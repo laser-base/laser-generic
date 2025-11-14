@@ -125,6 +125,9 @@ class Exposed:
     an 'exposed' (E) state to 'infectious' (I) after a delay. It supports custom incubation
     and infectious duration distributions and handles both initialization and per-tick dynamics.
 
+    Agents transition from Exposed to Infectious when their incubation timer (etimer) expires.
+    Tracks number of agents becoming infectious each tick in `model.nodes.newly_infectious`.
+
     Responsibilities:
     - Initializes exposed individuals at time 0 (if provided in the scenario)
     - Assigns and tracks per-agent incubation timers (`etimer`)
@@ -172,7 +175,7 @@ class Exposed:
         self.model = model
         self.model.people.add_scalar_property("etimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("E", model.params.nticks + 1, dtype=np.int32)
-        self.model.nodes.add_vector_property("symptomatic", model.params.nticks + 1, dtype=np.int32)
+        self.model.nodes.add_vector_property("newly_infectious", model.params.nticks + 1, dtype=np.int32)
 
         self.model.nodes.E[0] = self.model.scenario.E
 
@@ -234,7 +237,7 @@ class Exposed:
         parallel=True,
         cache=True,
     )
-    def nb_exposed_step(states, etimers, itimers, symptomatic, nodeids, infdurdist, infdurmin, tick):
+    def nb_exposed_step(states, etimers, itimers, newly_infectious, nodeids, infdurdist, infdurmin, tick):
         for i in nb.prange(len(states)):
             if states[i] == State.EXPOSED.value:
                 etimers[i] -= 1
@@ -242,7 +245,7 @@ class Exposed:
                     states[i] = State.INFECTIOUS.value
                     nid = nodeids[i]
                     itimers[i] = np.maximum(np.round(infdurdist(tick, nid)), infdurmin)  # Set the infection timer
-                    symptomatic[nb.get_thread_id(), nid] += 1
+                    newly_infectious[nb.get_thread_id(), nid] += 1
 
         return
 
@@ -251,24 +254,24 @@ class Exposed:
         # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
         self.model.nodes.E[tick + 1] = self.model.nodes.E[tick]
 
-        symptomatic_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+        newly_infectious_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         self.nb_exposed_step(
             self.model.people.state,
             self.model.people.etimer,
             self.model.people.itimer,
-            symptomatic_by_node,
+            newly_infectious_by_node,
             self.model.people.nodeid,
             self.infdurdist,
             self.infdurmin,
             tick,
         )
-        symptomatic_by_node = symptomatic_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
+        newly_infectious_by_node = newly_infectious_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
 
         # state(t+1) = state(t) + ∆state(t)
-        self.model.nodes.E[tick + 1] -= symptomatic_by_node
-        self.model.nodes.I[tick + 1] += symptomatic_by_node
+        self.model.nodes.E[tick + 1] -= newly_infectious_by_node
+        self.model.nodes.I[tick + 1] += newly_infectious_by_node
         # Record today's ∆
-        self.model.nodes.symptomatic[tick] = symptomatic_by_node
+        self.model.nodes.newly_infectious[tick] = newly_infectious_by_node
 
         return
 
@@ -409,6 +412,9 @@ class InfectiousIS:
     recover from infection and immediately return to the susceptible pool. It supports
     per-agent infection durations and manages patch-level infectious counts over time.
 
+    Agents transition from Infectious back to Susceptible after the infectious period (itimer).
+    Tracks number of agents recovering each tick in `model.nodes.newly_recovered`.
+
     Responsibilities:
     - Initializes infected agents and their infection timers (`itimer`)
     - Decrements `itimer` daily for infectious agents
@@ -452,7 +458,7 @@ class InfectiousIS:
         self.model = model
         self.model.people.add_scalar_property("itimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("I", model.params.nticks + 1, dtype=np.int32)
-        self.model.nodes.add_vector_property("recovered", model.params.nticks + 1, dtype=np.int32)
+        self.model.nodes.add_vector_property("newly_recovered", model.params.nticks + 1, dtype=np.int32)
 
         self.infdurdist = infdurdist
         self.infdurmin = infdurmin
@@ -507,13 +513,13 @@ class InfectiousIS:
         parallel=True,
         cache=True,
     )
-    def nb_infectious_step(states, itimers, recovered, nodeids):
+    def nb_infectious_step(states, itimers, newly_recovered, nodeids):
         for i in nb.prange(len(states)):
             if states[i] == State.INFECTIOUS.value:
                 itimers[i] -= 1
                 if itimers[i] == 0:
                     states[i] = State.SUSCEPTIBLE.value
-                    recovered[nb.get_thread_id(), nodeids[i]] += 1
+                    newly_recovered[nb.get_thread_id(), nodeids[i]] += 1
 
         return
 
@@ -528,15 +534,15 @@ class InfectiousIS:
         # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
         self.model.nodes.I[tick + 1] = self.model.nodes.I[tick]
 
-        recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
-        self.nb_infectious_step(self.model.people.state, self.model.people.itimer, recovered_by_node, self.model.people.nodeid)
-        recovered_by_node = recovered_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
+        newly_recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+        self.nb_infectious_step(self.model.people.state, self.model.people.itimer, newly_recovered_by_node, self.model.people.nodeid)
+        newly_recovered_by_node = newly_recovered_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
 
         # state(t+1) = state(t) + ∆state(t)
-        self.model.nodes.S[tick + 1] += recovered_by_node
-        self.model.nodes.I[tick + 1] -= recovered_by_node
+        self.model.nodes.S[tick + 1] += newly_recovered_by_node
+        self.model.nodes.I[tick + 1] -= newly_recovered_by_node
         # Record today's ∆
-        self.model.nodes.recovered[tick] = recovered_by_node
+        self.model.nodes.newly_recovered[tick] = newly_recovered_by_node
 
         return
 
@@ -565,6 +571,11 @@ class InfectiousIR:
     This component manages agents in the infectious state for models where infected individuals
     recover permanently (i.e., transition to a `RECOVERED` state without waning). It supports
     agent-level infection durations and patch-level tracking of recoveries over time.
+
+    Infectious component for an SIR/SEIR model - includes infectious duration, no waning immunity in newly_recovered state.
+
+    Agents transition from Infectious to Recovered after the infectious period (itimer).
+    Tracks number of agents recovering each tick in `model.nodes.newly_recovered`.
 
     Responsibilities:
     - Initializes infected agents and their infection timers (`itimer`) based on scenario input
@@ -611,7 +622,7 @@ class InfectiousIR:
         self.model = model
         self.model.people.add_scalar_property("itimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("I", model.params.nticks + 1, dtype=np.int32)
-        self.model.nodes.add_vector_property("recovered", model.params.nticks + 1, dtype=np.int32)
+        self.model.nodes.add_vector_property("newly_recovered", model.params.nticks + 1, dtype=np.int32)
 
         self.model.nodes.I[0] = self.model.scenario.I
 
@@ -670,13 +681,13 @@ class InfectiousIR:
         parallel=True,
         cache=True,
     )
-    def nb_infectious_step(states, itimers, recovered, nodeids):
+    def nb_infectious_step(states, itimers, newly_recovered, nodeids):
         for i in nb.prange(len(states)):
             if states[i] == State.INFECTIOUS.value:
                 itimers[i] -= 1
                 if itimers[i] == 0:
                     states[i] = State.RECOVERED.value
-                    recovered[nb.get_thread_id(), nodeids[i]] += 1
+                    newly_recovered[nb.get_thread_id(), nodeids[i]] += 1
 
         return
 
@@ -691,15 +702,15 @@ class InfectiousIR:
         # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
         self.model.nodes.I[tick + 1] = self.model.nodes.I[tick]
 
-        recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
-        self.nb_infectious_step(self.model.people.state, self.model.people.itimer, recovered_by_node, self.model.people.nodeid)
-        recovered_by_node = recovered_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
+        newly_recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+        self.nb_infectious_step(self.model.people.state, self.model.people.itimer, newly_recovered_by_node, self.model.people.nodeid)
+        newly_recovered_by_node = newly_recovered_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
 
         # state(t+1) = state(t) + ∆state(t)
-        self.model.nodes.I[tick + 1] -= recovered_by_node
-        self.model.nodes.R[tick + 1] += recovered_by_node
+        self.model.nodes.I[tick + 1] -= newly_recovered_by_node
+        self.model.nodes.R[tick + 1] += newly_recovered_by_node
         # Record today's ∆
-        self.model.nodes.recovered[tick] = recovered_by_node
+        self.model.nodes.newly_recovered[tick] = newly_recovered_by_node
 
         return
 
@@ -727,6 +738,10 @@ class InfectiousIRS:
 
     This component manages infectious individuals in models where recovery confers
     temporary immunity, after which agents become susceptible again (SIRS/SEIRS).
+
+    Agents transition from Infectious to Recovered after the infectious period (itimer).
+    Set the waning immunity timer (rtimer) upon recovery.
+    Tracks number of agents recovering each tick in `model.nodes.newly_recovered`.
 
     Responsibilities:
     - Initializes infectious agents from `model.scenario.I`
@@ -782,7 +797,7 @@ class InfectiousIRS:
         if not hasattr(self.model.people, "rtimer"):
             self.model.people.add_scalar_property("rtimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("I", model.params.nticks + 1, dtype=np.int32)
-        self.model.nodes.add_vector_property("recovered", model.params.nticks + 1, dtype=np.int32)
+        self.model.nodes.add_vector_property("newly_recovered", model.params.nticks + 1, dtype=np.int32)
 
         self.model.nodes.I[0] = self.model.scenario.I
 
@@ -835,7 +850,7 @@ class InfectiousIRS:
         parallel=True,
         cache=True,
     )
-    def nb_infectious_step(states, itimers, rtimers, recovered, nodeids, wandurdist, wandurmin, tick):
+    def nb_infectious_step(states, itimers, rtimers, newly_recovered, nodeids, wandurdist, wandurmin, tick):
         for i in nb.prange(len(states)):
             if states[i] == State.INFECTIOUS.value:
                 itimers[i] -= 1
@@ -843,7 +858,7 @@ class InfectiousIRS:
                     states[i] = State.RECOVERED.value
                     nid = nodeids[i]
                     rtimers[i] = np.maximum(np.round(wandurdist(tick, nid)), wandurmin)  # Set the recovery timer
-                    recovered[nb.get_thread_id(), nid] += 1
+                    newly_recovered[nb.get_thread_id(), nid] += 1
 
         return
 
@@ -858,24 +873,24 @@ class InfectiousIRS:
         # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
         self.model.nodes.I[tick + 1] = self.model.nodes.I[tick]
 
-        recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+        newly_recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         self.nb_infectious_step(
             self.model.people.state,
             self.model.people.itimer,
             self.model.people.rtimer,
-            recovered_by_node,
+            newly_recovered_by_node,
             self.model.people.nodeid,
             self.wandurdist,
             self.wandurmin,
             tick,
         )
-        recovered_by_node = recovered_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
+        newly_recovered_by_node = newly_recovered_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
 
         # state(t+1) = state(t) + ∆state(t)
-        self.model.nodes.I[tick + 1] -= recovered_by_node
-        self.model.nodes.R[tick + 1] += recovered_by_node
+        self.model.nodes.I[tick + 1] -= newly_recovered_by_node
+        self.model.nodes.R[tick + 1] += newly_recovered_by_node
         # Record today's ∆
-        self.model.nodes.recovered[tick] = recovered_by_node
+        self.model.nodes.newly_recovered[tick] = newly_recovered_by_node
 
         return
 
@@ -893,7 +908,7 @@ class InfectiousIRS:
         # Second plot: Total Infected and Total Recovered over Time
         _fig, ax2 = plt.subplots()
         total_infected = np.sum(self.model.nodes.I, axis=1)
-        total_recovered = np.sum(self.model.nodes.recovered, axis=1)
+        total_recovered = np.sum(self.model.nodes.newly_recovered, axis=1)
         ax2.plot(total_infected, color="black", linestyle="--", label="Total Infected")
         ax2.plot(total_recovered, color="green", linestyle="-.", label="Total Recovered")
         ax2.set_xlabel("Tick")
@@ -1007,52 +1022,57 @@ class Recovered:
 
 class RecoveredRS:
     """
-    Recovered Component for SIRS/SEIRS Models (Waning Immunity)
+        Recovered Component for SIRS/SEIRS Models (Waning Immunity)
 
-    This component manages agents in the recovered state in models where immunity is temporary.
-    It supports per-agent recovery timers, enabling individuals to return to the susceptible
-    state after a configurable waning period. This is essential for SEIRS/SIRS model dynamics.
+    <<<<<<< HEAD
+        This component manages agents in the recovered state in models where immunity is temporary.
+        It supports per-agent recovery timers, enabling individuals to return to the susceptible
+        state after a configurable waning period. This is essential for SEIRS/SIRS model dynamics.
 
-    Responsibilities:
-    - Initializes agents in the `RECOVERED` state using `model.scenario.R`
-    - Assigns `rtimer` values to track the duration of immunity
-    - Decrements `rtimer` each tick; transitions agents to `SUSCEPTIBLE` when `rtimer == 0`
-    - Updates patch-level counts:
-        • `R[t, i]`: number of recovered individuals in node `i` at time `t`
-        • `waned[t, i]`: number of agents who re-entered susceptibility on time step `t`
+        Responsibilities:
+        - Initializes agents in the `RECOVERED` state using `model.scenario.R`
+        - Assigns `rtimer` values to track the duration of immunity
+        - Decrements `rtimer` each tick; transitions agents to `SUSCEPTIBLE` when `rtimer == 0`
+        - Updates patch-level counts:
+            • `R[t, i]`: number of recovered individuals in node `i` at time `t`
+            • `waned[t, i]`: number of agents who re-entered susceptibility on time step `t`
 
-    Required Inputs:
-    - `model.scenario.R`: initial number of recovered individuals per node
-    - `wandurdist`: a function sampling the waning immunity duration distribution
-    - `wandurmin`: minimum duration of immunity (default = 1 time step)
+        Required Inputs:
+        - `model.scenario.R`: initial number of recovered individuals per node
+        - `wandurdist`: a function sampling the waning immunity duration distribution
+        - `wandurmin`: minimum duration of immunity (default = 1 time step)
 
-    Outputs:
-    - `model.people.rtimer`: per-agent countdown to immunity expiration
-    - `model.nodes.R`: recovered count per patch per timestep
-    - `model.nodes.waned`: number of immunity losses per patch per tick
+        Outputs:
+        - `model.people.rtimer`: per-agent countdown to immunity expiration
+        - `model.nodes.R`: recovered count per patch per timestep
+        - `model.nodes.waned`: number of immunity losses per patch per tick
 
-    Step Behavior:
-    - Agents with `state == RECOVERED` decrement `rtimer`
-    - When `rtimer == 0`, they return to `SUSCEPTIBLE`
-    - `R` and `S` counts are updated to reflect this transition
-    - `waned[t]` logs the number of agents who lost immunity on time step `t`
+        Step Behavior:
+        - Agents with `state == RECOVERED` decrement `rtimer`
+        - When `rtimer == 0`, they return to `SUSCEPTIBLE`
+        - `R` and `S` counts are updated to reflect this transition
+        - `waned[t]` logs the number of agents who lost immunity on time step `t`
 
-    Validation:
-    - Ensures population conservation and consistency between agent states and patch totals
-    - Detects unexpected changes in `R` or invalid transitions
+        Validation:
+        - Ensures population conservation and consistency between agent states and patch totals
+        - Detects unexpected changes in `R` or invalid transitions
 
-    Plotting:
-    The `plot()` method provides two views:
-    1. Per-node recovered trajectories
-    2. Total recovered and waned agents over time
+        Plotting:
+        The `plot()` method provides two views:
+        1. Per-node recovered trajectories
+        2. Total recovered and waned agents over time
 
-    Example:
-        model.components = [
-            SIR.Susceptible(model),
-            SEIRS.Infectious(model, infdurdist, wandurdist),
-            Exposed(model, ...),
-            RecoveredRS(model, wandurdist),
-        ]
+        Example:
+            model.components = [
+                SIR.Susceptible(model),
+                SEIRS.Infectious(model, infdurdist, wandurdist),
+                Exposed(model, ...),
+                RecoveredRS(model, wandurdist),
+            ]
+    =======
+        Agents transition from Recovered back to Susceptible after the waning immunity period (rtimer).
+        Tracks number of agents losing immunity each tick in `model.nodes.newly_waned`.
+    >>>>>>> 95d3d97 (flows in newly_xxx node properties)
     """
 
     def __init__(self, model, wandurdist, wandurmin=1):
@@ -1060,7 +1080,7 @@ class RecoveredRS:
         if not hasattr(self.model.people, "rtimer"):
             self.model.people.add_scalar_property("rtimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("R", model.params.nticks + 1, dtype=np.int32)
-        self.model.nodes.add_vector_property("waned", model.params.nticks + 1, dtype=np.int32)
+        self.model.nodes.add_vector_property("newly_waned", model.params.nticks + 1, dtype=np.int32)
 
         self.model.nodes.R[0] = self.model.scenario.R
 
@@ -1120,13 +1140,13 @@ class RecoveredRS:
         parallel=True,
         cache=True,
     )
-    def nb_recovered_step(states, rtimers, waned_by_node, nodeids):
+    def nb_recovered_step(states, rtimers, newly_waned_by_node, nodeids):
         for i in nb.prange(len(states)):
             if states[i] == State.RECOVERED.value:
                 rtimers[i] -= 1
                 if rtimers[i] == 0:
                     states[i] = State.SUSCEPTIBLE.value
-                    waned_by_node[nb.get_thread_id(), nodeids[i]] += 1
+                    newly_waned_by_node[nb.get_thread_id(), nodeids[i]] += 1
 
         return
 
@@ -1136,20 +1156,20 @@ class RecoveredRS:
         # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
         self.model.nodes.R[tick + 1] = self.model.nodes.R[tick]
 
-        waned_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+        newly_waned_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         self.nb_recovered_step(
             self.model.people.state,
             self.model.people.rtimer,
-            waned_by_node,
+            newly_waned_by_node,
             self.model.people.nodeid,
         )
-        waned_by_node = waned_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
+        newly_waned_by_node = newly_waned_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
 
         # state(t+1) = state(t) + ∆state(t)
-        self.model.nodes.R[tick + 1] -= waned_by_node
-        self.model.nodes.S[tick + 1] += waned_by_node
+        self.model.nodes.R[tick + 1] -= newly_waned_by_node
+        self.model.nodes.S[tick + 1] += newly_waned_by_node
         # Record today's ∆
-        self.model.nodes.waned[tick] = waned_by_node
+        self.model.nodes.newly_waned[tick] = newly_waned_by_node
 
         return
 
@@ -1167,7 +1187,7 @@ class RecoveredRS:
         # Second plot: Total Recovered and Total Waned over Time
         _fig, ax2 = plt.subplots()
         total_recovered = np.sum(self.model.nodes.R, axis=1)
-        total_waned = np.sum(self.model.nodes.waned, axis=1)
+        total_waned = np.sum(self.model.nodes.newly_waned, axis=1)
         ax2.plot(total_recovered, color="green", linestyle="--", label="Total Recovered")
         ax2.plot(total_waned, color="purple", linestyle="-.", label="Total Waned")
         ax2.set_xlabel("Tick")
@@ -1181,57 +1201,62 @@ class RecoveredRS:
 
 class TransmissionSIX:
     """
-    Transmission Component for SI-Style Models (S → I Only, No Recovery)
+        Transmission Component for SI-Style Models (S → I Only, No Recovery)
 
-    This component simulates the transmission process in simple epidemic models where
-    agents move from the `SUSCEPTIBLE` to `INFECTIOUS` state and remain infectious
-    indefinitely. It computes the force of infection (FOI) for each patch and applies
-    it stochastically to susceptible agents.
+    <<<<<<< HEAD
+        This component simulates the transmission process in simple epidemic models where
+        agents move from the `SUSCEPTIBLE` to `INFECTIOUS` state and remain infectious
+        indefinitely. It computes the force of infection (FOI) for each patch and applies
+        it stochastically to susceptible agents.
 
-    Responsibilities:
-    - Computes per-node force of infection (`λ`) at each tick:
-        λ = β * (I / N), with spatial coupling via a migration matrix
-    - Applies probabilistic infection to susceptible agents using `nb_transmission_step`
-    - Updates per-node `S` and `I` counts accordingly
-    - Tracks new infections (incidence) and FOI values per node and tick
+        Responsibilities:
+        - Computes per-node force of infection (`λ`) at each tick:
+            λ = β * (I / N), with spatial coupling via a migration matrix
+        - Applies probabilistic infection to susceptible agents using `nb_transmission_step`
+        - Updates per-node `S` and `I` counts accordingly
+        - Tracks new infections (incidence) and FOI values per node and tick
 
-    Required Inputs:
-    - `model.nodes.I[t]`: number of infectious agents per node at tick `t`
-    - `model.nodes.S[t]`: number of susceptible agents per node at tick `t`
-    - `model.params.beta`: transmission rate (global)
-    - `model.network`: matrix of spatial coupling between nodes
+        Required Inputs:
+        - `model.nodes.I[t]`: number of infectious agents per node at tick `t`
+        - `model.nodes.S[t]`: number of susceptible agents per node at tick `t`
+        - `model.params.beta`: transmission rate (global)
+        - `model.network`: matrix of spatial coupling between nodes
 
-    Outputs:
-    - `model.nodes.forces[t, i]`: force of infection in node `i` at tick `t`
-    - `model.nodes.incidence[t, i]`: number of new infections in node `i` at tick `t`
+        Outputs:
+        - `model.nodes.forces[t, i]`: force of infection in node `i` at tick `t`
+        - `model.nodes.incidence[t, i]`: number of new infections in node `i` at tick `t`
 
-    Step Behavior:
-    - Computes FOI (`λ`) for each node
-    - Applies inter-node infection pressure via `model.network`
-    - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
-    - Infects susceptible agents probabilistically
-    - Updates state and records incidence
+        Step Behavior:
+        - Computes FOI (`λ`) for each node
+        - Applies inter-node infection pressure via `model.network`
+        - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
+        - Infects susceptible agents probabilistically
+        - Updates state and records incidence
 
-    Validation:
-    - Ensures consistency between state transitions and incidence records
-    - Checks conservation of population in `S` and `I` states
-    - Validates `incidence[t] == I[t+1] - I[t]`
+        Validation:
+        - Ensures consistency between state transitions and incidence records
+        - Checks conservation of population in `S` and `I` states
+        - Validates `incidence[t] == I[t+1] - I[t]`
 
-    Plotting:
-    The `plot()` method displays the force of infection over time per node.
+        Plotting:
+        The `plot()` method displays the force of infection over time per node.
 
-    Example:
-        model.components = [
-            SIR.Susceptible(model),
-            TransmissionSIX(model),
-            InfectiousSI(model),
-        ]
+        Example:
+            model.components = [
+                SIR.Susceptible(model),
+                TransmissionSIX(model),
+                InfectiousSI(model),
+            ]
+    =======
+        Agents transition from Susceptible to Infectious based on force of infection.
+        Tracks number of new infections each tick in `model.nodes.newly_infected`.
+    >>>>>>> 95d3d97 (flows in newly_xxx node properties)
     """
 
     def __init__(self, model):
         self.model = model
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
-        self.model.nodes.add_vector_property("incidence", model.params.nticks + 1, dtype=np.int32)
+        self.model.nodes.add_vector_property("newly_infected", model.params.nticks + 1, dtype=np.int32)
 
         return
 
@@ -1242,7 +1267,7 @@ class TransmissionSIX:
         parallel=True,
         cache=True,
     )
-    def nb_transmission_step(states, nodeids, ft, inf_by_node):
+    def nb_transmission_step(states, nodeids, ft, newly_infected_by_node):
         for i in nb.prange(len(states)):
             if states[i] == State.SUSCEPTIBLE.value:
                 # Check for infection
@@ -1250,7 +1275,7 @@ class TransmissionSIX:
                 nid = nodeids[i]
                 if draw < ft[nid]:
                     states[i] = State.INFECTIOUS.value
-                    inf_by_node[nb.get_thread_id(), nid] += 1
+                    newly_infected_by_node[nb.get_thread_id(), nid] += 1
 
         return
 
@@ -1265,7 +1290,9 @@ class TransmissionSIX:
         _check_flow_vs_census(self.model.nodes.I[tick + 1], self.model.people, State.INFECTIOUS, "Infectious")
 
         I = self.model.nodes.I  # noqa: E741
-        assert np.all(self.model.nodes.incidence[tick] == (I[tick + 1] - I[tick])), "Incidence does not match change in Infectious counts"
+        assert np.all(self.model.nodes.newly_infected[tick] == (I[tick + 1] - I[tick])), (
+            "Incidence does not match change in Infectious counts"
+        )
 
         return
 
@@ -1279,20 +1306,20 @@ class TransmissionSIX:
         ft -= transfer.sum(axis=1)
         ft = -np.expm1(-ft)  # Convert to probability of infection
 
-        inf_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+        newly_infected_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         self.nb_transmission_step(
             self.model.people.state,
             self.model.people.nodeid,
             ft,
-            inf_by_node,
+            newly_infected_by_node,
         )
-        inf_by_node = inf_by_node.sum(axis=0)  # Sum over threads
+        newly_infected_by_node = newly_infected_by_node.sum(axis=0)  # Sum over threads
 
         # state(t+1) = state(t) + ∆state(t)
-        self.model.nodes.S[tick + 1] -= inf_by_node
-        self.model.nodes.I[tick + 1] += inf_by_node
+        self.model.nodes.S[tick + 1] -= newly_infected_by_node
+        self.model.nodes.I[tick + 1] += newly_infected_by_node
         # Record today's ∆
-        self.model.nodes.incidence[tick] = inf_by_node
+        self.model.nodes.newly_infected[tick] = newly_infected_by_node
 
         return
 
@@ -1310,51 +1337,57 @@ class TransmissionSIX:
 
 class TransmissionSI:
     """
-    Transmission Component for SIS/SIR/SIRS Models (S → I with Duration)
+        Transmission Component for SIS/SIR/SIRS Models (S → I with Duration)
 
-    This component simulates the transition from `SUSCEPTIBLE` to `INFECTIOUS` in
-    models where infectious individuals have a finite infection duration (`itimer`).
-    It supports full spatial coupling and allows infection durations to vary by node
-    and tick.
+    <<<<<<< HEAD
+        This component simulates the transition from `SUSCEPTIBLE` to `INFECTIOUS` in
+        models where infectious individuals have a finite infection duration (`itimer`).
+        It supports full spatial coupling and allows infection durations to vary by node
+        and tick.
 
-    Responsibilities:
-    - Computes force of infection (FOI) `λ = β * (I / N)` per patch each tick
-    - Applies optional spatial coupling via `model.network` (infection pressure transfer)
-    - Converts FOI into Bernoulli probabilities using `p = 1 - exp(-λ)`
-    - Infects susceptible agents stochastically, assigning per-agent `itimer`
-    - Updates patch-level susceptible (`S`) and infectious (`I`) counts
-    - Records number of new infections per tick in `model.nodes.incidence`
+        Responsibilities:
+        - Computes force of infection (FOI) `λ = β * (I / N)` per patch each tick
+        - Applies optional spatial coupling via `model.network` (infection pressure transfer)
+        - Converts FOI into Bernoulli probabilities using `p = 1 - exp(-λ)`
+        - Infects susceptible agents stochastically, assigning per-agent `itimer`
+        - Updates patch-level susceptible (`S`) and infectious (`I`) counts
+        - Records number of new infections per tick in `model.nodes.incidence`
 
-    Required Inputs:
-    - `model.params.beta`: transmission rate (global)
-    - `model.network`: [n x n] matrix of transmission coupling
-    - `infdurdist(tick, node)`: callable sampling the infectious duration distribution
-    - `model.people.itimer`: preallocated per-agent infection timer
+        Required Inputs:
+        - `model.params.beta`: transmission rate (global)
+        - `model.network`: [n x n] matrix of transmission coupling
+        - `infdurdist(tick, node)`: callable sampling the infectious duration distribution
+        - `model.people.itimer`: preallocated per-agent infection timer
 
-    Outputs:
-    - `model.nodes.forces[t, i]`: computed FOI in node `i` at time `t`
-    - `model.nodes.incidence[t, i]`: new infections in node `i` on time step `t`
+        Outputs:
+        - `model.nodes.forces[t, i]`: computed FOI in node `i` at time `t`
+        - `model.nodes.incidence[t, i]`: new infections in node `i` on time step `t`
 
-    Step Behavior:
-    - Computes FOI (`λ`) for each node
-    - Applies inter-node infection pressure via `model.network`
-    - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
-    - Infects susceptible agents probabilistically
-    - Updates state and records incidence
+        Step Behavior:
+        - Computes FOI (`λ`) for each node
+        - Applies inter-node infection pressure via `model.network`
+        - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
+        - Infects susceptible agents probabilistically
+        - Updates state and records incidence
 
-    Validation:
-    - Ensures consistency between incidence and change in `I`
-    - Checks for correct state and population accounting before and after tick
+        Validation:
+        - Ensures consistency between incidence and change in `I`
+        - Checks for correct state and population accounting before and after tick
 
-    Plotting:
-    The `plot()` method visualizes per-node FOI (`λ`) over simulation time.
+        Plotting:
+        The `plot()` method visualizes per-node FOI (`λ`) over simulation time.
 
-    Example:
-        model.components = [
-            SIR.Susceptible(model),
-            TransmissionSI(model, infdurdist),
-            InfectiousIR(model, infdurdist),
-        ]
+        Example:
+            model.components = [
+                SIR.Susceptible(model),
+                TransmissionSI(model, infdurdist),
+                InfectiousIR(model, infdurdist),
+            ]
+    =======
+        Agents transition from Susceptible to Infectious based on force of infection.
+        Sets newly infectious agents' infection timers (itimer) based on `infdurdist` and `infdurmin`.
+        Tracks number of new infections each tick in `model.nodes.newly_infected`.
+    >>>>>>> 95d3d97 (flows in newly_xxx node properties)
     """
 
     def __init__(self, model, infdurdist, infdurmin=1):
@@ -1368,7 +1401,7 @@ class TransmissionSI:
         """
         self.model = model
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
-        self.model.nodes.add_vector_property("incidence", model.params.nticks + 1, dtype=np.int32)
+        self.model.nodes.add_vector_property("newly_infected", model.params.nticks + 1, dtype=np.int32)
 
         self.infdurdist = infdurdist
         self.infdurmin = infdurmin
@@ -1389,13 +1422,15 @@ class TransmissionSI:
         _check_flow_vs_census(self.model.nodes.I[tick + 1], self.model.people, State.INFECTIOUS, "Infectious")
 
         Inext = self.model.nodes.I[tick + 1]
-        assert np.all(self.model.nodes.incidence[tick] == (Inext - self.prv_inext)), "Incidence does not match change in Infectious counts"
+        assert np.all(self.model.nodes.newly_infected[tick] == (Inext - self.prv_inext)), (
+            "Incidence does not match change in Infectious counts"
+        )
 
         return
 
     @staticmethod
     @nb.njit(nogil=True, parallel=True, cache=True)
-    def nb_transmission_step(states, nodeids, ft, inf_by_node, itimers, infdurdist, infdurmin, tick):
+    def nb_transmission_step(states, nodeids, ft, newly_infected_by_node, itimers, infdurdist, infdurmin, tick):
         for i in nb.prange(len(states)):
             if states[i] == State.SUSCEPTIBLE.value:
                 # Check for infection
@@ -1404,7 +1439,7 @@ class TransmissionSI:
                 if draw < ft[nid]:
                     states[i] = State.INFECTIOUS.value
                     itimers[i] = np.maximum(np.round(infdurdist(tick, nid)), infdurmin)  # Set the infection timer
-                    inf_by_node[nb.get_thread_id(), nid] += 1
+                    newly_infected_by_node[nb.get_thread_id(), nid] += 1
 
         return
 
@@ -1424,24 +1459,24 @@ class TransmissionSI:
         ft -= transfer.sum(axis=1)
         ft = -np.expm1(-ft)  # Convert to probability of infection
 
-        inf_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+        newly_infected_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         self.nb_transmission_step(
             self.model.people.state,
             self.model.people.nodeid,
             ft,
-            inf_by_node,
+            newly_infected_by_node,
             self.model.people.itimer,
             self.infdurdist,
             self.infdurmin,
             tick,
         )
-        inf_by_node = inf_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
+        newly_infected_by_node = newly_infected_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
 
         # state(t+1) = state(t) + ∆state(t)
-        self.model.nodes.S[tick + 1] -= inf_by_node
-        self.model.nodes.I[tick + 1] += inf_by_node
+        self.model.nodes.S[tick + 1] -= newly_infected_by_node
+        self.model.nodes.I[tick + 1] += newly_infected_by_node
         # Record today's ∆
-        self.model.nodes.incidence[tick] = inf_by_node
+        self.model.nodes.newly_infected[tick] = newly_infected_by_node
 
         return
 
@@ -1459,53 +1494,59 @@ class TransmissionSI:
 
 class TransmissionSE:
     """
-    Transmission Component for SEIR/SEIRS Models (S → E with Incubation Duration)
+        Transmission Component for SEIR/SEIRS Models (S → E with Incubation Duration)
 
-    This component simulates the transition from `SUSCEPTIBLE` to `EXPOSED` in models
-    where infection includes an incubation period before agents become infectious.
-    It handles stochastic exposure based on per-node force of infection (FOI), and
-    assigns individual incubation timers to newly exposed agents.
+    <<<<<<< HEAD
+        This component simulates the transition from `SUSCEPTIBLE` to `EXPOSED` in models
+        where infection includes an incubation period before agents become infectious.
+        It handles stochastic exposure based on per-node force of infection (FOI), and
+        assigns individual incubation timers to newly exposed agents.
 
-    Responsibilities:
-    - Computes force of infection `λ = β * (I / N)` at each tick per node
-    - Adjusts FOI using `model.network` for inter-node transmission coupling. Required but can be nullified by filling with all zeros.
-    - Applies FOI to susceptible agents to determine exposure
-    - Assigns incubation durations (`etimer`) to each newly exposed agent
-    - Updates node-level counts for `S` and `E` and logs daily incidence
+        Responsibilities:
+        - Computes force of infection `λ = β * (I / N)` at each tick per node
+        - Adjusts FOI using `model.network` for inter-node transmission coupling. Required but can be nullified by filling with all zeros.
+        - Applies FOI to susceptible agents to determine exposure
+        - Assigns incubation durations (`etimer`) to each newly exposed agent
+        - Updates node-level counts for `S` and `E` and logs daily incidence
 
-    Required Inputs:
-    - `model.params.beta`: global transmission rate
-    - `model.network`: [n x n] matrix for FOI migration
-    - `expdurdist(tick, node)`: callable that samples the exposure/incubation duration distribution
-    - `expdurmin`: minimum incubation period (default = 1)
+        Required Inputs:
+        - `model.params.beta`: global transmission rate
+        - `model.network`: [n x n] matrix for FOI migration
+        - `expdurdist(tick, node)`: callable that samples the exposure/incubation duration distribution
+        - `expdurmin`: minimum incubation period (default = 1)
 
-    Outputs:
-    - `model.nodes.forces[t, i]`: computed FOI in node `i` at tick `t`
-    - `model.nodes.incidence[t, i]`: new exposures per node per day
-    - `model.people.etimer`: per-agent incubation countdown
+        Outputs:
+        - `model.nodes.forces[t, i]`: computed FOI in node `i` at tick `t`
+        - `model.nodes.incidence[t, i]`: new exposures per node per day
+        - `model.people.etimer`: per-agent incubation countdown
 
-    Step Behavior:
-    - Computes FOI (`λ`) for each node
-    - Optionally applies inter-node infection pressure via `model.network`
-    - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
-    - Infects susceptible agents probabilistically
-    - Updates state and records incidence
+        Step Behavior:
+        - Computes FOI (`λ`) for each node
+        - Optionally applies inter-node infection pressure via `model.network`
+        - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
+        - Infects susceptible agents probabilistically
+        - Updates state and records incidence
 
-    Validation:
-    - Validates consistency between agent states and patch-level counts before and after tick
-    - Confirms that `incidence[t] == E[t+1] - E[t]`
+        Validation:
+        - Validates consistency between agent states and patch-level counts before and after tick
+        - Confirms that `incidence[t] == E[t+1] - E[t]`
 
-    Plotting:
-    The `plot()` method shows per-node FOI (`λ`) trajectories over time.
+        Plotting:
+        The `plot()` method shows per-node FOI (`λ`) trajectories over time.
 
-    Example:
-        model.components = [
-            SIR.Susceptible(model),
-            TransmissionSE(model, expdurdist),
-            Exposed(model, ...),
-            InfectiousIR(model, ...),
-            Recovered(model),
-        ]
+        Example:
+            model.components = [
+                SIR.Susceptible(model),
+                TransmissionSE(model, expdurdist),
+                Exposed(model, ...),
+                InfectiousIR(model, ...),
+                Recovered(model),
+            ]
+    =======
+        Agents transition from Susceptible to Exposed based on force of infection.
+        Sets newly exposed agents' infection timers (etimer) based on `expdurdist` and `expdurmin`.
+        Tracks number of new infections each tick in `model.nodes.newly_infected`.
+    >>>>>>> 95d3d97 (flows in newly_xxx node properties)
     """
 
     def __init__(self, model, expdurdist, expdurmin=1):
@@ -1519,7 +1560,7 @@ class TransmissionSE:
         """
         self.model = model
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
-        self.model.nodes.add_vector_property("incidence", model.params.nticks + 1, dtype=np.int32)
+        self.model.nodes.add_vector_property("newly_infected", model.params.nticks + 1, dtype=np.int32)
 
         self.expdurdist = expdurdist
         self.expdurmin = expdurmin
@@ -1540,13 +1581,15 @@ class TransmissionSE:
         _check_flow_vs_census(self.model.nodes.E[tick + 1], self.model.people, State.EXPOSED, "Exposed")
 
         Enext = self.model.nodes.E[tick + 1]
-        assert np.all(self.model.nodes.incidence[tick] == (Enext - self.prv_enext)), "Incidence does not match change in Exposed counts"
+        assert np.all(self.model.nodes.newly_infected[tick] == (Enext - self.prv_enext)), (
+            "Incidence does not match change in Exposed counts"
+        )
 
         return
 
     @staticmethod
     @nb.njit(nogil=True, parallel=True, cache=True)
-    def nb_transmission_step(states, nodeids, ft, exp_by_node, etimers, expdurdist, expdurmin, tick):
+    def nb_transmission_step(states, nodeids, ft, newly_infected_by_node, etimers, expdurdist, expdurmin, tick):
         for i in nb.prange(len(states)):
             if states[i] == State.SUSCEPTIBLE.value:
                 # Check for infection
@@ -1555,7 +1598,7 @@ class TransmissionSE:
                 if draw < ft[nid]:
                     states[i] = State.EXPOSED.value
                     etimers[i] = np.maximum(np.round(expdurdist(tick, nid)), expdurmin)  # Set the exposure timer
-                    exp_by_node[nb.get_thread_id(), nid] += 1
+                    newly_infected_by_node[nb.get_thread_id(), nid] += 1
 
         return
 
@@ -1574,24 +1617,24 @@ class TransmissionSE:
         ft -= transfer.sum(axis=1)
         ft = -np.expm1(-ft)  # Convert to probability of infection
 
-        exp_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+        newly_infected_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         self.nb_transmission_step(
             self.model.people.state,
             self.model.people.nodeid,
             ft,
-            exp_by_node,
+            newly_infected_by_node,
             self.model.people.etimer,
             self.expdurdist,
             self.expdurmin,
             tick,
         )
-        exp_by_node = exp_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
+        newly_infected_by_node = newly_infected_by_node.sum(axis=0).astype(self.model.nodes.S.dtype)  # Sum over threads
 
         # state(t+1) = state(t) + ∆state(t)
-        self.model.nodes.S[tick + 1] -= exp_by_node
-        self.model.nodes.E[tick + 1] += exp_by_node
+        self.model.nodes.S[tick + 1] -= newly_infected_by_node
+        self.model.nodes.E[tick + 1] += newly_infected_by_node
         # Record today's ∆
-        self.model.nodes.incidence[tick] = exp_by_node
+        self.model.nodes.newly_infected[tick] = newly_infected_by_node
 
         return
 
