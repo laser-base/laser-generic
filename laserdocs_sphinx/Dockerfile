@@ -13,14 +13,9 @@ RUN pip install --no-cache-dir \
       jupyter \
       nbconvert
 
-#ENTRYPOINT ["make"]
-#ENTRYPOINT ["sh", "-c", "python3 scripts/convert_docs.py && make $@"]
-
-ENTRYPOINT sh -c "python3 scripts/convert_docs.py && python3 scripts/convert_notebooks.py && make \"$@\""
-
 # Default workdir inside the container
 WORKDIR /docs/sphinx
-
-# Default command (may be overridden)
-#CMD ["make", "html"]
+COPY laserdocs_sphinx/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["html"]

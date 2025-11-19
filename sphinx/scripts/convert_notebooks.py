@@ -6,7 +6,7 @@ import subprocess
 here = pathlib.Path(__file__).resolve().parent
 root = here.parent.parent  # → /docs
 
-nb_root = root / "docs" / "notebooks"
+nb_root = root / "docs" / "tutorials" / "notebooks"
 rst_root = here.parent / "source" / "converted" / "notebooks"
 
 rst_root.mkdir(parents=True, exist_ok=True)
