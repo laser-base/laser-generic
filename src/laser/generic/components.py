@@ -130,10 +130,6 @@ class Susceptible:
 
     @validate(pre=prevalidate_step, post=postvalidate_step)
     def step(self, tick: int) -> None:
-        # Propagate the number of susceptible individuals in each patch
-        # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
-        self.model.nodes.S[tick + 1] = self.model.nodes.S[tick]
-
         return
 
     def plot(self):
@@ -269,10 +265,6 @@ class Exposed:
         return
 
     def step(self, tick: int) -> None:
-        # Propagate the number of exposed individuals in each patch
-        # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
-        self.model.nodes.E[tick + 1] = self.model.nodes.E[tick]
-
         newly_infectious_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         nb_timer_update_timer_set(
             self.model.people.state,
@@ -400,9 +392,6 @@ class InfectiousSI:
         Args:
             tick (int): The current tick of the simulation.
         """
-        # Propagate the number of infected individuals in each patch
-        # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
-        self.model.nodes.I[tick + 1] = self.model.nodes.I[tick]
 
         return
 
@@ -534,9 +523,6 @@ class InfectiousIS:
         Args:
             tick (int): The current tick of the simulation.
         """
-        # Propagate the number of infectious individuals in each patch
-        # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
-        self.model.nodes.I[tick + 1] = self.model.nodes.I[tick]
 
         newly_recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         nb_timer_update(
@@ -692,9 +678,6 @@ class InfectiousIR:
         Args:
             tick (int): The current tick of the simulation.
         """
-        # Propagate the number of infectious individuals in each patch
-        # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
-        self.model.nodes.I[tick + 1] = self.model.nodes.I[tick]
 
         newly_recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         nb_timer_update(
@@ -851,9 +834,6 @@ class InfectiousIRS:
         Args:
             tick (int): The current tick of the simulation.
         """
-        # Propagate the number of infectious individuals in each patch
-        # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
-        self.model.nodes.I[tick + 1] = self.model.nodes.I[tick]
 
         newly_recovered_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         nb_timer_update_timer_set(
@@ -980,10 +960,6 @@ class Recovered:
 
     @validate(pre=prevalidate_step, post=postvalidate_step)
     def step(self, tick: int) -> None:
-        # Propagate the number of recovered individuals in each patch
-        # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
-        self.model.nodes.R[tick + 1] = self.model.nodes.R[tick]
-
         return
 
     def plot(self):
@@ -1117,10 +1093,6 @@ class RecoveredRS:
 
     @validate(pre=prevalidate_step, post=postvalidate_step)
     def step(self, tick: int) -> None:
-        # Propagate the number of recovered individuals in each patch
-        # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
-        self.model.nodes.R[tick + 1] = self.model.nodes.R[tick]
-
         newly_waned_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         nb_timer_update(
             self.model.people.state,
