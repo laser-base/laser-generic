@@ -267,3 +267,143 @@ class MortalityByEstimator:
         sample_dods(dobs, dods, self.estimator, tick)
 
         return
+
+
+class ConstantPopVitalDynamics:
+    def __init__(self, model, recycle_rates, dobs: bool = False, mappings=None, validating: bool = False) -> None:
+        self.model = model
+        self.recycle_rates = recycle_rates
+        self.dobs = dobs
+        self.validating = validating
+
+        if self.dobs:
+            self.model.people.add_property("dob", dtype=np.int16)
+            self.model.people.dob[:] = -1  # Initialize all dobs to -1
+
+        model.nodes.add_vector_property("births", model.params.nticks + 1, dtype=np.int32)
+        model.nodes.add_vector_property("deaths", model.params.nticks + 1, dtype=np.int32)
+
+        if mappings is None:
+            self.mappings = [
+                (State.SUSCEPTIBLE.value, "S"),
+                (State.EXPOSED.value, "E"),
+                (State.INFECTIOUS.value, "I"),
+                (State.RECOVERED.value, "R"),
+            ]
+        else:
+            self.mappings = mappings
+
+        self.mapping = np.full(np.max([value for value, _name in self.mappings]) + 1, -1, dtype=np.int32)
+        for index, (value, _name) in enumerate(self.mappings):
+            self.mapping[value] = index
+
+        return
+
+    def prevalidate_step(self, tick: int) -> None:
+        # Check that no one has a dob == tick if self.dobs == True
+        if self.dobs:
+            assert not np.any(self.model.people.dob == tick), "No one should have dob == tick before births."
+
+        return
+
+    def postvalidate_step(self, tick: int) -> None:
+        # Check that everyone with dob == tick is in the SUSCEPTIBLE state if self.dobs == True
+        if self.dobs:
+            dob_today = self.model.people.dob == tick
+            assert np.all(self.model.people.state[dob_today] == State.SUSCEPTIBLE.value), "People with dob == tick should be susceptible."
+
+            # Check that today's births == number of people with dob == tick
+            n_births = self.model.nodes.births[tick].sum()
+            n_dobs = dob_today.sum()
+            assert n_births == n_dobs, "Number of births should equal number of people with dob == tick."
+
+            # Check that today's deaths == today's births
+            assert np.all(self.model.nodes.deaths[tick] == self.model.nodes.births[tick]), "Number of deaths should equal number of births."
+
+        return
+
+    @staticmethod
+    @nb.njit(parallel=True, cache=True)
+    def nb_process_recycling(
+        states: np.ndarray,
+        nodeids: np.ndarray,
+        p_recycle: np.ndarray,
+        newly_recycled: np.ndarray,
+        mapping: np.ndarray,
+        recycled_by_state: np.ndarray,
+        dobs: np.ndarray,
+        tick: int,
+    ) -> None:
+        for i in nb.prange(len(states)):
+            draw = np.random.rand()
+            nid = nodeids[i]
+            if draw < p_recycle[nid]:
+                index = mapping[states[i]]
+                states[i] = State.SUSCEPTIBLE.value
+                dobs[i] = tick
+                newly_recycled[nb.get_thread_id(), nid] += 1
+                if index >= 0:
+                    recycled_by_state[nb.get_thread_id(), index, nid] += 1
+
+        return
+
+    @validate(prevalidate_step, postvalidate_step)
+    def step(self, tick):
+        # Convert recycling rate (per 1000 per year) to daily recycling rate and probability
+        annual_continuation_rate = 1.0 - self.recycle_rates[tick] / 1000.0
+        daily_continuation_rate = np.power(annual_continuation_rate, 1.0 / 365.0)
+        daily_recycling_rate = 1.0 - daily_continuation_rate
+        daily_p_recycling = -np.expm1(-daily_recycling_rate)
+
+        recycled_by_state = np.zeros((nb.get_num_threads(), len(self.mapping), self.model.nodes.count), dtype=np.int32)
+        newly_recycled = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
+
+        if self.dobs:
+            dobs = self.model.people.dob
+        else:
+            # Create a single value int16 array broadcast to self.model.people.count
+            dobs = _make_sink((self.model.people.count,), dtype=np.int16)
+
+        self.nb_process_recycling(
+            self.model.people.state,
+            self.model.people.nodeid,
+            daily_p_recycling,
+            newly_recycled,
+            self.mapping,
+            recycled_by_state,
+            dobs,
+            tick,
+        )
+        total_recycled = np.sum(newly_recycled, axis=0)
+        recycled_by_state = np.sum(recycled_by_state, axis=0)
+
+        self.model.nodes.births[tick] = self.model.nodes.deaths[tick] = total_recycled
+
+        S_next = self.model.nodes.S[tick + 1]
+
+        # Get State.NNN.value and state name from mappings
+        for value, state_name in self.mappings:
+            if state_name == "S":
+                # Don't need to subtract and add back to S
+                continue
+
+            # Get index in deceased_by_state for State.NNN.value
+            index = self.mapping[value]
+            # If the state exists in nodes, decrement by deceased count
+            if (prop := getattr(self.model.nodes, state_name, None)) is not None:
+                S_next += recycled_by_state[index]
+                prop[tick + 1] -= recycled_by_state[index]
+
+        return
+
+
+def _make_sink(shape, dtype=np.int32):
+    # 1-element buffer to absorb all writes
+    buf = np.empty(1, dtype=dtype)
+    # zero strides -> every index maps to buf[0]
+    return np.lib.stride_tricks.as_strided(
+        buf,
+        shape=shape,
+        strides=(0,) * len(shape),
+        writeable=True,  # important
+    )
