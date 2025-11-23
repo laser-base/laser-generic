@@ -20,6 +20,8 @@ from age_at_infection import TransmissionWithDOI
 from laser.generic import SEIR
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
+from laser.generic.vitaldynamics import BirthsByCBR
+from laser.generic.vitaldynamics import MortalityByEstimator
 from utils import stdgrid
 
 State = SEIR.State
@@ -84,18 +86,6 @@ class MaternalAntibodies:
         return
 
 
-class LenientVitalDynamics(SEIR.VitalDynamics):
-    """A VitalDynamics component that does not validate flows vs census."""
-
-    def prevalidate_step(self, tick: int) -> None:
-        # Override to do nothing
-        return
-
-    def postvalidate_step(self, tick: int) -> None:
-        # Override to do nothing
-        return
-
-
 # Example usage in a test or simulation setup:
 if __name__ == "__main__":
     # Build a model as in test_seir.py, but use TransmissionWithDOI
@@ -150,11 +140,10 @@ if __name__ == "__main__":
 
     pyramid = AliasedDistribution(np.full(89, 1_000))
     survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
-    # vitals = SEIR.VitalDynamics(model, birthrates_map.values, pyramid, survival)
-    vitals = LenientVitalDynamics(model, birthrates_map.values, pyramid, survival)
+    births = BirthsByCBR(model, birthrates_map.values, pyramid)
+    mortality = MortalityByEstimator(model, survival)
 
-    # model.components = [s, r, i, e, tx, mabs, importation, vitals]
-    model.components = [s, r, i, e, tx, mabs, vitals]
+    model.components = [s, r, i, e, tx, mabs, births, mortality]
 
     label = f"SEIR with MABs and DOI ({model.people.count:,} agents in {model.nodes.count:,} nodes)"
     model.run(label)

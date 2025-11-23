@@ -15,6 +15,7 @@ from laser.core.demographics import KaplanMeierEstimator
 from laser.generic import SEIR
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
+from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
 from utils import base_maps
 from utils import stdgrid
 
@@ -60,14 +61,11 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
             assert birthrates is not None, "Birthrates must be provided for vital dynamics."
             assert pyramid is not None, "Pyramid must be provided for vital dynamics."
             assert survival is not None, "Survival function must be provided for vital dynamics."
-            vitals = SEIR.VitalDynamics(model, birthrates, pyramid, survival)
-            # Recovered has to run _before_ Infectious to move people correctly (Infectious updates model.nodes.R)
-            # Infectious should run _before_ Exposed to move people correctly (Exposed updates model.nodes.I)
-            model.components = [s, r, i, e, tx, vitals]
+            births = BirthsByCBR(model, birthrates, pyramid)
+            mortality = MortalityByEstimator(model, survival)
+            model.components = [s, e, i, r, tx, births, mortality]
         else:
-            # Recovered has to run _before_ Infectious to move people correctly (Infectious updates model.nodes.R)
-            # Infectious should run _before_ Exposed to move people correctly (Exposed updates model.nodes.I)
-            model.components = [s, r, i, e, tx]
+            model.components = [s, e, i, r, tx]
 
         model.validating = VALIDATING
 

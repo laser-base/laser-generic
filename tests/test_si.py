@@ -15,6 +15,7 @@ from laser.generic import SI
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
 from laser.generic.newutils import grid
+from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator, ConstantPopVitalDynamics
 from utils import base_maps
 from utils import stdgrid
 
@@ -51,8 +52,9 @@ class Default(unittest.TestCase):
                 s = SI.Susceptible(model)
                 i = SI.Infectious(model)
                 tx = SI.Transmission(model)
-                vitals = SI.VitalDynamics(model, birthrate_map.values, pyramid=pyramid, survival=survival)
-                model.components = [s, i, tx, vitals]
+                births = BirthsByCBR(model, birthrate_map.values, pyramid)
+                mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, tx, births, mortality]
 
             model.run(f"SI Grid ({model.people.count:,}/{model.nodes.count:,})")
 
@@ -94,8 +96,9 @@ class Default(unittest.TestCase):
                 s = SI.Susceptible(model)
                 i = SI.Infectious(model)
                 tx = SI.Transmission(model)
-                vitals = SI.VitalDynamics(model, birthrate_map.values, pyramid=pyramid, survival=survival)
-                model.components = [s, i, tx, vitals]
+                births = BirthsByCBR(model, birthrate_map.values, pyramid)
+                mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, tx, births, mortality]
 
             model.run(f"SI Linear ({model.people.count:,}/{model.nodes.count:,})")
 
@@ -133,12 +136,13 @@ class Default(unittest.TestCase):
                     SI.Susceptible(model),
                     SI.Infectious(model),
                     SI.Transmission(model),
-                    SI.ConstantPopVitalDynamics(
-                        # Send in zero mortality rates to prevent warning.
-                        model,
-                        birthrate_map.values,
-                        ValuesMap.from_scalar(0.0, nsteps=parameters.nticks, nnodes=1).values,
-                    ),
+                    # SI.ConstantPopVitalDynamics(
+                    #     # Send in zero mortality rates to prevent warning.
+                    #     model,
+                    #     birthrate_map.values,
+                    #     ValuesMap.from_scalar(0.0, nsteps=parameters.nticks, nnodes=1).values,
+                    # ),
+                    ConstantPopVitalDynamics(model, birthrate_map.values),
                 ]
 
             model.run(f"SI Constant Pop ({model.people.count:,}/{model.nodes.count:,})")
