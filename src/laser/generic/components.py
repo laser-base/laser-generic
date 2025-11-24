@@ -29,7 +29,6 @@ def nb_timer_update(states, test_state, timers, new_state, transitioned, node_id
 @nb.njit(
     nogil=True,
     parallel=True,
-    cache=True,
 )
 def nb_timer_update_timer_set(
     states, test_state, oldtimers, new_state, newtimers, transitioned, node_ids, duration_dist, duration_min, tick
@@ -1362,7 +1361,7 @@ class TransmissionSI:
         return
 
     @staticmethod
-    @nb.njit(nogil=True, parallel=True, cache=True)
+    @nb.njit(nogil=True, parallel=True)
     def nb_transmission_step(states, nodeids, ft, newly_infected_by_node, itimers, infdurdist, infdurmin, tick):
         for i in nb.prange(len(states)):
             if states[i] == State.SUSCEPTIBLE.value:
@@ -1519,7 +1518,7 @@ class TransmissionSE:
         return
 
     @staticmethod
-    @nb.njit(nogil=True, parallel=True, cache=True)
+    @nb.njit(nogil=True, parallel=True)
     def nb_transmission_step(states, nodeids, ft, newly_infected_by_node, etimers, expdurdist, expdurmin, tick):
         for i in nb.prange(len(states)):
             if states[i] == State.SUSCEPTIBLE.value:
