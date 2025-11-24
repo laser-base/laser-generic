@@ -85,7 +85,7 @@ class TransmissionWithDOI(SEIR.Transmission):
         return
 
     @staticmethod
-    @nb.njit(nogil=True, parallel=True, cache=True)
+    @nb.njit(nogil=True, parallel=True)
     def nb_transmission_step(states, nodeids, ft, exp_by_node, etimers, expdurdist, expdurmin, tick, doi):
         for i in nb.prange(len(states)):
             if states[i] == State.SUSCEPTIBLE.value:
@@ -182,7 +182,7 @@ class Importation:
         return
 
     @staticmethod
-    @nb.njit(nogil=True, parallel=True, cache=True)
+    @nb.njit(nogil=True, parallel=True)
     def nb_importation_step(states, probabilities, nodeids, itimers, infdurdist, infdurmin, inf_by_node, tick):
         for i in nb.prange(len(states)):
             if states[i] == State.SUSCEPTIBLE.value:
