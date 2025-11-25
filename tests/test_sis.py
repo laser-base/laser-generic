@@ -15,6 +15,7 @@ from laser.generic import SIS
 from laser.generic import Model
 from laser.generic.newutils import TimingStats as ts
 from laser.generic.newutils import ValuesMap
+from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
 from utils import base_maps
 from utils import stdgrid
 
@@ -70,8 +71,9 @@ class Default(unittest.TestCase):
                 s = SIS.Susceptible(model)
                 i = SIS.Infectious(model, infdist)
                 tx = SIS.Transmission(model, infdist)
-                vitals = SIS.VitalDynamics(model, birthrate_map.values, pyramid, survival)
-                model.components = [s, i, tx, vitals]
+                births = BirthsByCBR(model, birthrate_map.values, pyramid)
+                mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, tx, births, mortality]
 
                 model.validating = VALIDATING
 
@@ -133,8 +135,9 @@ class Default(unittest.TestCase):
                 s = SIS.Susceptible(model)
                 i = SIS.Infectious(model, infdist)
                 tx = SIS.Transmission(model, infdist)
-                vitals = SIS.VitalDynamics(model, birthrate_map.values, pyramid, survival)
-                model.components = [s, i, tx, vitals]
+                births = BirthsByCBR(model, birthrate_map.values, pyramid)
+                mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, tx, births, mortality]
 
                 model.validating = VALIDATING
 

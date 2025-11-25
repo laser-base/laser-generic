@@ -16,6 +16,7 @@ from scipy.special import lambertw
 from laser.generic import SIR
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
+from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
 from utils import base_maps
 from utils import stdgrid
 
@@ -50,8 +51,7 @@ class Default(unittest.TestCase):
                 i = SIR.Infectious(model, infdist)
                 r = SIR.Recovered(model)
                 tx = SIR.Transmission(model, infdist)
-                # Recovered has to run _before_ Infectious to move people correctly (Infectious updates model.nodes.R)
-                model.components = [s, r, i, tx]
+                model.components = [s, i, r, tx]
 
                 model.validating = VALIDATING
 
@@ -99,10 +99,9 @@ class Default(unittest.TestCase):
                 i = SIR.Infectious(model, infdist)
                 r = SIR.Recovered(model)
                 tx = SIR.Transmission(model, infdist)
-                vitals = SIR.VitalDynamics(model, birthrates=birthrate_map.values, pyramid=pyramid, survival=survival)
-                # Recovered has to run _before_ Infectious to move people correctly (Infectious updates model.nodes.R)
-                model.components = [s, r, i, tx, vitals]
-
+                births = BirthsByCBR(model, birthrates=birthrate_map.values, pyramid=pyramid)
+                mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, r, tx, births, mortality]
                 model.validating = VALIDATING
 
             model.run(f"SIR Grid ({model.people.count:,}/{model.nodes.count:,})")
@@ -150,9 +149,9 @@ class Default(unittest.TestCase):
                 i = SIR.Infectious(model, infdist)
                 r = SIR.Recovered(model)
                 tx = SIR.Transmission(model, infdist)
-                vitals = SIR.VitalDynamics(model, birthrates=birthrate_map.values, pyramid=pyramid, survival=survival)
-                # Recovered has to run _before_ Infectious to move people correctly (Infectious updates model.nodes.R)
-                model.components = [s, r, i, tx, vitals]
+                births = BirthsByCBR(model, birthrates=birthrate_map.values, pyramid=pyramid)
+                mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, r, tx, births, mortality]
 
                 model.validating = VALIDATING
 
@@ -209,8 +208,7 @@ class Default(unittest.TestCase):
                 i = SIR.Infectious(model, infdurdist)
                 r = SIR.Recovered(model)
                 tx = SIR.Transmission(model, infdurdist)
-                # Recovered has to run _before_ Infectious to move people correctly (Infectious updates model.nodes.R)
-                model.components = [s, r, i, tx]
+                model.components = [s, i, r, tx]
 
                 model.run(f"SIR Kermack-McKendrick ({model.people.count:,}/{model.nodes.count:,})")
 

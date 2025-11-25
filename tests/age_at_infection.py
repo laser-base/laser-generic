@@ -32,6 +32,8 @@ from laser.generic import SEIR
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
 from laser.generic.newutils import validate
+from laser.generic.vitaldynamics import BirthsByCBR
+from laser.generic.vitaldynamics import MortalityByEstimator
 from utils import stdgrid
 
 State = SEIR.State
@@ -263,9 +265,10 @@ if __name__ == "__main__":
 
     pyramid = AliasedDistribution(np.full(89, 1_000))
     survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
-    vitals = SEIR.VitalDynamics(model, birthrates_map.values, pyramid, survival)
+    births = BirthsByCBR(model, birthrates_map.values, pyramid)
+    mortality = MortalityByEstimator(model, survival)
 
-    model.components = [s, r, i, e, tx, vitals, importation]
+    model.components = [s, r, i, e, tx, births, mortality, importation]
 
     label = f"SEIR with DOI ({model.people.count:,} agents in {model.nodes.count:,} nodes)"
     model.run(label)

@@ -11,17 +11,20 @@ from laser.core import LaserFrame
 from laser.core.migration import distance
 from laser.core.migration import gravity
 from laser.core.migration import row_normalizer
+from laser.core.random import seed as set_seed
+from laser.core.utils import calc_capacity
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 from tqdm import tqdm
 
 from laser.generic.newutils import ValuesMap
-from laser.generic.newutils import estimate_capacity
 from laser.generic.newutils import get_centroids
 
 
 class Model:
-    def __init__(self, scenario, params, birthrates=None, name: str = "generic", skip_capacity: bool = False):
+    def __init__(
+        self, scenario, params, birthrates=None, name: str = "generic", skip_capacity: bool = False, states=None, additional_states=None
+    ):
         """
         Initialize the SI model.
 
@@ -31,15 +34,23 @@ class Model:
             birthrates (np.ndarray, optional): Birth rates in CBR per patch per tick. Defaults to None.
             name (str, optional): Name of the model instance. Defaults to "generic".
             skip_capacity (bool, optional): If True, skips capacity checks. Defaults to False.
+            states (list, optional): List of state names. Defaults to None == {"S", "E", "I", "R"}.
+            additional_states (list, optional): List of additional state names. Defaults to None.
         """
         self.params = params
         self.name = name
+        self.states = states if states is not None else {"S", "E", "I", "R"}
+        if additional_states is not None:
+            self.states.update(set(additional_states))
+
+        set_seed(getattr(self.params, "prng_seed", 20260101))
 
         num_nodes = max(np.unique(scenario.nodeid)) + 1
         self.birthrates = birthrates if birthrates is not None else ValuesMap.from_scalar(0, num_nodes, self.params.nticks).values
         num_active = scenario.population.sum()
         if not skip_capacity:
-            num_agents = estimate_capacity(self.birthrates, scenario.population).sum()
+            safety_factor = getattr(self.params, "capacity_safety_factor", 1.0)
+            num_agents = calc_capacity(self.birthrates, scenario.population, safety_factor=safety_factor).sum()
         else:
             # Ignore births for capacity calculation
             num_agents = num_active
@@ -82,12 +93,21 @@ class Model:
         return
 
     def run(self, label=None) -> None:
-        label = label or f"{self.people.count} agents in {len(self.scenario)} nodes"
+        label = label or f"{self.people.count:,} agents in {len(self.scenario)} node(s)"
         with ts.start(f"Running Simulation: {label}"):
             for tick in tqdm(range(self.params.nticks), desc=label):
+                self._initialize_flows(tick)
                 for c in self.components:
                     with ts.start(f"{c.__class__.__name__}.step()"):
                         c.step(tick)
+
+        return
+
+    def _initialize_flows(self, tick: int) -> None:
+        for state in self.states:
+            if (prop := getattr(self.nodes, state, None)) is not None:
+                # state(t+1) = state(t) + ∆state(t), initialize state(t+1) with state(t)
+                prop[tick + 1, :] = prop[tick, :]
 
         return
 
