@@ -7,7 +7,7 @@
 The LASER framework includes modules for canonical transmission dynamics, including SI, SIS, SIR, SIRS, SEIR, and SEIRS.
 <!-- add content on the disease model components: SI, SIR, SIER, etc. -->
 
-To build and explore model dynamics, see the [Tutorials](../tutorials/index.md) section.
+To build and explore model dynamics, see the [Tutorials](../tutorials/sir.md) section.
 
 ## Immunization
 

@@ -4,7 +4,7 @@ One of the simplest and most commonly used models to describe the progression of
 
 This tutorial will:
 
-- Demonstrate how the `LASERframe` and `PropertySet` libraries are used
+- Demonstrate how the `LaserFrame` and `PropertySet` libraries are used
 - Structure a basic disease transmission framework
 - Track and visualize results
 
@@ -15,7 +15,7 @@ As you progress through the sections, you will learn how to add spatial dynamics
 
 ## Simple SIR
 
-The SIR model presented here simulates disease dynamics within a closed population in a single node using the `LASERFrame` framework. The population starts with a defined number of susceptible and infected individuals, progresses over time with recovery and transmission components, and tracks results for visualization. This example serves as a practical guide for modeling simple epidemic dynamics. This simple example does not include vital dynamics, age-structured populations, vaccination, or other complex interactions.
+The SIR model presented here simulates disease dynamics within a closed population in a single node using the `LaserFrame` framework. The population starts with a defined number of susceptible and infected individuals, progresses over time with recovery and transmission components, and tracks results for visualization. This example serves as a practical guide for modeling simple epidemic dynamics. This simple example does not include vital dynamics, age-structured populations, vaccination, or other complex interactions.
 
 ### Model components
 
