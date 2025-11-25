@@ -53,13 +53,21 @@ LASER (Lightweight Agent Spatial modeling for ERadication) is a framework for bu
 
 ## Installation
 
-```sh
+We recommend using [`uv`](https://github.com/astral-sh/uv) for faster, more reliable installs:
+
+```
+uv pip install laser-generic
+```
+
+Alternatively, you can use regular `pip`:
+
+```
 pip install laser-generic
 ```
 
-You can also install the in-development version with:
+To install the latest in-development version:
 
-```sh
+```
 pip install https://github.com/InstituteforDiseaseModeling/laser-generic/archive/main.zip
 ```
 
