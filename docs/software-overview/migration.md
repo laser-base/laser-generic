@@ -37,7 +37,7 @@ The following example demonstrates implementing the gravity model to calculate t
 
 ```
 import numpy as np
-from laser_core.migration import gravity
+from laser.core.migration import gravity
 
 # Define populations and distances
 populations = np.array([5000, 10000, 15000, 20000, 25000])  # Unequal populations
