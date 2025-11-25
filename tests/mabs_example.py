@@ -16,13 +16,13 @@ from laser.core.demographics import KaplanMeierEstimator
 from laser.core.distributions import sample_ints
 from matplotlib import pyplot as plt
 
-from age_at_infection import TransmissionWithDOI
 from laser.generic import SEIR
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByEstimator
-from utils import stdgrid
+from tests.age_at_infection import TransmissionWithDOI
+from tests.utils import stdgrid
 
 State = SEIR.State
 

@@ -4,18 +4,18 @@ import numpy as np
 import pandas as pd
 import pytest
 from laser.core import PropertySet
-from laser.generic.infection import Infection
-from laser.generic.infection import Infection_SIS
 from scipy.optimize import curve_fit
 from scipy.optimize import fsolve
 
-from laser.generic import Births_ConstantPop
-from laser.generic import Model
-from laser.generic import Susceptibility
-from laser.generic import Transmission
+from laser.generic.components import Infectious_IS
+from laser.generic.components import Infectious_SI as Infection
+from laser.generic.components import Susceptibility
+from laser.generic.components import Transmission
+from laser.generic.model import Model
 from laser.generic.utils import seed_infections_randomly
 from laser.generic.utils import seed_infections_randomly_SI
 from laser.generic.utils import set_initial_susceptibility_randomly
+from laser.generic.vitaldynamics import ConstantPopVitalDynamics as Births_ConstantPop
 
 
 def SI_logistic(t, beta, size, t0):
@@ -129,7 +129,7 @@ def test_si_model_wbirths():
         parameters = PropertySet({"seed": seed, "nticks": nticks, "verbose": True, "beta": beta, "cbr": cbr})
         model = Model(scenario, parameters)
         model.components = [
-            Births_ConstantPop,
+            Births_ConstantPop,  # where does this come from now?
             Susceptibility,
             Transmission,
         ]
@@ -195,7 +195,7 @@ def test_sir_nobirths():
         parameters = PropertySet({"seed": seed, "nticks": nticks, "verbose": True, "beta": beta, "inf_mean": 1 / gamma})
         model = Model(scenario, parameters)
         model.components = [
-            Infection_SIS,
+            Infectious_IS,
             Susceptibility,
             Transmission,
         ]
