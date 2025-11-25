@@ -20,7 +20,7 @@ class BirthsByCBR:
         self.model.nodes.add_vector_property("births", model.params.nticks + 1, dtype=np.int32)
 
         if self.track:
-            self.model.people.add_property("dob", dtype=np.int16)
+            self.model.people.add_property("dob", dtype=np.int32)
             dobs = self.model.people.dob
             sample_dobs(dobs, self.pyramid, tick=0)
 
@@ -189,7 +189,7 @@ class MortalityByEstimator:
         if not hasattr(self.model.people, "dob"):
             raise RuntimeError("MortalityByEstimator requires 'dob' property on people. If using BirthsByCBR, set track=True.")
 
-        model.people.add_property("dod", dtype=np.int16)
+        model.people.add_property("dod", dtype=np.int32)
         model.nodes.add_vector_property("deaths", model.params.nticks + 1, dtype=np.int32)
 
         if mappings is None:
@@ -265,6 +265,8 @@ class MortalityByEstimator:
         dobs = self.model.people.dob[istart:iend]
         dods = self.model.people.dod[istart:iend]
         sample_dods(dobs, dods, self.estimator, tick)
+        if getattr(self, "validating", False) or getattr(self.model, "validating", False):
+            assert np.all(dods >= tick), "DODs for newborns should be >= current tick"
 
         return
 
@@ -277,7 +279,7 @@ class ConstantPopVitalDynamics:
         self.validating = validating
 
         if self.dobs:
-            self.model.people.add_property("dob", dtype=np.int16)
+            self.model.people.add_property("dob", dtype=np.int32)
             self.model.people.dob[:] = -1  # Initialize all dobs to -1
 
         model.nodes.add_vector_property("births", model.params.nticks + 1, dtype=np.int32)
