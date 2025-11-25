@@ -43,7 +43,7 @@ class TransmissionWithDOI(SEIR.Transmission):
     def __init__(self, model, expdurdist, expdurmin=1):
         super().__init__(model, expdurdist, expdurmin)
         # Add 'doi' property to people (default 0, dtype=int32)
-        self.model.people.add_scalar_property("doi", dtype=np.int16)
+        self.model.people.add_scalar_property("doi", dtype=np.int32)
         # Optionally initialize to -1 to indicate never infected
         self.model.people.doi[:] = -1
 
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     import laser.core.distributions as dists
     from laser.core import PropertySet
 
-    NTICKS = 3650
+    NTICKS = 365 * 10
     R0 = 10  # measles-ish 1.386
     EXPOSED_DURATION_MEAN = 4.5
     EXPOSED_DURATION_SCALE = 1.0
