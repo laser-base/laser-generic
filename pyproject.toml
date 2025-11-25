@@ -89,11 +89,11 @@ src = ["src", "tests"]
 target-version = "py39"
 
 [tool.ruff.lint.per-file-ignores]
+"tests/*" = ["I001"]
 "ci/*" = ["S"]
-"notebooks/07_SIR_CCS.ipynb" = ["F", "PTH", "C", "W", "I"] # temporary disable while in development
-"notebooks/08_2patch_SIR_wbirths_correlation.ipynb" = ["F", "PTH", "C", "W", "I"] # temporary disable while in development
+"notebooks/07_SIR_CCS.ipynb" = ["F", "PTH", "C", "W", "I"]
+"notebooks/08_2patch_SIR_wbirths_correlation.ipynb" = ["F", "PTH", "C", "W", "I"]
 
-[tool.ruff.lint]
 ignore = [
     "RUF001", # ruff-specific rules ambiguous-unicode-character-string
     "S101", # flake8-bandit assert

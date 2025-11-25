@@ -12,7 +12,7 @@ from laser.generic import SEIR
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR
-from utils import stdgrid
+from tests.utils import stdgrid
 
 # Shared test parameters
 NTICKS = 3650  # 10 years

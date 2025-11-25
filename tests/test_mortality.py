@@ -16,7 +16,7 @@ from laser.generic.newutils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByCDR
 from laser.generic.vitaldynamics import MortalityByEstimator
-from utils import stdgrid
+from tests.utils import stdgrid
 
 # Shared test parameters
 NTICKS = 3650  # 10 years

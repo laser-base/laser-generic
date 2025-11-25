@@ -37,3 +37,4 @@ exclude .pre-commit-config.yaml
 exclude tests/*.gz
 exclude sphinx/scripts/convert_docs.py
 exclude laserdocs_sphinx/*
+exclude tests/harvest_test_docstrings.py
