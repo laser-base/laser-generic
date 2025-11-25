@@ -2,26 +2,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-from laser.core import PropertySet
-from laser.generic.infection import Infection
-from laser.generic.infection import Infection_SIS
-from laser.generic.transmission import TransmissionSIR
 
-from laser.generic import Births
-from laser.generic import Births_ConstantPop
-from laser.generic import Births_ConstantPop_VariableBirthRate
-from laser.generic import Exposure
-from laser.generic import ImmunizationCampaign
-from laser.generic import Infect_Random_Agents
-from laser.generic import Model
-from laser.generic import RoutineImmunization
-from laser.generic import Susceptibility
-from laser.generic import Transmission
-from laser.generic.importation import Infect_Agents_In_Patch
+from laser.core import PropertySet
+
+from laser.generic.models.components import Susceptible
+from laser.generic.models.components import Exposure
+from laser.generic.models.components import Infectious
+from laser.generic.models.components import Transmission
+from laser.generic.models.components import Recovered
+from laser.generic.models.components import VitalDynamics
+
+from laser.generic.models.importation import Infect_Agents_In_Patch
+from laser.generic.models.importation import Infect_Random_Agents
+
+from laser.generic.models.immunization import ImmunizationCampaign
+from laser.generic.models.immunization import RoutineImmunization
+
 from laser.generic.utils import get_default_parameters
-from laser.generic.utils import seed_infections_in_patch
 from laser.generic.utils import seed_infections_randomly
 from laser.generic.utils import seed_infections_randomly_SI
+from laser.generic.utils import seed_infections_in_patch
+
+from laser.generic.models.model import Model
 
 
 def assert_model_sanity(model):
