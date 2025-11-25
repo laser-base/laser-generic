@@ -165,7 +165,7 @@ params = PropertySet({
 
 The model is initialized with the defined parameters, components are added, and the simulation is run for the specified timesteps. Results are then visualized.
 
-/// details | Code example: Intiailize, run the simulation, and plot the results
+/// details | Code example: Initialize, run the simulation, and plot the results
 
 ```
 # Initialize the model
