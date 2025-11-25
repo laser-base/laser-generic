@@ -2,28 +2,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-
 from laser.core import PropertySet
 
-from laser.generic.models.components import Susceptible
-from laser.generic.models.components import Exposure
-from laser.generic.models.components import Infectious
-from laser.generic.models.components import Transmission
-from laser.generic.models.components import Recovered
-from laser.generic.models.components import VitalDynamics
+from laser.generic.components import Exposed
+from laser.generic.components import Infectious_IS
+from laser.generic.components import Infectious_SI as Infection
+from laser.generic.components import Susceptibility
+from laser.generic.components import Transmission
+from laser.generic.components import TransmissionSIR
+from laser.generic.immunization import ImmunizationCampaign
+from laser.generic.immunization import RoutineImmunization
 
-from laser.generic.models.importation import Infect_Agents_In_Patch
-from laser.generic.models.importation import Infect_Random_Agents
-
-from laser.generic.models.immunization import ImmunizationCampaign
-from laser.generic.models.immunization import RoutineImmunization
-
+# from laser.generic.components import VitalDynamics
+from laser.generic.importation import Infect_Agents_In_Patch
+from laser.generic.importation import Infect_Random_Agents
+from laser.generic.model import Model
 from laser.generic.utils import get_default_parameters
+from laser.generic.utils import seed_infections_in_patch
 from laser.generic.utils import seed_infections_randomly
 from laser.generic.utils import seed_infections_randomly_SI
-from laser.generic.utils import seed_infections_in_patch
-
-from laser.generic.models.model import Model
+from laser.generic.vitaldynamics import BirthsByCBR as Births
+from laser.generic.vitaldynamics import ConstantPopVitalDynamics
 
 
 def assert_model_sanity(model):
@@ -59,9 +58,9 @@ def baseline_model():
     scenario = pd.DataFrame({"name": ["home"], "population": [pop]})
     model = Model(scenario, params)
     model.components = [
-        Births_ConstantPop,
+        ConstantPopVitalDynamics,
         Susceptibility,
-        Exposure,
+        Exposed,
         Infection,
         Transmission,
     ]
@@ -120,7 +119,7 @@ def test_si_model_with_births_short():
     parameters = PropertySet({"seed": 123, "nticks": nticks, "verbose": False, "beta": beta, "cbr": cbr})
 
     model = Model(scenario, parameters)
-    model.components = [Births_ConstantPop, Susceptibility, Transmission]
+    model.components = [ConstantPopVitalDynamics, Susceptibility, Transmission]
     seed_infections_randomly_SI(model, ninfections=10)
     model.run()
 
@@ -148,7 +147,7 @@ def test_sei_model_with_births_short():
     }
 
     model = Model(scenario, parameters)
-    model.components = [Births_ConstantPop, Susceptibility, Infection, Transmission]
+    model.components = [ConstantPopVitalDynamics, Susceptibility, Infection, Transmission]
     seed_infections_randomly_SI(model, ninfections=10)
     model.run()
 
@@ -167,7 +166,7 @@ def test_sis_model_short():
     parameters = PropertySet({"seed": 99, "nticks": nticks, "verbose": False, "beta": beta, "inf_mean": inf_mean})
 
     model = Model(scenario, parameters)
-    model.components = [Susceptibility, Infection_SIS, Transmission]
+    model.components = [Susceptibility, Infectious_IS, Transmission]
     seed_infections_randomly(model, ninfections=50)
     model.run()
 
@@ -192,9 +191,9 @@ def test_routine_immunization_blocks_spread():
     scenario = pd.DataFrame(data=[["homenode", pop]], columns=["name", "population"])
     model = Model(scenario, parameters)
     model.components = [
-        Births_ConstantPop,
+        ConstantPopVitalDynamics,
         Susceptibility,
-        Exposure,
+        Exposed,
         Infection,
         Transmission,
         lambda m, v: RoutineImmunization(m, period=365, coverage=0.9, age=365, verbose=v),
@@ -236,7 +235,7 @@ def test_mobility_spreads_infection_across_nodes():
 
     model.components = [
         Susceptibility,
-        Exposure,
+        Exposed,
         Infection,
         Transmission,
     ]
@@ -258,7 +257,7 @@ def test_mobility_spreads_infection_across_nodes():
 )
 def test_births_only_maintain_population_stability():
     """
-    Confirm that Births_ConstantPop maintains stable population when transmission is disabled.
+    Confirm that ConstantPopVitalDynamics maintains stable population when transmission is disabled.
     """
     pop = int(1e5)
     nticks = 365 * 3  # 3 years
@@ -281,14 +280,14 @@ def test_births_only_maintain_population_stability():
 
     model = Model(scenario, parameters)
     model.components = [
-        Births_ConstantPop,
+        ConstantPopVitalDynamics,
         Susceptibility,
     ]
 
     model.run()
 
     populations = model.patches.populations[:, 0]
-    assert np.all(populations == pop), "Population changed under Births_ConstantPop when it shouldn't"
+    assert np.all(populations == pop), "Population changed under ConstantPopVitalDynamics when it shouldn't"
 
 
 @pytest.mark.modeltest
@@ -325,14 +324,14 @@ def test_biweekly_scalar_modulates_transmission():
 
     # Baseline model
     model1 = Model(scenario, base_params)
-    model1.components = [Susceptibility, Exposure, Infection, Transmission]
+    model1.components = [Susceptibility, Exposed, Infection, Transmission]
     seed_infections_randomly_SI(model1, ninfections=10)
     model1.run()
     assert_model_sanity(model1)
 
     # Perturbed model
     model2 = Model(scenario, low_transmission)
-    model2.components = [Susceptibility, Exposure, Infection, Transmission]
+    model2.components = [Susceptibility, Exposed, Infection, Transmission]
     seed_infections_randomly_SI(model2, ninfections=10)
     model2.run()
     assert_model_sanity(model2)
@@ -384,7 +383,7 @@ def test_births_base_runs_minimally():
 )
 def test_births_variable_birthrate_maintains_population():
     """
-    Ensure that Births_ConstantPop_VariableBirthRate maintains population size over time.
+    Ensure that ConstantPopVitalDynamics_VariableBirthRate maintains population size over time.
     """
     pop = 10000
     nticks = 100
@@ -407,7 +406,7 @@ def test_births_variable_birthrate_maintains_population():
 
     model = Model(scenario, params)
     model.components = [
-        Births_ConstantPop_VariableBirthRate,
+        ConstantPopVitalDynamics,
         Susceptibility,
     ]
 
@@ -447,9 +446,9 @@ def test_routine_immunization_blocks_spread_compare(stable_transmission_model):
     # With routine immunization
     model2 = Model(scenario, base_params)
     model2.components = [
-        Births_ConstantPop,
+        ConstantPopVitalDynamics,
         Susceptibility,
-        Exposure,
+        Exposed,
         Infection,
         Transmission,
         lambda m, v: RoutineImmunization(m, period=365, coverage=0.9, age=365, verbose=v),
@@ -522,9 +521,9 @@ def test_importation_keeps_infection_alive():
     scenario = pd.DataFrame({"name": ["home"], "population": [pop]})
     model = Model(scenario, params)
     model.components = [
-        Births_ConstantPop,
+        ConstantPopVitalDynamics,
         Susceptibility,
-        Exposure,
+        Exposed,
         Infection,
         Transmission,
         Infect_Random_Agents,
@@ -572,7 +571,7 @@ def test_targeted_importation_hits_correct_patch():
 
     model = Model(scenario, params)
     importation = Infect_Agents_In_Patch(model, verbose=params.verbose)  # Inject into patch 1
-    model.components = [Births_ConstantPop, Susceptibility, Exposure, Infection, Transmission, importation]
+    model.components = [ConstantPopVitalDynamics, Susceptibility, Exposed, Infection, Transmission, importation]
     # seed_infections_in_patch(model, ipatch=1, ninfections=1)
     model.run()
 

@@ -16,7 +16,7 @@ from laser.generic.shared import State
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByCDR
 from laser.generic.vitaldynamics import MortalityByEstimator
-from utils import stdgrid
+from tests.utils import stdgrid
 
 # Claude Code prompt: "Please write a test class for MortalityByCDR in the file test_mortality.py. Use the code to inform your implementation. You should use a population of 100000 running for 10 years. Test against the four CDR values used in the notebook."
 # Claude Code prompt: "Please write a test class for MortalityByEstimator in the file test_mortality.py. Use the code in the mortality.ipynb notebook to inform your implementation. You should use a population of 100000 running for 10 years. Validation will require looking at the population in each age each year and comparing deaths in that population against the data from the input survival CSV. Do not remove any existing tests."

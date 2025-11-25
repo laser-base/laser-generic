@@ -21,7 +21,7 @@ from laser.generic import SIRS
 from laser.generic import SEIR
 from laser.generic import SEIRS
 from laser.generic import Model
-from utils import stdgrid
+from tests.utils import stdgrid
 
 EM = 10
 EN = 10

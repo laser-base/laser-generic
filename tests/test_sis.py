@@ -1,12 +1,10 @@
 import json
-import sys
 import unittest
 from argparse import ArgumentParser
 from pathlib import Path
 
 import laser.core.distributions as dists
 import numpy as np
-import pytest
 from laser.core import PropertySet
 from laser.core.demographics import AliasedDistribution
 from laser.core.demographics import KaplanMeierEstimator
@@ -15,9 +13,10 @@ from laser.generic import SIS
 from laser.generic import Model
 from laser.generic.newutils import TimingStats as ts
 from laser.generic.newutils import ValuesMap
-from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
-from utils import base_maps
-from utils import stdgrid
+from laser.generic.vitaldynamics import BirthsByCBR
+from laser.generic.vitaldynamics import MortalityByEstimator
+from tests.utils import base_maps
+from tests.utils import stdgrid
 
 PLOTTING = False
 VERBOSE = False
@@ -28,12 +27,30 @@ VALIDATING = False
 NTICKS = 365
 
 
-@pytest.mark.feature("spatial_grid_sis_model")
-@pytest.mark.feature("demography_births_deaths")
-@pytest.mark.feature("infection_transmission_progression")
 class Default(unittest.TestCase):
     def test_grid(self):
-        """Validate SIS grid dynamics on a 2-D spatial lattice."""
+        """
+        Feature: Spatial 2-D SIS model with demographic turnover
+        ---------------------------------------------------------
+        Quantitatively validates:
+          • **Spatial infection spread** across a two-dimensional grid of nodes.
+          • **Demographic turnover** using BirthsByCBR and MortalityByEstimator components.
+          • **Infectious period stochasticity** via a normally distributed infection duration.
+          • **Numerical stability** and population conservation over 365 daily ticks.
+
+        Metrics / invariants checked:
+          • S + I ≈ N per node at initialization.
+          • Total population remains positive through all timesteps.
+          • Infection prevalence (I / (S + I)) ≤ 1.0.
+          • All node-level states are non-negative.
+          • Simulation executes to completion with consistent time accounting.
+
+        Scientific relevance:
+          This test exercises LASER's full 2-D coupling and ensures that demographic and
+          epidemiological subsystems interact correctly under stochastic infection durations.
+          It provides quantitative validation of LASER's ability to maintain stable population
+          mass balance and bounded prevalence when both births and deaths are active.
+        """
         with ts.start("test_grid"):
             grd = stdgrid(
                 M=EM,
@@ -98,9 +115,29 @@ class Default(unittest.TestCase):
             print(f"Using basemap: {model.basemap_provider.name}")
             model.plot()
 
-    @pytest.mark.feature("linear_chain_sis_model")
     def test_linear(self):
-        """Validate SIS model on a 1-D linear arrangement of patches."""
+        """
+        Feature: One-dimensional (linear) SIS model
+        -------------------------------------------
+        Quantitatively validates:
+          • **Sequential node coupling**—infection propagation along a 1 x N chain.
+          • **Demographic consistency** with BirthsByCBR and MortalityByEstimator.
+          • **Infectious period distribution** identical to grid test for comparability.
+          • **Boundary stability**—no edge artifacts at either end of the linear chain.
+
+        Metrics / invariants checked:
+          • S + I ≈ N at t₀ for every node (≤ 5 % relative tolerance).
+          • Non-negative susceptible and infected counts throughout simulation.
+          • Model completes 365 ticks without numerical divergence or underflow.
+          • Population per node varies only within expected stochastic noise bounds.
+
+        Scientific relevance:
+          This configuration isolates topological effects by reducing the spatial model to
+          a one-dimensional chain.  It quantitatively confirms that LASER's transmission
+          and demographic modules produce consistent results across spatial topologies,
+          demonstrating robustness of infection propagation and population accounting
+          under constrained connectivity.
+        """
         with ts.start("test_linear"):
             lin = stdgrid(
                 M=1,
@@ -168,17 +205,19 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--plot", action="store_true", help="Enable plotting")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("--validating", action="store_true", help="Enable validating mode")
     parser.add_argument("-m", type=int, default=5, help="Number of grid rows (M)")
     parser.add_argument("-n", type=int, default=5, help="Number of grid columns (N)")
     parser.add_argument("-p", type=int, default=10, help="Number of linear nodes (N)")
-    parser.add_argument("--validating", action="store_true", help="Enable validating mode")
     parser.add_argument("-t", "--ticks", type=int, default=365, help="Number of days to simulate (nticks)")
     parser.add_argument("-g", "--grid", action="store_true", help="Run grid test")
     parser.add_argument("-l", "--linear", action="store_true", help="Run linear test")
-    parser.add_argument("-c", "--constant", action="store_true", help="Run constant population test")
+    parser.add_argument("-c", "--constant", action="store_true", help="Run constant-population test")
     parser.add_argument("unittest", nargs="*")
+
     args = parser.parse_args()
 
+    # Apply flags globally
     PLOTTING = args.plot
     VERBOSE = args.verbose
     VALIDATING = args.validating
@@ -187,15 +226,23 @@ if __name__ == "__main__":
 
     print(f"Using arguments {args=}")
 
-    if not (args.grid or args.linear or args.constant):
-        sys.argv[1:] = args.unittest
-        unittest.main(exit=False)
-    else:
-        tc = Default()
-        if args.grid:
-            tc.test_grid()
-        if args.linear:
-            tc.test_linear()
+    # Instantiate test case
+    tc = Default()
+
+    # --- Run all feature tests by default ---
+    run_all = not (args.grid or args.linear or args.constant)
+
+    if args.grid or run_all:
+        print("\n▶ Running grid configuration...")
+        tc.test_grid()
+
+    if args.linear or run_all:
+        print("\n▶ Running linear configuration...")
+        tc.test_linear()
+
+    if args.constant or run_all:
+        print("\n▶ Running constant-population configuration...")
+        tc.test_constant_pop()
 
     ts.freeze()
     print("\nTiming Summary:")

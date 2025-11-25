@@ -34,7 +34,7 @@ from laser.generic.newutils import ValuesMap
 from laser.generic.newutils import validate
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByEstimator
-from utils import stdgrid
+from tests.utils import stdgrid
 
 State = SEIR.State
 
