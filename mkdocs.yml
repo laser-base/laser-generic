@@ -60,6 +60,16 @@ nav: # Navigation structure for the documentation
       - Intrinsic periodicity of the SIR system: tutorials/notebooks/06_SIR_wbirths_natural_periodicity.ipynb
       - Exploring the critical community size of an SIR model: tutorials/notebooks/07_SIR_CCS.ipynb
       - The relationship between spatial coupling and incidence correlation in a 2-patch model: tutorials/notebooks/08_2patch_SIR_wbirths_correlation.ipynb
+    - Additional Notebooks:
+      - tutorials/additional-notebooks/index.md
+      - Births by CBR component: tutorials/births.ipynb
+      - Constant population demographics component: tutorials/constant_pop.ipynb
+      - LASER compatible distributions: tutorials/distributions.ipynb
+      - gridded scenario examples: tutorials/grid_examples.ipynb
+      - Mortality by CDR and by survival curve components: tutorials/mortality.ipynb
+      - Routine immunization component: tutorials/ri_exploration.ipynb
+      - Seasonally varying transmission component: tutorials/seasonality.ipynb
+      - Example implementations of SEI and SEIS models: tutorials/SEI_and_SEIS_implementations.ipynb
   - API reference: reference/
   - Contribution guide: contribute.md
 

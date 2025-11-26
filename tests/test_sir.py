@@ -86,7 +86,7 @@ class Default(unittest.TestCase):
             params = PropertySet({"nticks": NTICKS, "beta": beta})
 
             with ts.start("Model Initialization"):
-                model = Model(scenario, params, birthrates=birthrate_map.values)
+                model = Model(scenario, params, birthrates=birthrate_map)
 
                 infdist = dists.normal(loc=infectious_duration_mean, scale=2)
 
@@ -99,7 +99,7 @@ class Default(unittest.TestCase):
                 i = SIR.Infectious(model, infdist)
                 r = SIR.Recovered(model)
                 tx = SIR.Transmission(model, infdist)
-                births = BirthsByCBR(model, birthrates=birthrate_map.values, pyramid=pyramid)
+                births = BirthsByCBR(model, birthrates=birthrate_map, pyramid=pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, r, tx, births, mortality]
                 model.validating = VALIDATING
@@ -136,7 +136,7 @@ class Default(unittest.TestCase):
             params = PropertySet({"nticks": NTICKS, "beta": beta})
 
             with ts.start("Model Initialization"):
-                model = Model(scenario, params, birthrates=birthrate_map.values)
+                model = Model(scenario, params, birthrates=birthrate_map)
 
                 infdist = dists.normal(loc=infectious_duration_mean, scale=2)
 
@@ -149,7 +149,7 @@ class Default(unittest.TestCase):
                 i = SIR.Infectious(model, infdist)
                 r = SIR.Recovered(model)
                 tx = SIR.Transmission(model, infdist)
-                births = BirthsByCBR(model, birthrates=birthrate_map.values, pyramid=pyramid)
+                births = BirthsByCBR(model, birthrates=birthrate_map, pyramid=pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, r, tx, births, mortality]
 

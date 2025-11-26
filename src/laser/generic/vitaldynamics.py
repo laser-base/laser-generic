@@ -4,7 +4,7 @@ import numba as nb
 import numpy as np
 
 from .newutils import validate
-from .shared import State
+from laser.generic import State
 from .shared import sample_dobs
 from .shared import sample_dods
 
