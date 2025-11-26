@@ -110,7 +110,7 @@ class Default(unittest.TestCase):
                     lambda x, y: int(np.random.uniform(10_000, 1_000_000)),
                     init_infected=10,
                     init_recovered=0,
-                    birthrates=birthrate_map.values,
+                    birthrates=birthrate_map,
                     pyramid=pyramid,
                     survival=survival,
                 )
@@ -145,7 +145,7 @@ class Default(unittest.TestCase):
                     lambda x, y: int(np.random.uniform(10_000, 1_000_000)),
                     init_infected=10,
                     init_recovered=0,
-                    birthrates=birthrate_map.values,
+                    birthrates=birthrate_map,
                     pyramid=pyramid,
                     survival=survival,
                 )

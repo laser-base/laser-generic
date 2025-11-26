@@ -6,12 +6,11 @@ from . import SI
 from . import SIR
 from . import SIRS
 from . import SIS
-from . import components
-from . import shared
 from .immunization import ImmunizationCampaign
 from .immunization import RoutineImmunization
 from .importation import Infect_Random_Agents
 from .model import Model
+from .shared import State
 
 __all__ = [
     "SEIR",
@@ -24,6 +23,5 @@ __all__ = [
     "Infect_Random_Agents",
     "Model",
     "RoutineImmunization",
-    "components",
-    "shared",
+    "State",
 ]

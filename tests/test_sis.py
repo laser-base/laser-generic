@@ -54,7 +54,7 @@ class Default(unittest.TestCase):
             params = PropertySet({"nticks": NTICKS, "beta": beta})
 
             with ts.start("Model Initialization"):
-                model = Model(scenario, params, birthrates=birthrate_map.values)
+                model = Model(scenario, params, birthrates=birthrate_map)
 
                 infdist = dists.normal(loc=infectious_duration_mean, scale=2)
 
@@ -66,7 +66,7 @@ class Default(unittest.TestCase):
                 s = SIS.Susceptible(model)
                 i = SIS.Infectious(model, infdist)
                 tx = SIS.Transmission(model, infdist)
-                births = BirthsByCBR(model, birthrate_map.values, pyramid)
+                births = BirthsByCBR(model, birthrate_map, pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, tx, births, mortality]
 
@@ -111,7 +111,7 @@ class Default(unittest.TestCase):
             params = PropertySet({"nticks": NTICKS, "beta": beta})
 
             with ts.start("Model Initialization"):
-                model = Model(scenario, params, birthrate_map.values)
+                model = Model(scenario, params, birthrate_map)
 
                 infdist = dists.normal(loc=infectious_duration_mean, scale=2)
 
@@ -123,7 +123,7 @@ class Default(unittest.TestCase):
                 s = SIS.Susceptible(model)
                 i = SIS.Infectious(model, infdist)
                 tx = SIS.Transmission(model, infdist)
-                births = BirthsByCBR(model, birthrate_map.values, pyramid)
+                births = BirthsByCBR(model, birthrate_map, pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, tx, births, mortality]
 

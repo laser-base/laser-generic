@@ -1,3 +1,6 @@
+from typing import Callable
+from typing import Union
+
 import laser.core.distributions as dists
 import matplotlib.pyplot as plt
 import numba as nb
@@ -5,6 +8,7 @@ import numpy as np
 
 from laser.generic.newutils import validate
 
+from .newutils import ValuesMap
 from .shared import State
 
 
@@ -1322,7 +1326,9 @@ class TransmissionSI:
         ]
     """
 
-    def __init__(self, model, infdurdist, infdurmin=1):
+    def __init__(
+        self, model, infdurdist: Callable[[int, int], float], infdurmin: int = 1, seasonality: Union[ValuesMap, np.ndarray] = None
+    ):
         """
         Initializes the TransmissionSI component.
 
@@ -1337,6 +1343,9 @@ class TransmissionSI:
 
         self.infdurdist = infdurdist
         self.infdurmin = infdurmin
+
+        # Default is no temporal or spatial variation in transmission
+        self.seasonality = seasonality if seasonality is not None else ValuesMap.from_scalar(1.0, model.nodes.count, model.params.nticks)
 
         return
 
@@ -1379,13 +1388,12 @@ class TransmissionSI:
     def step(self, tick: int) -> None:
         ft = self.model.nodes.forces[tick]
 
-        N = self.model.nodes.S[tick] + (I := self.model.nodes.I[tick])  # noqa: E741
-        # Shouldn't be any exposed (E), because this is an S->I model
-        # Might have R
-        if hasattr(self.model.nodes, "R"):
-            N += self.model.nodes.R[tick]
+        N = np.zeros_like(self.model.nodes.S[tick])
+        for state in self.model.states:
+            if (prop := getattr(self.model.nodes, state, None)) is not None:
+                N += prop[tick]
 
-        ft[:] = self.model.params.beta * I / N
+        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
         transfer = ft[:, None] * self.model.network
         ft += transfer.sum(axis=0)
         ft -= transfer.sum(axis=1)
@@ -1479,7 +1487,9 @@ class TransmissionSE:
             ]
     """
 
-    def __init__(self, model, expdurdist, expdurmin=1):
+    def __init__(
+        self, model, expdurdist: Callable[[int, int], float], expdurmin: int = 1, seasonality: Union[ValuesMap, np.ndarray] = None
+    ):
         """
         Initializes the TransmissionSE component.
 
@@ -1494,6 +1504,9 @@ class TransmissionSE:
 
         self.expdurdist = expdurdist
         self.expdurmin = expdurmin
+
+        # Default is no temporal or spatial variation in transmission
+        self.seasonality = seasonality if seasonality is not None else ValuesMap.from_scalar(1.0, model.nodes.count, model.params.nticks)
 
         return
 
@@ -1536,12 +1549,12 @@ class TransmissionSE:
     def step(self, tick: int) -> None:
         ft = self.model.nodes.forces[tick]
 
-        N = self.model.nodes.S[tick] + self.model.nodes.E[tick] + (I := self.model.nodes.I[tick])  # noqa: E741
-        # Might have R
-        if hasattr(self.model.nodes, "R"):
-            N += self.model.nodes.R[tick]
+        N = np.zeros_like(self.model.nodes.S[tick])
+        for state in self.model.states:
+            if (prop := getattr(self.model.nodes, state, None)) is not None:
+                N += prop[tick]
 
-        ft[:] = self.model.params.beta * I / N
+        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
         transfer = ft[:, None] * self.model.network
         ft += transfer.sum(axis=0)
         ft -= transfer.sum(axis=1)

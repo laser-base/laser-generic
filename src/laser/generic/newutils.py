@@ -148,6 +148,9 @@ class ValuesMap:
         """Underlying data array of shape (nsteps, nnodes)."""
         return self._data
 
+    def __getitem__(self, access):
+        return self._data[access]
+
 
 def grid(M=5, N=5, node_size_km=10, population_fn=None, origin_x=0, origin_y=0) -> gpd.GeoDataFrame:
     """

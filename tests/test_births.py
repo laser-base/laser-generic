@@ -32,7 +32,7 @@ def create_basic_scenario_susceptible_only(cbr=20.0):
     scenario["E"] = scenario["I"] = scenario["R"] = 0
 
     parameters = PropertySet({"nticks": NTICKS})
-    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS).values
+    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
     pyramid = load_age_distribution()
 
     model = Model(scenario, parameters, birthrates=birthrates)
@@ -64,7 +64,7 @@ def create_equilibrium_seir_scenario(cbr=20.0):
 
     parameters = PropertySet({"nticks": NTICKS, "beta": R0 / INFECTIOUS_DURATION_MEAN})
 
-    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS).values
+    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
     pyramid = load_age_distribution()
 
     expdurdist = dists.normal(loc=EXPOSED_DURATION_MEAN, scale=EXPOSED_DURATION_SCALE)
@@ -97,7 +97,7 @@ def create_scenario_with_additional_states(cbr=20.0):
     scenario["V"] = initial_vaccinated
 
     parameters = PropertySet({"nticks": NTICKS})
-    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS).values
+    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
     pyramid = load_age_distribution()
 
     expdurdist = dists.normal(loc=5.0, scale=1.0)
@@ -132,7 +132,7 @@ def create_multi_node_scenario(cbr=20.0):
     scenario["S"] = (total_pop - (scenario.E + scenario.I + scenario.R)).astype(np.int32)
 
     parameters = PropertySet({"nticks": NTICKS, "beta": 2.0 / 7.0})
-    birthrates = ValuesMap.from_scalar(cbr, 4, NTICKS).values
+    birthrates = ValuesMap.from_scalar(cbr, 4, NTICKS)
     pyramid = load_age_distribution()
 
     expdurdist = dists.normal(loc=5.0, scale=1.0)
@@ -161,7 +161,7 @@ def create_spatially_varying_cbr_scenario():
 
     # Different CBR for each node (ranging from rural to urban)
     cbrs = np.array([35.0, 30.0, 25.0, 20.0, 18.0, 16.0, 14.0, 12.0])
-    birthrates = ValuesMap.from_nodes(cbrs, NTICKS).values
+    birthrates = ValuesMap.from_nodes(cbrs, NTICKS)
     pyramid = load_age_distribution()
 
     model = Model(scenario, parameters, birthrates=birthrates)
@@ -184,7 +184,7 @@ def create_time_varying_cbr_scenario():
 
     # CBR decreases from 30 to 10 over the simulation period
     time_varying_cbr = np.linspace(30.0, 10.0, NTICKS)
-    birthrates = ValuesMap.from_timeseries(time_varying_cbr, 1).values
+    birthrates = ValuesMap.from_timeseries(time_varying_cbr, 1)
     pyramid = load_age_distribution()
 
     model = Model(scenario, parameters, birthrates=birthrates)

@@ -11,8 +11,8 @@ from laser.core.random import seed as set_seed
 
 from laser.generic import SEIR
 from laser.generic import Model
+from laser.generic import State
 from laser.generic.newutils import ValuesMap
-from laser.generic.shared import State
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByCDR
 from laser.generic.vitaldynamics import MortalityByEstimator
@@ -36,7 +36,7 @@ def create_seir_scenario_with_mortality(cdr=20.0):
     scenario["S"] = (scenario.population - (scenario.E + scenario.I + scenario.R)).astype(np.int32)
 
     parameters = PropertySet({"nticks": NTICKS})
-    mortalityrates = ValuesMap.from_scalar(cdr, 1, NTICKS).values
+    mortalityrates = ValuesMap.from_scalar(cdr, 1, NTICKS)
 
     expdurdist = dists.normal(loc=30.0, scale=3.0)
     infdurdist = dists.normal(loc=30.0, scale=5.0)
@@ -99,7 +99,7 @@ def create_seir_scenario_with_age_specific_mortality(CBR: float = 0.0):
         SEIR.Exposed(model, expdurdist, infdurdist),
         SEIR.Infectious(model, infdurdist),
         SEIR.Recovered(model),
-        BirthsByCBR(model, birthrates=ValuesMap.from_scalar(CBR, 1, NTICKS).values, pyramid=pyramid, track=True),
+        BirthsByCBR(model, birthrates=ValuesMap.from_scalar(CBR, 1, NTICKS), pyramid=pyramid, track=True),
         MortalityByEstimator(model, survival),
     ]
 

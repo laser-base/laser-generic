@@ -123,7 +123,7 @@ if __name__ == "__main__":
     params = PropertySet({"nticks": NTICKS, "beta": R0 / INFECTIOUS_DURATION_MEAN})
     birthrates_map = ValuesMap.from_scalar(35, nsteps=NTICKS, nnodes=len(scenario))
 
-    model = Model(scenario, params, birthrates=birthrates_map.values)
+    model = Model(scenario, params, birthrates=birthrates_map)
     # model.validating = args.validating
 
     expdist = dists.normal(loc=EXPOSED_DURATION_MEAN, scale=EXPOSED_DURATION_SCALE)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     pyramid = AliasedDistribution(np.full(89, 1_000))
     survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
-    births = BirthsByCBR(model, birthrates_map.values, pyramid)
+    births = BirthsByCBR(model, birthrates_map, pyramid)
     mortality = MortalityByEstimator(model, survival)
 
     model.components = [s, r, i, e, tx, mabs, births, mortality]

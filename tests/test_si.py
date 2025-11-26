@@ -41,7 +41,7 @@ class Default(unittest.TestCase):
             params = PropertySet({"nticks": NTICKS, "beta": 1.0 / 32})
 
             with ts.start("Model Initialization"):
-                model = Model(scenario, params, birthrate_map.values)
+                model = Model(scenario, params, birthrate_map)
                 model.validating = VALIDATING
 
                 # Sampling this pyramid will return indices in [0, 88] with equal probability.
@@ -52,7 +52,7 @@ class Default(unittest.TestCase):
                 s = SI.Susceptible(model)
                 i = SI.Infectious(model)
                 tx = SI.Transmission(model)
-                births = BirthsByCBR(model, birthrate_map.values, pyramid)
+                births = BirthsByCBR(model, birthrate_map, pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, tx, births, mortality]
 
@@ -85,7 +85,7 @@ class Default(unittest.TestCase):
             params = PropertySet({"nticks": NTICKS, "beta": 1.0 / 32})
 
             with ts.start("Model Initialization"):
-                model = Model(scenario, params, birthrate_map.values)
+                model = Model(scenario, params, birthrate_map)
                 model.validating = VALIDATING
 
                 # Sampling this pyramid will return indices in [0, 88] with equal probability.
@@ -96,7 +96,7 @@ class Default(unittest.TestCase):
                 s = SI.Susceptible(model)
                 i = SI.Infectious(model)
                 tx = SI.Transmission(model)
-                births = BirthsByCBR(model, birthrate_map.values, pyramid)
+                births = BirthsByCBR(model, birthrate_map, pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, tx, births, mortality]
 
@@ -129,20 +129,14 @@ class Default(unittest.TestCase):
             birthrate_map = ValuesMap.from_scalar(parameters.cbr, nsteps=parameters.nticks, nnodes=1)
 
             with ts.start("Model Initialization"):
-                model = Model(scenario, parameters, birthrate_map.values, skip_capacity=True)
+                model = Model(scenario, parameters, birthrate_map, skip_capacity=True)
                 model.validating = VALIDATING
 
                 model.components = [
                     SI.Susceptible(model),
                     SI.Infectious(model),
                     SI.Transmission(model),
-                    # SI.ConstantPopVitalDynamics(
-                    #     # Send in zero mortality rates to prevent warning.
-                    #     model,
-                    #     birthrate_map.values,
-                    #     ValuesMap.from_scalar(0.0, nsteps=parameters.nticks, nnodes=1).values,
-                    # ),
-                    ConstantPopVitalDynamics(model, birthrate_map.values),
+                    ConstantPopVitalDynamics(model, birthrate_map),
                 ]
 
             model.run(f"SI Constant Pop ({model.people.count:,}/{model.nodes.count:,})")

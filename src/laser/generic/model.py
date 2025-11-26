@@ -46,7 +46,12 @@ class Model:
         set_seed(getattr(self.params, "prng_seed", 20260101))
 
         num_nodes = max(np.unique(scenario.nodeid)) + 1
-        self.birthrates = birthrates if birthrates is not None else ValuesMap.from_scalar(0, num_nodes, self.params.nticks).values
+
+        if birthrates is not None:
+            self.birthrates = birthrates if not isinstance(birthrates, ValuesMap) else birthrates.values
+        else:
+            self.birthrates = ValuesMap.from_scalar(0, num_nodes, self.params.nticks).values
+
         num_active = scenario.population.sum()
         if not skip_capacity:
             safety_factor = getattr(self.params, "capacity_safety_factor", 1.0)
