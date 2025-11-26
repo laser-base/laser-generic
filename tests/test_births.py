@@ -20,7 +20,7 @@ SEED = 271828
 
 def load_age_distribution():
     """Load Nigeria age distribution for birth age assignment."""
-    age_data_path = Path(__file__).parent.parent / "docs/tutorials/notebooks/Nigeria-Distribution-2020.csv"
+    age_data_path = Path(__file__).parent.parent / "docs" / "tutorials" / "notebooks" / "data" / "Nigeria-Distribution-2020.csv"
     age_data = np.loadtxt(age_data_path, delimiter=",", usecols=0)[0:89]
     return AliasedDistribution(age_data)
 

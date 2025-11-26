@@ -64,14 +64,14 @@ def calculate_observed_cdr(model):
 
 def load_survival_data():
     """Load Nigeria survival data for age-specific mortality."""
-    data_path = Path(__file__).parent.parent / "docs/tutorials/notebooks/Nigeria-Survival-2020.csv"
+    data_path = Path(__file__).parent.parent / "docs" / "tutorials" / "notebooks" / "data" / "Nigeria-Survival-2020.csv"
     survival_data = np.loadtxt(data_path, delimiter=",", usecols=1)[0:89].cumsum()
     return KaplanMeierEstimator(survival_data)
 
 
 def load_age_distribution():
     """Load Nigeria age distribution for population initialization."""
-    data_path = Path(__file__).parent.parent / "docs/tutorials/notebooks/Nigeria-Distribution-2020.csv"
+    data_path = Path(__file__).parent.parent / "docs" / "tutorials" / "notebooks" / "data" / "Nigeria-Distribution-2020.csv"
     age_data = np.loadtxt(data_path, delimiter=",", usecols=0)[0:89]
     return AliasedDistribution(age_data)
 
