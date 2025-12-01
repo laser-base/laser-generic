@@ -97,7 +97,7 @@ pip install uv
 
     An interactive tour of key features.
 
-    [:octicons-arrow-right-24: Tutorials](tutorials/sir.md)
+    [:octicons-arrow-right-24: Tutorials](tutorials/index.md)
 
 -   :material-new-box:{ .lg .middle } __What's new__
 
