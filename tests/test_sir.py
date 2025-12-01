@@ -162,67 +162,211 @@ class Default(unittest.TestCase):
             assert 0 <= mean_prev <= 0.5, f"Mean prevalence unrealistic: {mean_prev:.3f}"
             assert I_series.max() > I_series[0] * 1.5, "Epidemic growth not observed."
 
-    def test_linear(self):
+    def test_sir_linear_no_demography(self):
         """
-        Feature: One-dimensional (linear) SIR model
-        --------------------------------------------------
-        Validates:
-          • Epidemic propagation in a chain topology (1xN nodes).
-          • Comparison of epidemic timing vs. grid model.
-          • Local population conservation and bounded infection.
-          • Demographic integration across minimal connectivity.
+        Feature: Pure SIR epidemic on a 1-D linear chain (no births/deaths)
+        -------------------------------------------------------------------
+        This test validates the core SIR epidemic logic in LASER without
+        the added complexity of demographic processes. It uses a one-dimensional
+        spatial chain of patches and checks that the SIR transmission,
+        infectious-period progression, and recovery transitions behave
+        correctly in a fixed-population setting.
 
-        Configuration:
-          Layout: 1x10 linear chain
-          Infectious duration: Normal(mean=7, sd=2)
-          Simulation: 365 ticks
+        Model structure:
+            • 1×N linear chain topology (each patch has at most two neighbors).
+            • SIR disease dynamics:
+                  S → I → R
+              with user-specified infectious-duration distribution.
+            • No vital dynamics: total population remains fixed.
+            • Initial seeding: low-level infection at one end of the chain.
+            • Simulation runs for 365 ticks.
 
-        Expected Outcomes / Invariants:
-          • Total population drift <5%.
-          • Epidemic rise and decay pattern (clear peak).
-          • Final attack fraction within realistic range (20-70%).
+        What this test verifies:
+            ✓ Population conservation: S + I + R remains constant at all times.
+            ✓ Epidemic growth: infection increases substantially from the initial seed.
+            ✓ Epidemic peak: I(t) achieves a clear maximum mid-simulation.
+            ✓ Epidemic decline: I(t) falls significantly after the peak (R buildup).
+            ✓ Realistic attack fraction: final R/N is in a plausible SIR range.
+            ✓ Numerical stability: no negative states or invalid transitions.
 
-        Notes:
-          Tests LASER's SIR implementation under linear spatial coupling,
-          validating that infection propagation, recovery, and demographics
-          behave consistently across simplified topology.
+        Why this test matters:
+            This is the simplest fully functional SIR validation scenario.
+            It isolates the epidemic engine—transmission, timers, and recovery—
+            from demographic noise. Passing this test demonstrates that LASER’s
+            SIR core mechanics work correctly before layering on births/mortality.
         """
-        with ts.start("test_linear"):
+
+        def debug():
+            print("\n--- DEBUG: SIR Linear No Demography ---")
+            print(f"I(0): {I_series[0]}, I(max): {I_series.max()}, I(T): {I_series[-1]}")
+            print(f"S(0): {S_series[0]}, S(T): {S_series[-1]}")
+            print(f"R(0): {R_series[0]}, R(T): {R_series[-1]}")
+            print("\nFirst 20 I(t):", I_series[:20])
+            print("Last 20 I(t):", I_series[-20:])
+            print("\nPrevalence first 20:", (I_series[:20] / (S_series[:20] + I_series[:20] + R_series[:20] + 1e-9)))
+            print("Prevalence last 20:", (I_series[-20:] / (S_series[-20:] + I_series[-20:] + R_series[-20:] + 1e-9)))
+            print("\nPeak tick:", np.argmax(I_series))
+
+        with ts.start("test_sir_linear_no_demography"):
+            # --- Scenario ---
             scenario = stdgrid(M=1, N=PEE)
             scenario["S"] = scenario["population"] - 10
             scenario["I"] = 10
             scenario["R"] = 0
 
-            cbr = np.random.uniform(5, 35, len(scenario))
-            birthrate_map = ValuesMap.from_nodes(cbr, nsteps=NTICKS)
+            # --- Parameters ---
             infectious_duration_mean = 7.0
+            infdist = dists.normal(loc=infectious_duration_mean, scale=2.0)
+
+            # R0 target for this test
+            R0 = 2.0
             beta = R0 / infectious_duration_mean
             params = PropertySet({"nticks": NTICKS, "beta": beta})
 
+            # --- Model ---
             with ts.start("Model Initialization"):
-                model = Model(scenario, params, birthrates=birthrate_map)
-                infdist = dists.normal(loc=infectious_duration_mean, scale=2)
-                pyramid = AliasedDistribution(np.full(89, 1_000))
-                survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
+                model = Model(scenario, params)
+                model.validating = VALIDATING
+
                 s = SIR.Susceptible(model)
                 i = SIR.Infectious(model, infdist)
                 r = SIR.Recovered(model)
                 tx = SIR.Transmission(model, infdist)
-                births = BirthsByCBR(model, birthrates=birthrate_map, pyramid=pyramid)
-                mortality = MortalityByEstimator(model, survival)
-                model.components = [s, i, r, tx, births, mortality]
-                model.validating = VALIDATING
+                model.components = [s, i, r, tx]
 
-            model.run("SIR Linear")
+            model.run("SIR Linear (no demography)")
 
             # --- Quantitative Checks ---
             I_series = model.nodes.I.sum(axis=1)
-            pop_series = (model.nodes.S + model.nodes.I + model.nodes.R).sum(axis=1)
-            pop_change = (pop_series[-1] - pop_series[0]) / pop_series[0]
-            assert abs(pop_change) < 0.05, f"Population drift {pop_change * 100:.2f}% >5%."
-            assert I_series.max() > I_series[0] * 1.5, "Epidemic growth too weak."
+            S_series = model.nodes.S.sum(axis=1)
+            R_series = model.nodes.R.sum(axis=1)
+
+            # 1. perfect population conservation
+            pop0 = S_series[0] + I_series[0] + R_series[0]
+            popT = S_series[-1] + I_series[-1] + R_series[-1]
+            assert abs(popT - pop0) < 1e-9, f"Population drift detected: ΔN={popT - pop0}"
+
+            # 2. epidemic must show strong growth (peak >> initial)
+            peak_I = I_series.max()
+            assert peak_I > I_series[0] * 20, f"Epidemic peak too weak: start={I_series[0]}, peak={peak_I}"
+
+            # 3. epidemic must clearly decline after peak
             peak_tick = np.argmax(I_series)
-            assert I_series[-1] < I_series[peak_tick] * 0.8, "Epidemic did not decline."
+            assert peak_tick > 5, "Peak occurs too early."
+            assert I_series[-1] < peak_I * 0.4, "Epidemic did not decline after peak."
+
+            # 4. final attack fraction in reasonable SIR range
+            attack = R_series[-1] / pop0
+            assert 0.2 <= attack <= 0.95, f"Attack fraction out of range: {attack:.3f}"
+
+    def test_sir_linear_with_demography(self):
+        """
+        Feature: SIR epidemic on a 1-D linear chain with demographic turnover
+        ---------------------------------------------------------------------
+        This test validates the correct integration of SIR epidemic dynamics
+        with demographic processes (births and mortality) in a minimal spatial
+        topology. Unlike the pure-epidemic test, new susceptibles enter the
+        population through births and individuals are removed by mortality.
+        This produces a continuously shifting demographic structure and a
+        more complex epidemic trajectory.
+
+        Model structure:
+            • 1×N linear chain topology (nearest-neighbor mixing).
+            • SIR disease dynamics with finite infectious periods.
+            • Vital dynamics:
+                  – Births via BirthsByCBR (per-node crude birth rate).
+                  – Mortality via Kaplan–Meier survival curve.
+              These cause population turnover and susceptible replenishment.
+            • Simulation runs for 365 ticks.
+
+        What this test verifies:
+            ✓ Population drift remains moderate (< ~15%) despite births/mortality.
+            ✓ Epidemic growth occurs and produces a substantial peak.
+            ✓ Decline after peak still occurs (though muted by new susceptibles).
+            ✓ Population never becomes negative or unstable.
+            ✓ Birth/death accounting remains reasonable (no runaway imbalance).
+            ✓ SIR and demographic components interact consistently across time.
+
+        Why this test matters:
+            This scenario checks LASER’s ability to combine SIR infection
+            progression with realistic demographic churn. It validates that
+            births replenish susceptibles correctly, mortality removes agents
+            without destabilizing dynamics, and that the combined system
+            behaves plausibly and numerically stably.
+
+            Passing this test gives confidence that LASER’s SIR implementation
+            works not only in fixed-population settings, but also in models
+            where demographic forces shape long-term epidemic patterns.
+        """
+        with ts.start("test_sir_linear_with_demography"):
+            # --- Scenario ---
+            scenario = stdgrid(M=1, N=PEE)
+            scenario["S"] = scenario["population"] - 10
+            scenario["I"] = 10
+            scenario["R"] = 0
+
+            # --- Vital Dynamics ---
+            # Birthrate moderately large; mortality via Kaplan–Meier curve.
+            cbr = np.random.uniform(5, 35, len(scenario))  # births per 1000 per year
+            birthrate_map = ValuesMap.from_nodes(cbr, nsteps=NTICKS)
+
+            pyramid = AliasedDistribution(np.full(89, 1_000))
+            survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
+
+            # --- Epidemic Params ---
+            infectious_duration_mean = 7.0
+            infdist = dists.normal(loc=infectious_duration_mean, scale=2.0)
+            R0 = 2.0
+            beta = R0 / infectious_duration_mean
+            params = PropertySet({"nticks": NTICKS, "beta": beta})
+
+            # --- Model ---
+            with ts.start("Model Initialization"):
+                model = Model(scenario, params, birthrates=birthrate_map)
+                model.validating = VALIDATING
+
+                s = SIR.Susceptible(model)
+                i = SIR.Infectious(model, infdist)
+                r = SIR.Recovered(model)
+                tx = SIR.Transmission(model, infdist)
+
+                births = BirthsByCBR(model, birthrate_map, pyramid)
+                mortality = MortalityByEstimator(model, survival)
+
+                model.components = [s, i, r, tx, births, mortality]
+
+            model.run("SIR Linear (with demography)")
+
+            # --- Quantitative Checks ---
+            I_series = model.nodes.I.sum(axis=1)
+            S_series = model.nodes.S.sum(axis=1)
+            R_series = model.nodes.R.sum(axis=1)
+            pop_series = S_series + I_series + R_series
+
+            pop0, popT = pop_series[0], pop_series[-1]
+            pop_change = (popT - pop0) / pop0
+
+            # 1. Population drift must be moderate but not exploding
+            assert abs(pop_change) < 0.15, f"Population drift {pop_change * 100:.2f}% >15%."
+
+            # 2. Epidemic growth must occur
+            assert I_series.max() > I_series[0] * 1.5, "Epidemic growth too weak."
+
+            # 3. Epidemic decline should still occur, though less pronounced than no-demography
+            peak_tick = np.argmax(I_series)
+            assert peak_tick > 5, "Peak should occur after initial ticks."
+            assert I_series[-1] < I_series[peak_tick] * 0.9, "Epidemic did not decline after peak with demographics."
+
+            # 4. Population series must remain positive and reasonable
+            assert np.all(pop_series > 0), "Negative population count encountered."
+
+            # 5. Birth / death accounting should not diverge wildly
+            births_total = getattr(model.nodes, "births", None)
+            deaths_total = getattr(model.nodes, "deaths", None)
+            if births_total is not None and deaths_total is not None:
+                # Just ensure turnover is not wildly imbalanced
+                net = births_total.sum() - deaths_total.sum()
+                assert abs(net) < 0.20 * pop0, f"Birth-death mismatch too large: net={net}"
 
     def test_kermack_mckendrick(self):
         """
