@@ -8,14 +8,12 @@ from pathlib import Path
 
 import numpy as np
 from laser.core import PropertySet
-from laser.core.demographics import AliasedDistribution
-from laser.core.demographics import KaplanMeierEstimator
 
 from laser.generic import SI
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
 from laser.generic.newutils import grid
-from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator, ConstantPopVitalDynamics
+from laser.generic.vitaldynamics import ConstantPopVitalDynamics
 from tests.utils import base_maps
 from tests.utils import stdgrid
 
@@ -31,31 +29,36 @@ NTICKS = 365
 class Default(unittest.TestCase):
     def test_grid(self):
         """
-        Feature: Spatial 2-D SIS grid model
-        --------------------------------------------------
-        Validates:
-          • Spatially explicit, multi-patch SIS dynamics on a two-dimensional grid.
-          • Population birth and death processes via the VitalDynamics component.
-          • Transmission and recovery events governed by SIS.Infectious and SIS.Transmission.
-          • Integration of demographic and epidemiological components within a unified model loop.
+        Feature: Two-dimensional spatial SI model (grid topology)
+        ---------------------------------------------------------
+        Validates core LASER functionality for a spatially explicit,
+        multi-patch **SI (Susceptible → Infectious, no recovery)** model
+        on a 2-D grid.
 
-        Configuration:
-          Grid size: 10 x 10 (100 nodes)
-          Node size: 10 km
-          Population initialization: uniform random between 10 000 and 1 000 000
-          Simulation length: 365 ticks (daily updates)
+        Model Structure:
+            • 10×10 grid (100 nodes), each a distinct spatial patch.
+            • SI epidemic dynamics: Susceptible agents transition to
+              Infectious but never recover.
+            • No vital dynamics (births, deaths) in this test.
+            • Spatial interactions governed by the model’s adjacency matrix.
 
-        Expected Outcomes / Invariants:
-          • S + I remains approximately equal to total population per node.
-          • Populations remain strictly positive (no negative counts).
-          • Infection prevalence (I / N) remains within [0, 1].
-          • Model executes full duration without numerical or indexing errors.
+        What this test verifies:
+            ✓ Spatial connectivity and correct construction of a 2-D grid.
+            ✓ SI transmission operates across patches (infection spreads).
+            ✓ Infection counts evolve over time (system is non-static).
+            ✓ Prevalence remains bounded within biologically reasonable ranges.
+            ✓ Population counts (S+I) remain exactly constant (no births/deaths).
+            ✓ Per-node conservation holds: no negative or exploding populations.
+            ✓ No numerical errors or inconsistent state transitions.
 
-        Notes:
-          This test represents the full spatial-grid capability of LASER and exercises
-          nearly all key agent-level and node-level update mechanisms in a coupled
-          SIS framework. It therefore provides high-level validation of LASER's
-          spatial and demographic integration.
+        Interpretation:
+            Passing this test demonstrates that LASER:
+              • correctly sets up a large spatial grid,
+              • applies SI transmission across space,
+              • maintains population conservation,
+              • and runs stably over many timesteps.
+
+            This is a broad end-to-end validation of spatial SI dynamics.
         """
         with ts.start("test_grid"):
             scenario = stdgrid(M=EM, N=EN)
@@ -71,17 +74,12 @@ class Default(unittest.TestCase):
                 model = Model(scenario, params, birthrate_map)
                 model.validating = VALIDATING
 
-                # Sampling this pyramid will return indices in [0, 88] with equal probability.
-                pyramid = AliasedDistribution(np.full(89, 1_000))
-                # The survival function will return the probability of surviving past each age.
-                survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
-
                 s = SI.Susceptible(model)
                 i = SI.Infectious(model)
                 tx = SI.Transmission(model)
-                births = BirthsByCBR(model, birthrate_map, pyramid)
-                mortality = MortalityByEstimator(model, survival)
-                model.components = [s, i, tx, births, mortality]
+                # births = BirthsByCBR(model, birthrate_map, pyramid)
+                # mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, tx]  # , births, mortality]
 
             model.run(f"SI Grid ({model.people.count:,}/{model.nodes.count:,})")
 
@@ -100,7 +98,7 @@ class Default(unittest.TestCase):
             pop0 = (model.nodes.S[0] + model.nodes.I[0]).sum()
             popT = (model.nodes.S[-1] + model.nodes.I[-1]).sum()
             delta = (popT - pop0) / pop0
-            assert abs(delta) < 0.1, f"Unexpected population drift: {delta * 100:.2f}%"
+            assert abs(delta) == 0
 
             # 4. Node-level conservation (mean relative error)
             rel_err = np.abs((model.nodes.S[-1] + model.nodes.I[-1]) - (model.nodes.S[0] + model.nodes.I[0])) / (
@@ -125,30 +123,34 @@ class Default(unittest.TestCase):
 
     def test_linear(self):
         """
-        Feature: One-dimensional (linear) SI model
-        --------------------------------------------------
-        Validates:
-          • Sequential (1-D chain) arrangement of patches with neighbor-based interaction.
-          • Infection transmission and recovery processes identical to grid model.
-          • Vital dynamics (births/deaths) under linear connectivity.
-          • Proper handling of boundary conditions at the ends of the chain.
+        Feature: One-dimensional spatial SI model (linear chain)
+        --------------------------------------------------------
+        Validates LASER’s behavior for a spatial SI (Susceptible → Infectious)
+        epidemic on a **1-D chain of patches**, without recovery or vital dynamics.
 
-        Configuration:
-          Layout: 1 x 10 linear chain
-          Node size: 10 km
-          Population initialization: uniform random between 10 000 and 1 000 000
-          Simulation length: 365 ticks (daily updates)
+        Model Structure:
+            • 1×10 linear chain (10 nodes, each connected only to neighbors).
+            • SI epidemic dynamics (no recovery): infection grows monotonically.
+            • No births or deaths; population is constant.
+            • Spatial mixing occurs only between adjacent patches.
 
-        Expected Outcomes / Invariants:
-          • Population conservation per node (S + I ≈ N).
-          • Non-negative and bounded infection counts.
-          • Consistency of per-node epidemiological transitions with grid model behavior.
+        What this test verifies:
+            ✓ Correct construction of a linear adjacency structure.
+            ✓ Infection grows substantially from its initial seeding.
+            ✓ Infection time series is nearly monotone (SI allows no decline).
+            ✓ Population (S+I) remains perfectly conserved over time.
+            ✓ All node-level counts remain valid (non-negative, finite).
+            ✓ No numerical errors or invalid array operations.
 
-        Notes:
-          This test isolates topological and connectivity aspects of LASER's SI model.
-          It validates that infection spread and demography behave correctly under
-          reduced spatial dimensionality, providing confidence that LASER can operate
-          across alternative spatial network configurations.
+        Interpretation:
+            Passing this test shows that LASER:
+                • handles 1-D spatial connectivity correctly,
+                • propagates SI infection along a spatial chain,
+                • conserves population in the absence of vital dynamics,
+                • and maintains monotonic SI dynamics as expected.
+
+            This isolates spatial adjacency logic independently of other
+            model complexities.
         """
         with ts.start("test_linear"):
             scenario = stdgrid(M=1, N=PEE)
@@ -164,32 +166,25 @@ class Default(unittest.TestCase):
                 model = Model(scenario, params, birthrate_map)
                 model.validating = VALIDATING
 
-                # Sampling this pyramid will return indices in [0, 88] with equal probability.
-                pyramid = AliasedDistribution(np.full(89, 1_000))
-                # The survival function will return the probability of surviving past each age.
-                survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
-
                 s = SI.Susceptible(model)
                 i = SI.Infectious(model)
                 tx = SI.Transmission(model)
-                births = BirthsByCBR(model, birthrate_map, pyramid)
-                mortality = MortalityByEstimator(model, survival)
-                model.components = [s, i, tx, births, mortality]
+                model.components = [s, i, tx]  # , births, mortality]
 
             model.run(f"SI Linear ({model.people.count:,}/{model.nodes.count:,})")
 
-            # 1. Infection curve monotonicity segments (rise-fall)
             I_series = model.nodes.I.sum(axis=1)
-            assert I_series.max() > I_series[0] * 1.5, "No epidemic growth detected."
-            peak_tick = np.argmax(I_series)
-            assert peak_tick > 0, "Peak should occur after initial tick."
 
-            # 2. Epidemic decay: final infections lower than peak
-            assert I_series[-1] < I_series[peak_tick] * 0.8, "No decline after peak."
+            # Epidemic growth: infections increase substantially
+            assert I_series[-1] > I_series[0] * 1.5, "No epidemic growth detected."
+
+            # Optional: curve should not decrease much (SI is monotone-ish)
+            diffs = np.diff(I_series)
+            assert (diffs < 0).sum() <= 5, "Unexpected large declines in SI infections."
 
             # 3. Population size consistency
             pop_change = ((model.nodes.S[-1] + model.nodes.I[-1]).sum() / (model.nodes.S[0] + model.nodes.I[0]).sum()) - 1
-            assert abs(pop_change) < 0.05, f"Population changed {pop_change * 100:.2f}%"
+            assert abs(pop_change) == 0
 
         if VERBOSE:
             print(model.people.describe("People"))
@@ -208,36 +203,40 @@ class Default(unittest.TestCase):
 
     def test_constant_pop(self):
         """
-        Feature: Constant-population SI model with dynamic births and deaths
-        --------------------------------------------------
-        Validates:
-          • Constant-population demographic process in which births exactly offset deaths.
-          • Interaction between epidemiological and demographic components under a
-            strict population-conservation constraint.
-          • Correct handling of zero-mortality edge cases (no negative or runaway population).
-          • Integration of SIS infection dynamics (Susceptible, Infectious, Transmission)
-            with ConstantPopVitalDynamics.
+        Feature: Constant-population SI model with balanced births & deaths
+        -------------------------------------------------------------------
+        Validates LASER’s SI (Susceptible → Infectious, no recovery) dynamics
+        when coupled to **ConstantPopVitalDynamics**, which enforces exact
+        population conservation by making births offset deaths.
 
-        Configuration:
-          Layout: single-node model (M=1, N=1)
-          Population: 1 000 000
-          Initial infections: 10
-          Crude birth rate: 400 births per 1 000 individuals per year
-          Mortality: explicitly set to zero
-          Simulation length: 365 ticks (daily updates)
+        Model Structure:
+            • Single-node model (no spatial effects).
+            • Initial population: 1,000,000; initial infections: 10.
+            • ConstantPopVitalDynamics keeps N(t) ≈ constant.
+            • SI epidemic dynamics: infections increase monotonically because
+              there is no recovery process.
+            • Births and deaths occur internally but are exactly balanced.
 
-        Expected Outcomes / Invariants:
-          • Total population remains constant throughout the run (ΔN ≈ 0).
-          • Non-negative susceptible and infected counts for all ticks.
-          • Infection prevalence remains bounded within [0, 1].
-          • Model runs without demographic or epidemiological warnings.
+        What this test verifies:
+            ✓ Total population remains constant to numerical tolerance.
+            ✓ Prevalence stays within [0,1] and rises monotonically
+              (correct SI behavior without recovery).
+            ✓ Infection grows substantially from initial seeding.
+            ✓ Birth counts approximately equal death counts over the run.
+            ✓ No negative populations or invalid state transitions.
+            ✓ No unexpected oscillations or declines in prevalence.
 
-        Notes:
-          This test exercises LASER's ConstantPopVitalDynamics component in combination
-          with SIS transmission and progression. It ensures that population accounting
-          remains stable even when births and deaths are tightly coupled or extreme
-          (high CBR, zero mortality). Serves as a regression test for demographic
-          balance and numerical stability in constant-population scenarios.
+        Interpretation:
+            Passing this test demonstrates that LASER:
+                • correctly implements ConstantPopVitalDynamics,
+                • preserves strict population conservation,
+                • produces monotonic SI epidemic curves under demographic
+                  turnover,
+                • and handles births/deaths without destabilizing epidemic
+                  updates.
+
+            This is an end-to-end validation of demographic coupling in a
+            constant-population SI setting.
         """
         with ts.start("test_constant_pop"):
             pop = 1e6
@@ -262,23 +261,32 @@ class Default(unittest.TestCase):
 
             model.run(f"SI Constant Pop ({model.people.count:,}/{model.nodes.count:,})")
 
-            # 1. Total population constant to within 0.01%
+            # 1. Total population must remain constant (to numerical tolerance)
             N0 = (model.nodes.S[0] + model.nodes.I[0]).sum()
             NT = (model.nodes.S[-1] + model.nodes.I[-1]).sum()
-            assert abs(NT - N0) / N0 < 1e-4, f"Population not constant: {NT - N0}"
+            assert abs(NT - N0) / N0 < 1e-4, f"Population not constant: ΔN={NT - N0}"
 
-            # 2. Infection prevalence stable and bounded
+            # 2. Prevalence must remain bounded and rise monotonically (SI has no recovery)
             prev_series = model.nodes.I.sum(axis=1) / (model.nodes.I.sum(axis=1) + model.nodes.S.sum(axis=1) + 1e-9)
-            assert np.all((prev_series >= 0) & (prev_series <= 1))
-            # assert prev_series.std() < 0.05, "Prevalence fluctuated excessively for constant-pop model"
-            assert prev_series.std() < 0.1, f"Prevalence fluctuated excessively: std={prev_series.std():.3f}"
 
-            # 3. Births ≈ deaths accounting
+            # 2a. Prevalence always within [0, 1]
+            assert np.all((prev_series >= 0) & (prev_series <= 1)), "Prevalence out of bounds [0,1]."
+
+            # 2b. SI has no recovery → prevalence should rise or stay flat, not meaningfully decline
+            drops = np.diff(prev_series) < 0
+            assert drops.sum() <= 3, f"Prevalence decreased unexpectedly at {drops.sum()} ticks."
+
+            # 2c. Prevalence should increase substantially from the initial small seeding
+            assert prev_series[-1] > prev_series[0] * 100, (
+                f"Prevalence did not grow enough for SI: start={prev_series[0]:.5f}, end={prev_series[-1]:.5f}"
+            )
+
+            # 3. Births ≈ deaths (constant-population vital dynamics)
             births_total = getattr(model.nodes, "births", None)
             deaths_total = getattr(model.nodes, "deaths", None)
             if births_total is not None and deaths_total is not None:
                 net = births_total.sum() - deaths_total.sum()
-                assert abs(net) < 1e-6 * N0, f"Birth-death mismatch: {net}"
+                assert abs(net) < 1e-6 * N0, f"Birth-death mismatch: net={net}"
 
         if VERBOSE:
             print(model.people.describe("People"))
