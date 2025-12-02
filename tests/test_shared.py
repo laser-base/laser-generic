@@ -11,9 +11,11 @@ from laser.generic.shared import sample_dods
 
 class TestShared(unittest.TestCase):
     def test_sample_dobs_with_tick_zero_uniform_pyramid(self):
-        pyramid = AliasedDistribution([1000] * 100)  # Uniform distribution over ages 0..99
+        # Population pyramid: uniform distribution over ages 0..99 - 100_000 agents
+        expected = np.full(100, 1000, dtype=np.int32)
+        pyramid = AliasedDistribution(expected)  # Uniform distribution over ages 0..99
 
-        n_agents = 100_000
+        n_agents = 100_000  # matches total in pyramid
         dobs = np.zeros(n_agents, dtype=np.int32)
         tick = 0
 
@@ -29,15 +31,13 @@ class TestShared(unittest.TestCase):
         # Convert dobs to ages in years (since dobs are negative ages in days)
         ages_sampled = -dobs // 365
 
-        # Generate the expected population ages according to the pyramid
-        expected_ages = np.repeat(np.arange(100), np.round(n_agents * pyramid.probs / pyramid.probs.sum()).astype(np.int32))
-
         # Perform a chi-squared test to verify that the dob distribution matches the population pyramid
-        observed_counts = np.bincount(ages_sampled, minlength=100)
-        expected_counts = np.bincount(expected_ages, minlength=100)
+        # observed_counts = np.bincount(ages_sampled, minlength=100)
+        observed = np.histogram(ages_sampled, bins=100, range=(0, 100))[0]
+
         from scipy.stats import chisquare
 
-        chi2_stat, p_value = chisquare(observed_counts, expected_counts)
+        chi2_stat, p_value = chisquare(observed, expected)
 
         assert p_value > 0.01, f"Chi-squared test failed: p-value={p_value}"
 
