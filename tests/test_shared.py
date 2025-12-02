@@ -32,10 +32,14 @@ class TestShared(unittest.TestCase):
         # Generate the expected population ages according to the pyramid
         expected_ages = np.repeat(np.arange(100), np.round(n_agents * pyramid.probs / pyramid.probs.sum()).astype(np.int32))
 
-        # Perform the two-sample KS test
-        _ks_stat, p_value = ks_2samp(ages_sampled, expected_ages)
+        # Perform a chi-squared test to verify that the dob distribution matches the population pyramid
+        observed_counts = np.bincount(ages_sampled, minlength=100)
+        expected_counts = np.bincount(expected_ages, minlength=100)
+        from scipy.stats import chisquare
 
-        assert p_value > 0.01, f"KS test failed: p-value={p_value}"
+        chi2_stat, p_value = chisquare(observed_counts, expected_counts)
+
+        assert p_value > 0.01, f"Chi-squared test failed: p-value={p_value}"
 
         return
 
