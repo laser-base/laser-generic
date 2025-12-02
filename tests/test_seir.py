@@ -417,7 +417,7 @@ class Default(unittest.TestCase):
             assert np.all(E >= 0)
             assert np.all(I_series >= 0)
             assert np.all(R >= 0)
-    
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
