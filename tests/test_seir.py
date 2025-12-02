@@ -231,7 +231,6 @@ class Default(unittest.TestCase):
             infdur = dists.normal(loc=7.0, scale=2.0)
 
             # R0 → beta
-            # R0 = 1.386
             beta = R0 / 7.0
             params = PropertySet({"nticks": NTICKS, "beta": beta})
 
@@ -418,7 +417,7 @@ class Default(unittest.TestCase):
             assert np.all(E >= 0)
             assert np.all(I_series >= 0)
             assert np.all(R >= 0)
-
+    
 
 if __name__ == "__main__":
     parser = ArgumentParser()
