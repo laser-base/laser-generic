@@ -340,7 +340,7 @@ class Default(unittest.TestCase):
 
             # 4. Latency ordering (early phase)
             assert E_series[5] > E_series[0]
-            #assert I_series[10] > I_series[0]
+            # assert I_series[10] > I_series[0]
 
             # 4. Latency: E must rise early, I must eventually rise
             assert E_series[5] > E_series[0], "E did not rise early (latency broken)."
