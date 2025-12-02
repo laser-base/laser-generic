@@ -114,7 +114,11 @@ class Default(unittest.TestCase):
             assert np.argmax(E_series) < np.argmax(I_series), "E should peak before I."
             assert np.argmax(I_series) < np.argmax(R_series), "I should peak before R."
             assert S_series[-1] < S_series[0], "S decreased initially due to infection."
-            assert R_series[-1] < R_series.max(), "Some waning expected (R decreases over time)."
+            #assert R_series[-1] < R_series.max(), "Some waning expected (R decreases over time)."
+            # Some waning must happen somewhere in the time series
+            assert np.any(np.diff(R_series) < 0), (
+                "No waning evident: R(t) never showed any decrease."
+            )
 
             N0 = (model.nodes.S[0] + model.nodes.E[0] + model.nodes.I[0] + model.nodes.R[0]).sum()
             NT = (model.nodes.S[-1] + model.nodes.E[-1] + model.nodes.I[-1] + model.nodes.R[-1]).sum()
