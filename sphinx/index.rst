@@ -13,10 +13,17 @@ the automatically generated API reference from AutoAPI.
    :caption: Getting Started
 
    source/converted/index
-   source/converted/get-started
-   source/converted/glossary
+   source/converted/get-started/index
+   source/converted/get-started/calibration
+   source/converted/get-started/initialization
+   source/converted/get-started/optimization
+   source/converted/software-overview/index
+   source/converted/software-overview/database
+   source/converted/software-overview/demographics/index
+   source/converted/software-overview/migration
+   source/converted/software-overview/transmission
+   source/converted/includes/glossary
    source/converted/whatsnew
-   source/converted/contribute
 
 .. toctree::
    :maxdepth: 2
@@ -39,3 +46,4 @@ the automatically generated API reference from AutoAPI.
    source/converted/notebooks/10_EW_periodicity
    source/converted/notebooks/EW_analysis
    source/converted/notebooks/distributions
+
