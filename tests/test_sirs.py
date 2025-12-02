@@ -370,17 +370,25 @@ class Default(unittest.TestCase):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--plot", action="store_true")
-    parser.add_argument("--verbose", action="store_true")
-    parser.add_argument("--validating", action="store_true")
-    parser.add_argument("-m", type=int, default=5)
-    parser.add_argument("-n", type=int, default=5)
-    parser.add_argument("-p", type=int, default=10)
-    parser.add_argument("-t", "--ticks", type=int, default=365)
-    parser.add_argument("-r", "--r0", type=float, default=1.386)
-    parser.add_argument("-g", "--grid", action="store_true")
-    parser.add_argument("-l", "--linear", action="store_true")
-    parser.add_argument("-s", "--single", action="store_true")
+    parser.add_argument("--plot", action="store_true", help="Enable plotting")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("--validating", action="store_true", help="Enable validating mode")
+    parser.add_argument("-m", type=int, default=5, help="Number of grid rows (M)")
+    parser.add_argument("-n", type=int, default=5, help="Number of grid columns (N)")
+    parser.add_argument("-p", type=int, default=10, help="Number of linear nodes (N)")
+    parser.add_argument("-t", "--ticks", type=int, default=365, help="Number of days to simulate (nticks)")
+    parser.add_argument(
+        "-r",
+        "--r0",
+        type=float,
+        default=1.386,
+        help="Basic reproduction number (R0) [1.151 for 25%% attack fraction, 1.386=50%%, and 1.848=75%%]",
+    )
+    parser.add_argument("-g", "--grid", action="store_true", help="Run grid test")
+    parser.add_argument("-l", "--linear", action="store_true", help="Run linear test")
+    parser.add_argument("-s", "--single", action="store_true", help="Run single node test")
+    parser.add_argument("-i", "--infdur", type=float, default=7.0, help="Mean infectious duration in days")
+    parser.add_argument("-w", "--wandur", type=float, default=30.0, help="Mean waning duration in days")
     parser.add_argument("unittest", nargs="*")
 
     args = parser.parse_args()
