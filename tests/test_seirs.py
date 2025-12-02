@@ -174,8 +174,8 @@ class Default(unittest.TestCase):
             assert np.all(model.nodes.R >= 0)
             assert abs(pop_change) < 0.1, f"Population drift {pop_change * 100:.2f}% >10%"
             assert mean_prev <= 0.5, f"Mean prevalence {mean_prev:.3f} >0.5"
-            #assert np.argmax(E_series) < np.argmax(I_series), "E before I"
-            #assert np.argmax(I_series) < np.argmax(R_series), "I before R"
+            # assert np.argmax(E_series) < np.argmax(I_series), "E before I"
+            # assert np.argmax(I_series) < np.argmax(R_series), "I before R"
 
             # Latent period must exist: E must rise early
             assert E_series[5] > E_series[0], "E did not rise early (SEIR/SEIRS latency broken)."
@@ -184,9 +184,7 @@ class Default(unittest.TestCase):
             assert I_series[10] > I_series[0], "I did not rise after early E growth."
 
             # Recovered must accumulate beyond infectious at some point (even in waning systems)
-            assert R_series.max() >= I_series.max(), (
-                "Recovered never exceeded infectious — unusual for SEIRS dynamics."
-            )
+            assert R_series.max() >= I_series.max(), "Recovered never exceeded infectious — unusual for SEIRS dynamics."
 
     def test_seirs_linear_no_demography(self):
         """
@@ -236,7 +234,7 @@ class Default(unittest.TestCase):
 
                 s = SEIRS.Susceptible(model)
                 e = SEIRS.Exposed(model, expdur, infdur)
-                i = SEIRS.Infectious(model, infdur, wandur )
+                i = SEIRS.Infectious(model, infdur, wandur)
                 r = SEIRS.Recovered(model, wandur)
                 tx = SEIRS.Transmission(model, infdur)
 
@@ -258,9 +256,7 @@ class Default(unittest.TestCase):
             assert E_series[5] > E_series[0], "E did not rise early (latency)."
 
             # 3. Infectious must grow at least modestly
-            assert I_series.max() > I_series[0] * 2, (
-                f"Infectious growth too weak: I0={I_series[0]}, Imax={I_series.max()}"
-            )
+            assert I_series.max() > I_series[0] * 2, f"Infectious growth too weak: I0={I_series[0]}, Imax={I_series.max()}"
 
             # 4. Waning immunity must eventually reduce R at some point
             assert R_series.max() > R_series[-1], "R never decreased (no waning visible)."
@@ -307,7 +303,8 @@ class Default(unittest.TestCase):
             survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
 
             model = build_model(
-                1, PEE,
+                1,
+                PEE,
                 lambda x, y: int(np.random.uniform(10_000, 1_000_000)),
                 init_infected=10,
                 birthrates=birthrate_map.values,
@@ -351,6 +348,7 @@ class Default(unittest.TestCase):
             assert np.all(E_series >= 0)
             assert np.all(I_series >= 0)
             assert np.all(R_series >= 0)
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
