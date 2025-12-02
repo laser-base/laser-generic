@@ -7,9 +7,9 @@ from laser.core.demographics import KaplanMeierEstimator
 __all__ = ["State", "sample_dobs", "sample_dods"]
 
 
-def sample_dobs(dobs: np.ndarray, pyramid: AliasedDistribution, tick: int) -> None:
+def sample_dobs(pyramid: AliasedDistribution, dobs: np.ndarray, tick: int = 0) -> None:
     # Get years of age sampled from the population pyramid
-    dobs[:] = pyramid.sample(len(dobs)).astype(np.int16)  # Fit in np.int16
+    dobs[:] = pyramid.sample(len(dobs)).astype(dobs.dtype)
     dobs *= 365  # Convert years to days
     dobs += np.random.randint(0, 365, size=len(dobs))  # add some noise within the year
     # pyramid.sample actually returned ages. Turn them into dobs by treating them
@@ -19,10 +19,9 @@ def sample_dobs(dobs: np.ndarray, pyramid: AliasedDistribution, tick: int) -> No
     return
 
 
-def sample_dods(dobs: np.ndarray, dods: np.ndarray, survival: KaplanMeierEstimator, tick: int) -> None:
+def sample_dods(dobs: np.ndarray, survival: KaplanMeierEstimator, tick: int, dods: np.ndarray) -> None:
     # An agent's age is (tick - dob).
-    dods[:] = survival.predict_age_at_death(tick - dobs).astype(np.int32)
-    # assert np.all(dods >= 0), "Predicted ages at death should be non-negative"
+    dods[:] = survival.predict_age_at_death(tick - dobs).astype(dods.dtype)
     dods += dobs  # Convert days until death to a date of death.
 
     return

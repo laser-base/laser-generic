@@ -1,6 +1,5 @@
 import warnings
 
-import contextily as ctx
 import numpy as np
 
 from laser.generic.newutils import grid
@@ -22,17 +21,22 @@ def stdgrid(M=10, N=10, node_size_km=10, population_fn=POP_FN, origin_x=_longitu
 
 
 try:
-    base_maps = [
-        ctx.providers.Esri.NatGeoWorldMap,
-        ctx.providers.Esri.WorldGrayCanvas,
-        ctx.providers.Esri.WorldImagery,
-        ctx.providers.Esri.WorldPhysical,
-        ctx.providers.Esri.WorldShadedRelief,
-        ctx.providers.Esri.WorldStreetMap,
-        ctx.providers.Esri.WorldTerrain,
-        ctx.providers.Esri.WorldTopoMap,
-        # ctx.providers.NASAGIBS.ModisTerraTrueColorCR,
-    ]
-except Exception:
-    warnings.warn("Couldn't load basemaps.", stacklevel=2)
-    base_maps = []
+    import contextily as ctx
+
+    try:
+        base_maps = [
+            ctx.providers.Esri.NatGeoWorldMap,
+            ctx.providers.Esri.WorldGrayCanvas,
+            ctx.providers.Esri.WorldImagery,
+            ctx.providers.Esri.WorldPhysical,
+            ctx.providers.Esri.WorldShadedRelief,
+            ctx.providers.Esri.WorldStreetMap,
+            ctx.providers.Esri.WorldTerrain,
+            ctx.providers.Esri.WorldTopoMap,
+            # ctx.providers.NASAGIBS.ModisTerraTrueColorCR,
+        ]
+    except Exception:
+        warnings.warn("Couldn't load basemaps.", stacklevel=2)
+        base_maps = [None]
+except ImportError:
+    base_maps = [None]

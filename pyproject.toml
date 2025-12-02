@@ -48,13 +48,16 @@ dependencies = [
   "scipy",
   "scikit-learn",
   "mplcursors>=0.7",
-  "contextily>=1.6.2",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pre-commit",
     "pytest",
+]
+
+basemaps = [
+  "contextily>=1.6.2",
 ]
 
 [project.urls]

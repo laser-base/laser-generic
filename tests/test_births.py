@@ -6,6 +6,7 @@ import numpy as np
 from laser.core import PropertySet
 from laser.core.demographics import AliasedDistribution
 from laser.core.random import seed as set_seed
+from scipy.stats import chisquare
 
 from laser.generic import SEIR
 from laser.generic import Model
@@ -15,14 +16,14 @@ from utils import stdgrid
 
 # Shared test parameters
 NTICKS = 3650  # 10 years
-SEED = 271828
+SEED = 271828  # arbitrary but fixed seed for reproducibility
 
 
 def load_age_distribution():
     """Load Nigeria age distribution for birth age assignment."""
     age_data_path = Path(__file__).parent.parent / "docs" / "tutorials" / "notebooks" / "data" / "Nigeria-Distribution-2020.csv"
     age_data = np.loadtxt(age_data_path, delimiter=",", usecols=0)[0:89]
-    return AliasedDistribution(age_data)
+    return AliasedDistribution(age_data), age_data
 
 
 def create_basic_scenario_susceptible_only(cbr=20.0):
@@ -33,7 +34,7 @@ def create_basic_scenario_susceptible_only(cbr=20.0):
 
     parameters = PropertySet({"nticks": NTICKS})
     birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
-    pyramid = load_age_distribution()
+    pyramid, _ = load_age_distribution()
 
     model = Model(scenario, parameters, birthrates=birthrates)
     model.components = [
@@ -65,7 +66,7 @@ def create_equilibrium_seir_scenario(cbr=20.0):
     parameters = PropertySet({"nticks": NTICKS, "beta": R0 / INFECTIOUS_DURATION_MEAN})
 
     birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
-    pyramid = load_age_distribution()
+    pyramid, _ = load_age_distribution()
 
     expdurdist = dists.normal(loc=EXPOSED_DURATION_MEAN, scale=EXPOSED_DURATION_SCALE)
     infdurdist = dists.normal(loc=INFECTIOUS_DURATION_MEAN, scale=INFECTIOUS_DURATION_SCALE)
@@ -98,7 +99,7 @@ def create_scenario_with_additional_states(cbr=20.0):
 
     parameters = PropertySet({"nticks": NTICKS})
     birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
-    pyramid = load_age_distribution()
+    pyramid, _ = load_age_distribution()
 
     expdurdist = dists.normal(loc=5.0, scale=1.0)
     infdurdist = dists.normal(loc=7.0, scale=2.0)
@@ -133,7 +134,7 @@ def create_multi_node_scenario(cbr=20.0):
 
     parameters = PropertySet({"nticks": NTICKS, "beta": 2.0 / 7.0})
     birthrates = ValuesMap.from_scalar(cbr, 4, NTICKS)
-    pyramid = load_age_distribution()
+    pyramid, _ = load_age_distribution()
 
     expdurdist = dists.normal(loc=5.0, scale=1.0)
     infdurdist = dists.normal(loc=7.0, scale=2.0)
@@ -162,7 +163,7 @@ def create_spatially_varying_cbr_scenario():
     # Different CBR for each node (ranging from rural to urban)
     cbrs = np.array([35.0, 30.0, 25.0, 20.0, 18.0, 16.0, 14.0, 12.0])
     birthrates = ValuesMap.from_nodes(cbrs, NTICKS)
-    pyramid = load_age_distribution()
+    pyramid, _ = load_age_distribution()
 
     model = Model(scenario, parameters, birthrates=birthrates)
     model.components = [
@@ -185,7 +186,7 @@ def create_time_varying_cbr_scenario():
     # CBR decreases from 30 to 10 over the simulation period
     time_varying_cbr = np.linspace(30.0, 10.0, NTICKS)
     birthrates = ValuesMap.from_timeseries(time_varying_cbr, 1)
-    pyramid = load_age_distribution()
+    pyramid, _ = load_age_distribution()
 
     model = Model(scenario, parameters, birthrates=birthrates)
     model.components = [
@@ -386,6 +387,52 @@ class TestBirthsByCBR(unittest.TestCase):
         late_growth = total_pop[-1] / total_pop[-366]  # Last year growth
 
         assert early_growth > late_growth, "Early growth rate should be higher than late growth rate as CBR decreases"
+
+        return
+
+    def test_track(self):
+        """Test that dates of birth (dobs) are correctly initialized when track=True in BirthsByCBR."""
+        # Scenario: single node, susceptible only, enable tracking
+        scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: 1_000_000)
+        scenario["S"] = scenario.population
+        scenario["E"] = scenario["I"] = scenario["R"] = 0
+
+        parameters = PropertySet({"nticks": NTICKS})
+        cbr = 20.0
+        birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
+        pyramid, age_dist = load_age_distribution()
+
+        model = Model(scenario, parameters, birthrates=birthrates)
+        # Enable tracking of dobs
+        births_component = BirthsByCBR(model, birthrates, pyramid, track=True)
+        model.components = [
+            SEIR.Susceptible(model),
+            births_component,
+        ]
+
+        # Run model
+        model.run()
+
+        # Check that dobs are present and correctly initialized
+        assert hasattr(model.people, "dob"), "Model people should have 'dob' attribute when track=True"
+
+        dobs = model.people.dob
+        assert len(dobs) == model.people.count, "DOBs array length should match population count"
+
+        # Check that initial agents have dobs matching population age distribution in pyramid.
+        initial_population = scenario.population.sum()
+        # Compare histogram of initial dobs to pyramid (age distribution)
+        ages = -dobs[:initial_population] // 365
+        hist, _ = np.histogram(ages, bins=np.arange(len(age_dist) + 1))
+        expected = initial_population * age_dist / age_dist.sum()
+
+        # Chi-squared test for goodness of fit (allowing for some stochasticity)
+        _chi2, pval = chisquare(hist, expected)
+        assert pval > 0.01, f"Initial DOBs do not match pyramid age distribution (p={pval:.3g})"
+
+        # Check that all new agents have DOB > 0
+        if model.people.count > initial_population:
+            assert np.all(dobs[initial_population:] >= 0), "All new agents should have DOB > 0"
 
         return
 

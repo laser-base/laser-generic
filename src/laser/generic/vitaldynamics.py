@@ -22,7 +22,7 @@ class BirthsByCBR:
         if self.track:
             self.model.people.add_property("dob", dtype=np.int32)
             dobs = self.model.people.dob
-            sample_dobs(dobs, self.pyramid, tick=0)
+            sample_dobs(self.pyramid, dobs)
 
         return
 
@@ -204,7 +204,7 @@ class MortalityByEstimator:
 
         dobs = self.model.people.dob
         dods = self.model.people.dod
-        sample_dods(dobs, dods, self.estimator, tick=0)
+        sample_dods(dobs, self.estimator, tick=0, dods=dods)
 
         return
 
@@ -264,7 +264,7 @@ class MortalityByEstimator:
     def on_birth(self, istart: int, iend: int, tick: int) -> None:
         dobs = self.model.people.dob[istart:iend]
         dods = self.model.people.dod[istart:iend]
-        sample_dods(dobs, dods, self.estimator, tick)
+        sample_dods(dobs, self.estimator, tick, dods)
         if getattr(self, "validating", False) or getattr(self.model, "validating", False):
             assert np.all(dods >= tick), "DODs for newborns should be >= current tick"
 
@@ -400,6 +400,16 @@ class ConstantPopVitalDynamics:
 
 
 def _make_sink(shape, dtype=np.int32):
+    """
+    Create a writable array of given shape and dtype that discards all writes.
+
+    Args:
+        shape (tuple): Shape of the array to create.
+        dtype (data-type, optional): Desired data-type for the array. Default is np.int32.
+
+    Returns:
+        np.ndarray: A writable array that effectively discards all writes by routing them to a single memory location.
+    """
     # 1-element buffer to absorb all writes
     buf = np.empty(1, dtype=dtype)
     # zero strides -> every index maps to buf[0]

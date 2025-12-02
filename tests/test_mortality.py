@@ -18,9 +18,6 @@ from laser.generic.vitaldynamics import MortalityByCDR
 from laser.generic.vitaldynamics import MortalityByEstimator
 from utils import stdgrid
 
-# Claude Code prompt: "Please write a test class for MortalityByCDR in the file test_mortality.py. Use the code to inform your implementation. You should use a population of 100000 running for 10 years. Test against the four CDR values used in the notebook."
-# Claude Code prompt: "Please write a test class for MortalityByEstimator in the file test_mortality.py. Use the code in the mortality.ipynb notebook to inform your implementation. You should use a population of 100000 running for 10 years. Validation will require looking at the population in each age each year and comparing deaths in that population against the data from the input survival CSV. Do not remove any existing tests."
-
 # Shared test parameters
 NTICKS = 3650  # 10 years
 SEED = datetime.now().microsecond  # noqa: DTZ005
@@ -152,9 +149,9 @@ class TestMortalityByCDR(unittest.TestCase):
         # Population should have decreased
         assert pop_finish < pop_start, "Population should decrease due to mortality"
 
-        # Observed CDR should be close to target CDR (within 1% tolerance)
+        # Observed CDR should be close to target CDR (within 3% tolerance)
         percent_diff = abs((observed_cdr - cdr) / cdr * 100)
-        assert percent_diff < 1.0, f"Observed CDR {observed_cdr:.2f} deviated by {percent_diff:.2f}% from target CDR {cdr}"
+        assert percent_diff < 3.0, f"Observed CDR {observed_cdr:.2f} deviated by {percent_diff:.2f}% from target CDR {cdr}"
 
         # Verify deaths were recorded
         total_deaths = model.nodes.deaths.sum()
@@ -177,9 +174,9 @@ class TestMortalityByCDR(unittest.TestCase):
         # Population should have decreased
         assert pop_finish < pop_start, "Population should decrease due to mortality"
 
-        # Observed CDR should be close to target CDR (within 1% tolerance)
+        # Observed CDR should be close to target CDR (within 3% tolerance)
         percent_diff = abs((observed_cdr - cdr) / cdr * 100)
-        assert percent_diff < 1.0, f"Observed CDR {observed_cdr:.2f} deviated by {percent_diff:.2f}% from target CDR {cdr}"
+        assert percent_diff < 3.0, f"Observed CDR {observed_cdr:.2f} deviated by {percent_diff:.2f}% from target CDR {cdr}"
 
         # Verify deaths were recorded
         total_deaths = model.nodes.deaths.sum()

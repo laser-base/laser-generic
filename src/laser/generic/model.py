@@ -2,7 +2,6 @@ from laser.generic.newutils import TimingStats as ts  # noqa: I001
 
 import datetime
 
-import contextily as ctx
 import geopandas as gpd
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -43,6 +42,7 @@ class Model:
         if additional_states is not None:
             self.states.update(set(additional_states))
 
+        # Use arbitrary but fixed seed for reproducibility
         set_seed(getattr(self.params, "prng_seed", 20260101))
 
         num_nodes = max(np.unique(scenario.nodeid)) + 1
@@ -91,7 +91,11 @@ class Model:
         self.network = gravity(population, dist_matrix, k=k, a=a, b=b, c=c)
         self.network = row_normalizer(self.network, (1 / 16) + (1 / 32))
 
-        self.basemap_provider = ctx.providers.Esri.WorldImagery
+        try:
+            import contextily as ctx  # noqa: PLC0415
+        except ImportError:
+            ctx = None
+        self.basemap_provider = ctx.providers.Esri.WorldImagery if ctx is not None else None
 
         self._components = []
 
@@ -126,11 +130,14 @@ class Model:
 
         return
 
-    def plot(self, figure: Figure = None, basemap_provider=ctx.providers.Esri.WorldImagery, **rest):
+    def plot(self, figure: Figure = None, basemap_provider=None, **rest):
         _fig = plt.figure(figsize=(12, 9), dpi=200) if figure is None else figure
 
         if "geometry" in self.scenario.columns:
             gdf = gpd.GeoDataFrame(self.scenario, geometry="geometry")
+
+            if (basemap_provider is not None or self.basemap_provider is not None) and ctx is not None:  # noqa: F821
+                basemap_provider = basemap_provider or self.basemap_provider
 
             if basemap_provider is None:
                 pop = gdf["population"].values
@@ -155,7 +162,7 @@ class Model:
                 yhalf = (bounds[3] - bounds[1]) / 2
                 ax.set_xlim(xmid - 2 * xhalf, xmid + 2 * xhalf)
                 ax.set_ylim(ymid - 2 * yhalf, ymid + 2 * yhalf)
-                ctx.add_basemap(ax, source=basemap_provider)
+                ctx.add_basemap(ax, source=basemap_provider)  # noqa: F821
                 gdf_merc.boundary.plot(ax=ax, edgecolor="black", linewidth=1)
 
                 # Draw circles at centroids sized by log(population)

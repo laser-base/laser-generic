@@ -12,7 +12,6 @@ from .newutils import ValuesMap
 from .shared import State
 
 
-@staticmethod
 @nb.njit(
     nogil=True,
     parallel=True,
@@ -29,7 +28,6 @@ def nb_timer_update(states, test_state, timers, new_state, transitioned, node_id
     return
 
 
-@staticmethod
 @nb.njit(
     nogil=True,
     parallel=True,
