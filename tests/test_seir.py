@@ -231,7 +231,7 @@ class Default(unittest.TestCase):
             infdur = dists.normal(loc=7.0, scale=2.0)
 
             # R0 → beta
-            #R0 = 1.386
+            # R0 = 1.386
             beta = R0 / 7.0
             params = PropertySet({"nticks": NTICKS, "beta": beta})
 
@@ -327,7 +327,7 @@ class Default(unittest.TestCase):
         """
         with ts.start("test_seir_linear_with_demography"):
             cbr = np.random.uniform(5, 35, PEE)
-            birthrates = ValuesMap.from_nodes(cbr, nsteps=NTICKS*2)
+            birthrates = ValuesMap.from_nodes(cbr, nsteps=NTICKS * 2)
             pyramid = AliasedDistribution(np.full(89, 1_000))
             survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
 
@@ -339,7 +339,7 @@ class Default(unittest.TestCase):
                 birthrates=birthrates.values,
                 pyramid=pyramid,
                 survival=survival,
-                nticks=NTICKS*2
+                nticks=NTICKS * 2,
             )
             model.run("SEIR Linear (with demography)")
 
@@ -353,7 +353,7 @@ class Default(unittest.TestCase):
             drift = (popT - pop0) / pop0
 
             # Extract per-node series (already shape: [ticks, nodes])
-            S_nodes = model.nodes.S          # shape (T, N)
+            S_nodes = model.nodes.S  # shape (T, N)
             E_nodes = model.nodes.E
             I_nodes = model.nodes.I
             R_nodes = model.nodes.R
@@ -418,7 +418,7 @@ class Default(unittest.TestCase):
             assert np.all(E >= 0)
             assert np.all(I_series >= 0)
             assert np.all(R >= 0)
-    
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
