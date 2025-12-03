@@ -46,4 +46,3 @@ the automatically generated API reference from AutoAPI.
    source/converted/notebooks/10_EW_periodicity
    source/converted/notebooks/EW_analysis
    source/converted/notebooks/distributions
-
