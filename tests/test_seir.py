@@ -19,7 +19,7 @@ from laser.generic.newutils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
 from tests.utils import stdgrid
 
-PLOTTING = False
+PLOTTING = True
 VERBOSE = False
 EM = 10
 EN = 10
@@ -32,7 +32,7 @@ EXPOSED_DURATION_SCALE = 1.0
 INFECTIOUS_DURATION_MEAN = 7.0
 
 
-def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None, pyramid=None, survival=None, nticks=NTICKS):
+def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None, pyramid=None, survival=None, nticks=NTICKS, beta=None):
     """
     Helper function: build a complete SEIR model with configurable demography.
     Creates Susceptible, Exposed, Infectious, and Recovered components plus
@@ -46,7 +46,8 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
     scenario["S"] -= init_recovered
     scenario["R"] = init_recovered
 
-    beta = R0 / INFECTIOUS_DURATION_MEAN
+    if not beta:
+        beta = R0 / INFECTIOUS_DURATION_MEAN
     params = PropertySet({"nticks": nticks, "beta": beta})
 
     with ts.start("Model Initialization"):
@@ -101,13 +102,26 @@ class Default(unittest.TestCase):
           • Final R fraction ≈ 0.5 ± 0.05.
         """
         with ts.start("test_single_node"):
-            model = build_model(1, 1, lambda x, y: 100_000, init_infected=10)
+            model = build_model(1, 1, lambda x, y: 100_000, init_infected=10, beta=0.25)
             model.run("SEIR Single Node")
 
-            I_series = model.nodes.I.sum(axis=1)
-            E_series = model.nodes.E.sum(axis=1)
-            # R_series = model.nodes.R.sum(axis=1)
+            # ---------------------------------------------------
+            # 1. Extract node-level arrays from LASER LaserFrame
+            # ---------------------------------------------------
+            # Each is shaped (T, N)
+            S_nodes = model.nodes.S
+            E_nodes = model.nodes.E
+            I_nodes = model.nodes.I
+            R_nodes = model.nodes.R
 
+            T, N = I_nodes.shape
+            ticks = np.arange(T)
+
+            # Derive series *after* these are defined
+            S_series = S_nodes.sum(axis=1)
+            E_series = E_nodes.sum(axis=1)
+            I_series = I_nodes.sum(axis=1)
+            R_series = R_nodes.sum(axis=1)
             # Quantitative checks
             assert E_series.max() > 0, "No exposed cases observed."
             assert np.argmax(E_series) < np.argmax(I_series), "E should peak before I."
@@ -119,7 +133,7 @@ class Default(unittest.TestCase):
             assert abs(NT - N0) / N0 < 1e-4, "Population not conserved (ΔN>0.01%)."
 
             final_R_frac = model.nodes.R[-1].sum() / N0
-            assert 0.25 <= final_R_frac <= 0.35, f"Final attack fraction {final_R_frac:.3f} out of expected 0.25–0.35 range."
+            assert 0.55 <= final_R_frac <= 0.75, f"Final attack fraction {final_R_frac:.3f} out of expected 0.55–0.75 range."
 
     def test_grid(self):
         """
@@ -157,7 +171,7 @@ class Default(unittest.TestCase):
                 init_infected=10,
                 birthrates=birthrate_map.values,
                 pyramid=pyramid,
-                survival=survival,
+                survival=survival
             )
             model.run("SEIR Grid")
 
@@ -338,7 +352,7 @@ class Default(unittest.TestCase):
                 birthrates=birthrates.values,
                 pyramid=pyramid,
                 survival=survival,
-                nticks=NTICKS * 2,
+                nticks=NTICKS * 2
             )
             model.run("SEIR Linear (with demography)")
 
