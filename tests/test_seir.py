@@ -339,6 +339,7 @@ class Default(unittest.TestCase):
             coupling in long-term simulations.
         """
         with ts.start("test_seir_linear_with_demography"):
+            # Let's run for 2 years to let things smooth out with these settings
             cbr = np.random.uniform(5, 35, PEE)
             birthrates = ValuesMap.from_nodes(cbr, nsteps=NTICKS * 2)
             pyramid = AliasedDistribution(np.full(89, 1_000))
