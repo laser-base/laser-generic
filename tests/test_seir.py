@@ -109,19 +109,14 @@ class Default(unittest.TestCase):
             # 1. Extract node-level arrays from LASER LaserFrame
             # ---------------------------------------------------
             # Each is shaped (T, N)
-            S_nodes = model.nodes.S
             E_nodes = model.nodes.E
             I_nodes = model.nodes.I
-            R_nodes = model.nodes.R
-
             T, N = I_nodes.shape
-            ticks = np.arange(T)
 
             # Derive series *after* these are defined
-            S_series = S_nodes.sum(axis=1)
             E_series = E_nodes.sum(axis=1)
             I_series = I_nodes.sum(axis=1)
-            R_series = R_nodes.sum(axis=1)
+
             # Quantitative checks
             assert E_series.max() > 0, "No exposed cases observed."
             assert np.argmax(E_series) < np.argmax(I_series), "E should peak before I."
@@ -171,7 +166,7 @@ class Default(unittest.TestCase):
                 init_infected=10,
                 birthrates=birthrate_map.values,
                 pyramid=pyramid,
-                survival=survival
+                survival=survival,
             )
             model.run("SEIR Grid")
 
@@ -353,7 +348,7 @@ class Default(unittest.TestCase):
                 birthrates=birthrates.values,
                 pyramid=pyramid,
                 survival=survival,
-                nticks=NTICKS * 2
+                nticks=NTICKS * 2,
             )
             model.run("SEIR Linear (with demography)")
 

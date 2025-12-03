@@ -5,6 +5,8 @@ import unittest
 from argparse import ArgumentParser
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import math
 import numpy as np
 import laser.core.distributions as dists
 from laser.core import PropertySet
@@ -17,7 +19,7 @@ from laser.generic.newutils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
 from tests.utils import stdgrid
 
-PLOTTING = False
+PLOTTING = True
 VERBOSE = False
 EM = 10
 EN = 10
@@ -31,7 +33,7 @@ INFECTIOUS_DURATION_MEAN = 7.0
 WANING_DURATION_MEAN = 30.0
 
 
-def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None, pyramid=None, survival=None):
+def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None, pyramid=None, survival=None, nticks=NTICKS):
     """
     Helper: Construct an SEIRS model with configurable demography and waning immunity.
 
@@ -47,7 +49,7 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
     scenario["R"] = init_recovered
 
     beta = R0 / INFECTIOUS_DURATION_MEAN
-    params = PropertySet({"nticks": NTICKS, "beta": beta})
+    params = PropertySet({"nticks": nticks, "beta": beta})
 
     with ts.start("Model Initialization"):
         model = Model(scenario, params, birthrates=birthrates)
@@ -300,7 +302,7 @@ class Default(unittest.TestCase):
         with ts.start("test_seirs_linear_with_demography"):
             # --- Vital dynamics ---
             cbr = np.random.uniform(5, 35, PEE)
-            birthrate_map = ValuesMap.from_nodes(cbr, nsteps=NTICKS)
+            birthrate_map = ValuesMap.from_nodes(cbr, nsteps=NTICKS * 2)
             pyramid = AliasedDistribution(np.full(89, 1_000))
             survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
 
@@ -312,6 +314,7 @@ class Default(unittest.TestCase):
                 birthrates=birthrate_map.values,
                 pyramid=pyramid,
                 survival=survival,
+                nticks=NTICKS * 2,  # Need to run a little longer to get steady state
             )
             model.run("SEIRS Linear (with demography)")
 
@@ -324,6 +327,47 @@ class Default(unittest.TestCase):
 
             # 1. Moderate demographic drift
             drift = (pop_series[-1] - pop_series[0]) / pop_series[0]
+
+            # Extract per-node series (already shape: [ticks, nodes])
+            S_nodes = model.nodes.S  # shape (T, N)
+            E_nodes = model.nodes.E
+            I_nodes = model.nodes.I
+            R_nodes = model.nodes.R
+
+            T, N = S_nodes.shape
+            ticks = np.arange(T)
+
+            def plot():
+                # Arrange subplots in the most square grid possible
+                cols = math.ceil(math.sqrt(N))
+                rows = math.ceil(N / cols)
+
+                fig, axes = plt.subplots(rows, cols, figsize=(4 * cols, 3 * rows), sharex=True)
+                axes = axes.flatten()  # flatten to simplify indexing
+
+                for node in range(N):
+                    ax = axes[node]
+                    ax.plot(ticks, S_nodes[:, node], label="S", alpha=0.8)
+                    ax.plot(ticks, E_nodes[:, node], label="E", alpha=0.8)
+                    ax.plot(ticks, I_nodes[:, node], label="I", alpha=0.8)
+                    ax.plot(ticks, R_nodes[:, node], label="R", alpha=0.8)
+
+                    ax.set_title(f"Node {node}")
+                    ax.set_xlabel("Time (days)")
+                    ax.set_ylabel("Count")
+                    ax.legend(fontsize=8)
+
+                # Hide unused subplots
+                for ax in axes[N:]:
+                    ax.axis("off")
+
+                fig.suptitle("SEIR Dynamics per Node (SEIR + Demography)", fontsize=16)
+                plt.tight_layout()
+                plt.show()
+
+            if PLOTTING:
+                plot()
+
             assert abs(drift) < 0.15
 
             # 2. Epidemic growth
