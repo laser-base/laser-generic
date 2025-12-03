@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from laser.core.demographics import AliasedDistribution
 from laser.core.demographics import KaplanMeierEstimator
+from scipy.stats import chisquare
 from scipy.stats import ks_2samp
 
 from laser.generic.shared import sample_dobs
@@ -26,18 +27,12 @@ class TestShared(unittest.TestCase):
         # The maximum dob should be at most 0 (youngest, min noise)
         assert np.all(dobs <= 0), "Maximum dob is greater than expected."
 
-        # Perform a KS test to verify that the dob distribution matches the population pyramid
+        # Perform a chi-squared test to verify that the dob distribution matches the population pyramid
 
         # Convert dobs to ages in years (since dobs are negative ages in days)
         ages_sampled = -dobs // 365
-
-        # Perform a chi-squared test to verify that the dob distribution matches the population pyramid
-        # observed_counts = np.bincount(ages_sampled, minlength=100)
         observed = np.histogram(ages_sampled, bins=100, range=(0, 100))[0]
-
-        from scipy.stats import chisquare
-
-        chi2_stat, p_value = chisquare(observed, expected)
+        _chi2_stat, p_value = chisquare(observed, expected)
 
         assert p_value > 0.01, f"Chi-squared test failed: p-value={p_value}"
 
