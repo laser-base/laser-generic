@@ -49,7 +49,7 @@ def baseline_model():
     pop = int(1e5)
     nticks = 365
     params = get_default_parameters() | {
-        "seed": 42,
+        "prng_seed": 42,
         "nticks": nticks,
         "beta": 0.3,
         "inf_mean": 7,
@@ -74,7 +74,7 @@ def test_si_model_nobirths_flow():
     nticks = 180
     pop = int(1e5)
     scenario = pd.DataFrame(data=[["homenode", pop, "0,0"]], columns=["name", "population", "location"])
-    parameters = PropertySet({"seed": 42, "nticks": nticks, "verbose": False, "beta": 0.03})
+    parameters = PropertySet({"prng_seed": 42, "nticks": nticks, "verbose": False, "beta": 0.03})
 
     model = Model(scenario, parameters)
     model.components = [Susceptibility, Transmission]
@@ -93,7 +93,7 @@ def test_sir_nobirths_short():
     beta = 0.06
     gamma = 1 / 20
     scenario = pd.DataFrame(data=[["homenode", pop]], columns=["name", "population"])
-    parameters = PropertySet({"seed": 1, "nticks": nticks, "verbose": False, "beta": beta, "inf_mean": 1 / gamma})
+    parameters = PropertySet({"prng_seed": 1, "nticks": nticks, "verbose": False, "beta": beta, "inf_mean": 1 / gamma})
 
     model = Model(scenario, parameters)
     model.components = [Susceptibility, Infection, Transmission]
@@ -116,7 +116,7 @@ def test_si_model_with_births_short():
     beta = 0.02
     cbr = 0.03
     scenario = pd.DataFrame(data=[["homenode", pop]], columns=["name", "population"])
-    parameters = PropertySet({"seed": 123, "nticks": nticks, "verbose": False, "beta": beta, "cbr": cbr})
+    parameters = PropertySet({"prng_seed": 123, "nticks": nticks, "verbose": False, "beta": beta, "cbr": cbr})
 
     model = Model(scenario, parameters)
     model.components = [ConstantPopVitalDynamics, Susceptibility, Transmission]
@@ -138,7 +138,7 @@ def test_sei_model_with_births_short():
     cbr = 0.03
     scenario = pd.DataFrame(data=[["homenode", pop]], columns=["name", "population"])
     parameters = get_default_parameters() | {
-        "seed": 123,
+        "prng_seed": 123,
         "nticks": nticks,
         "verbose": False,
         "beta": beta,
@@ -163,7 +163,7 @@ def test_sis_model_short():
     beta = 0.05
     inf_mean = 10
     scenario = pd.DataFrame(data=[["homenode", pop]], columns=["name", "population"])
-    parameters = PropertySet({"seed": 99, "nticks": nticks, "verbose": False, "beta": beta, "inf_mean": inf_mean})
+    parameters = PropertySet({"prng_seed": 99, "nticks": nticks, "verbose": False, "beta": beta, "inf_mean": inf_mean})
 
     model = Model(scenario, parameters)
     model.components = [Susceptibility, Infectious_IS, Transmission]
@@ -182,7 +182,7 @@ def test_routine_immunization_blocks_spread():
     pop = int(1e5)
     nticks = 365 * 2
     parameters = get_default_parameters() | {
-        "seed": 321,
+        "prng_seed": 321,
         "nticks": nticks,
         "beta": 0.05,
         "cbr": 0.03,
@@ -225,7 +225,14 @@ def test_mobility_spreads_infection_across_nodes():
         }
     )
 
-    parameters = get_default_parameters() | {"seed": 42, "nticks": nticks, "verbose": False, "beta": beta, "inf_mean": 5, "inf_sigma": 2}
+    parameters = get_default_parameters() | {
+        "prng_seed": 42,
+        "nticks": nticks,
+        "verbose": False,
+        "beta": beta,
+        "inf_mean": 5,
+        "inf_sigma": 2,
+    }
 
     model = Model(scenario, parameters)
 
@@ -264,7 +271,7 @@ def test_births_only_maintain_population_stability():
     cbr = 0.03  # Crude birth rate
 
     parameters = get_default_parameters() | {
-        "seed": 888,
+        "prng_seed": 888,
         "nticks": nticks,
         "beta": 0.0,  # No transmission
         "cbr": cbr,
@@ -303,7 +310,7 @@ def test_biweekly_scalar_modulates_transmission():
 
     # Start with all 1.0
     base_params = get_default_parameters() | {
-        "seed": 999,
+        "prng_seed": 999,
         "nticks": nticks,
         "beta": base_beta,
         "inf_mean": 5,
@@ -361,7 +368,7 @@ def test_births_base_runs_minimally():
 
     params = get_default_parameters() | {
         "nticks": nticks,
-        "seed": 42,
+        "prng_seed": 42,
         "verbose": False,
     }
 
@@ -396,7 +403,7 @@ def test_births_variable_birthrate_maintains_population():
 
     params = get_default_parameters() | {
         "nticks": nticks,
-        "seed": 123,
+        "prng_seed": 123,
         "verbose": False,
         "cbr": {
             "rates": [0.02],  # constant birth rate
@@ -433,7 +440,7 @@ def test_routine_immunization_blocks_spread_compare(stable_transmission_model):
     scenario = pd.DataFrame({"name": ["home"], "population": [pop]})
     base_params = get_default_parameters() | {
         "nticks": nticks,
-        "seed": 777,
+        "prng_seed": 777,
         "beta": beta,
         "cbr": cbr,
         "inf_mean": 5,
@@ -507,7 +514,7 @@ def test_importation_keeps_infection_alive():
     nticks = 365 * 5
     params = get_default_parameters() | {
         "nticks": nticks,
-        "seed": 123,
+        "prng_seed": 123,
         "beta": 0.35,
         "inf_mean": 5,
         "cbr": 0.03,
@@ -557,7 +564,7 @@ def test_targeted_importation_hits_correct_patch():
 
     params = get_default_parameters() | {
         "nticks": nticks,
-        "seed": 222,
+        "prng_seed": 222,
         "beta": 0.05,
         "cbr": 0.03,
         "inf_mean": 5,
@@ -610,7 +617,7 @@ def test_transmission_sir_behaves_like_transmission():
 
     params = get_default_parameters() | {
         "nticks": nticks,
-        "seed": 777,
+        "prng_seed": 777,
         "beta": 0.04,
         "inf_mean": 5,
         "verbose": False,

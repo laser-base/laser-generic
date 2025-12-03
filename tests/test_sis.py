@@ -55,7 +55,7 @@ class Default(unittest.TestCase):
             grd = stdgrid(
                 M=EM,
                 N=EN,
-                node_size_km=10,
+                node_size_degs=0.08983,
                 population_fn=lambda x, y: int(np.random.uniform(10_000, 1_000_000)),
                 origin_x=-119.204167,
                 origin_y=40.786944,
@@ -142,7 +142,7 @@ class Default(unittest.TestCase):
             lin = stdgrid(
                 M=1,
                 N=PEE,
-                node_size_km=10,
+                node_size_degs=0.08983,
                 population_fn=lambda x, y: int(np.random.uniform(10_000, 1_000_000)),
                 origin_x=-119.204167,
                 origin_y=40.786944,

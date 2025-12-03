@@ -462,7 +462,8 @@ if __name__ == "__main__":
     if args.grid or run_all:
         tc.test_grid()
     if args.linear or run_all:
-        tc.test_linear()
+        tc.test_seir_linear_no_demography()
+        tc.test_seir_linear_with_demography()
 
     ts.freeze()
     print("\nTiming Summary:")

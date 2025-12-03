@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 
-from laser.generic.newutils import grid
+from laser.core.utils import grid
 
 __all__ = ["base_maps", "stdgrid"]
 
@@ -16,8 +16,22 @@ _latitude = 40.786944
 _longitude = -119.204167
 
 
-def stdgrid(M=10, N=10, node_size_km=10, population_fn=POP_FN, origin_x=_longitude, origin_y=_latitude):
-    return grid(M, N, node_size_km, population_fn, origin_x, origin_y)
+def stdgrid(M=10, N=10, node_size_degs=0.08983, population_fn=POP_FN, origin_x=_longitude, origin_y=_latitude):
+    """
+    Create a standard grid for testing.
+
+    Args:
+        M (int): Number of rows (south-north).
+        N (int): Number of columns (east-west).
+        node_size_degs (float): Size of each cell in decimal degrees (default 0.08983 ≈ 10km at the equator).
+        population_fn (callable): Function(row, col) returning population for a cell (default [10_000, 1_000_000)).
+        origin_x (float): longitude of the origin in decimal degrees (bottom-left corner) -180 <= origin_x < 180. (default Black Rock Desert, NV)
+        origin_y (float): latitude of the origin in decimal degrees (bottom-left corner) -90 <= origin_y < 90. (default Black Rock Desert, NV)
+
+    Returns:
+        GeoDataFrame: Columns are nodeid, population, geometry.
+    """
+    return grid(M, N, node_size_degs, population_fn, origin_x, origin_y)
 
 
 try:

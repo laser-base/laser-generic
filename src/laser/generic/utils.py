@@ -195,7 +195,7 @@ def get_default_parameters() -> PropertySet:
             "importation_period": 30,
             "importation_start": 0,
             "importation_end": 365 * 2,
-            "seed": 123,
+            "prng_seed": 314159265,
             "verbose": False,
         }
     )

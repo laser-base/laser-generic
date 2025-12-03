@@ -5,9 +5,8 @@ import geopandas as gpd
 import numpy as np
 from pyproj import Transformer
 from shapely.geometry import Point
-from shapely.geometry import Polygon
 
-__all__ = ["TimingStats", "ValuesMap", "estimate_capacity", "get_centroids", "grid"]
+__all__ = ["TimingStats", "ValuesMap", "get_centroids"]
 
 
 class ValuesMap:
@@ -150,82 +149,6 @@ class ValuesMap:
 
     def __getitem__(self, access):
         return self._data[access]
-
-
-def grid(M=5, N=5, node_size_km=10, population_fn=None, origin_x=0, origin_y=0) -> gpd.GeoDataFrame:
-    """
-    Create an MxN grid of cells anchored at (0, 0) with populations and geometries.
-
-    Args:
-        M (int): Number of rows (north-south).
-        N (int): Number of columns (east-west).
-        node_size_km (float): Size of each cell in kilometers (default 10).
-        population_fn (callable): Function returning population for a cell.
-        origin_x (float): longitude of the origin (bottom-left corner) -180 <= origin_x < 180.
-        origin_y (float): latitude of the origin (bottom-left corner) -90 <= origin_y < 90.
-
-    Returns:
-        GeoDataFrame: Columns are nodeid, population, geometry.
-    """
-    if population_fn is None:
-
-        def population_fn(x: int, y: int) -> int:
-            return int(np.random.uniform(1000, 100000))
-
-    # Convert node_size_km from kilometers to degrees (approximate)
-    km_per_degree = 111.320
-    node_size_deg = node_size_km / km_per_degree
-
-    cells = []
-    nodeid = 0
-    for i in range(M):
-        for j in range(N):
-            x0 = origin_x + j * node_size_deg
-            y0 = origin_y + i * node_size_deg
-            x1 = x0 + node_size_deg
-            y1 = y0 + node_size_deg
-            poly = Polygon(
-                [
-                    (x0, y0),  # NW
-                    (x1, y0),  # NE
-                    (x1, y1),  # SE
-                    (x0, y1),  # SW
-                    (x0, y0),  # Close polygon
-                ]
-            )
-            cells.append({"nodeid": nodeid, "population": population_fn(j, i), "geometry": poly})
-            nodeid += 1
-
-    gdf = gpd.GeoDataFrame(cells, columns=["nodeid", "population", "geometry"], crs="EPSG:4326")
-
-    return gdf
-
-
-def estimate_capacity(birthrates: np.ndarray, initial_pop: np.ndarray) -> np.ndarray:
-    """
-    Estimate the carrying capacity of each node given birthrates and initial population.
-
-    Args:
-        birthrates (np.ndarray): 2D array of shape (nticks, nnodes) with CBR (birthrates per 1000 individuals per year) in effect at each tick.
-        initial_pop (np.ndarray): 1D array of shape (nnodes,) with initial population per node.
-
-    Returns:
-        np.ndarray: 1D array of shape (nnodes,) with estimated final population count per node.
-    """
-    nticks, nnodes = birthrates.shape
-    assert len(initial_pop) == nnodes, "initial_pop length must match number of nodes in birthrates_map"
-    estimate = initial_pop.copy()
-
-    for t in range(nticks):
-        # Poisson draw for births per patch
-
-        # naive = rates[t] / 1000 / 365
-        # _ = np.random.poisson(naive * estimate)
-        accurate = (1.0 + birthrates[t] / 1000) ** (1.0 / 365) - 1.0
-        delta = np.random.poisson(accurate * estimate)
-        estimate += delta
-
-    return estimate
 
 
 class TimingContext:
