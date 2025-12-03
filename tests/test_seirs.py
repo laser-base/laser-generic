@@ -19,7 +19,7 @@ from laser.generic.newutils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
 from tests.utils import stdgrid
 
-PLOTTING = True
+PLOTTING = False
 VERBOSE = False
 EM = 10
 EN = 10
