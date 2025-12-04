@@ -19,7 +19,7 @@ from laser.generic.newutils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
 from tests.utils import stdgrid
 
-PLOTTING = True
+PLOTTING = False
 VERBOSE = False
 EM = 10
 EN = 10
@@ -76,16 +76,6 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
 
         model.validating = VALIDATING
 
-        # Extract per-node series (already shape: [ticks, nodes])
-        S_nodes = model.nodes.S  # shape (T, N)
-        E_nodes = model.nodes.E
-        I_nodes = model.nodes.I
-        R_nodes = model.nodes.R
-
-        T, N = S_nodes.shape
-        ticks = np.arange(T)
-
-
     return model
 
 
@@ -121,7 +111,7 @@ class Default(unittest.TestCase):
             model.run("SEIRS Single Node")
 
             # Extract node-level arrays
-            S_nodes = model.nodes.S        # shape (T, N)
+            S_nodes = model.nodes.S  # shape (T, N)
             E_nodes = model.nodes.E
             I_nodes = model.nodes.I
             R_nodes = model.nodes.R
