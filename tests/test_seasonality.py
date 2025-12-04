@@ -109,10 +109,6 @@ class TestSeasonalForcing(unittest.TestCase):
         baseline_rate = calculate_infection_rate(model)
         assert baseline_rate > 0, "Baseline infection rate should be positive"
 
-        # Store for comparison (would use in actual testing framework)
-        self.baseline_si_rate = baseline_rate
-        self.baseline_si_final = final_I
-
         return
 
     def test_si_attenuated_seasonality(self):

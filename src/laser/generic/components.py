@@ -1246,10 +1246,7 @@ class TransmissionSIX:
     def step(self, tick: int) -> None:
         ft = self.model.nodes.forces[tick]
 
-        N = np.zeros_like(self.model.nodes.S[tick])
-        for state in self.model.states:
-            if (prop := getattr(self.model.nodes, state, None)) is not None:
-                N += prop[tick]
+        N = _get_total_population(self, tick)
 
         ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
         transfer = ft[:, None] * self.model.network
@@ -1401,10 +1398,7 @@ class TransmissionSI:
     def step(self, tick: int) -> None:
         ft = self.model.nodes.forces[tick]
 
-        N = np.zeros_like(self.model.nodes.S[tick])
-        for state in self.model.states:
-            if (prop := getattr(self.model.nodes, state, None)) is not None:
-                N += prop[tick]
+        N = _get_total_population(self, tick)
 
         ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
         transfer = ft[:, None] * self.model.network
@@ -1562,10 +1556,7 @@ class TransmissionSE:
     def step(self, tick: int) -> None:
         ft = self.model.nodes.forces[tick]
 
-        N = np.zeros_like(self.model.nodes.S[tick])
-        for state in self.model.states:
-            if (prop := getattr(self.model.nodes, state, None)) is not None:
-                N += prop[tick]
+        N = _get_total_population(self, tick)
 
         ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
         transfer = ft[:, None] * self.model.network
@@ -1604,6 +1595,38 @@ class TransmissionSE:
         plt.show()
 
         return
+
+
+def _get_total_population(component, tick):
+    """
+    Helper to compute total population N at a given tick across all states.
+
+    States, by default in laser.generic.Model are ['S', 'E', 'I', 'R'], but can be customized per component.
+    E.g., a component may only care about ['S', 'I'] states or a component may add additional states like 'V' for vaccinated.
+
+    Checks to see if the component has a 'states' attribute; if not, it uses the model's states.
+    Requires the component to have a model property with nodes LaserFrame that contain current state counts.
+
+    Args:
+        component: The model component containing the model and states.
+        tick: The current time tick.
+
+    Returns:
+        np.ndarray: Total population, shape = (#nodes,) array at the given tick.
+    """
+
+    states = component.states if hasattr(component, "states") else component.model.states
+
+    # Use susceptible property as basis for N shape and dtype
+    # Assumes that model at least has a susceptible property "S"
+    N = np.zeros_like(component.model.nodes.S[tick])
+
+    for state in states:
+        # Test for state, e.g., might not have 'E' or 'R' states
+        if (prop := getattr(component.model.nodes, state, None)) is not None:
+            N += prop[tick]
+
+    return N
 
 
 ## Validation helper functions
