@@ -349,7 +349,7 @@ class Default(unittest.TestCase):
                 pyramid=pyramid,
                 survival=survival,
                 nticks=NTICKS * 1,
-                beta=0.25
+                beta=0.25,
             )
             model.run("SEIR Linear (with demography)")
 
