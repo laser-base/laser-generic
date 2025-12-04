@@ -14,3 +14,11 @@ Set up seasonality as expected, 1.0, for one node and 0.5 for the second node, a
 spread of contagion. Verify that in each case the infections in the attenuated node
 increase more slowly than the baseline which increases more slowly than the amplified
 node. Do not modify or remove any existing code or tests.
+
+Using the example in seasonality.ipynb as an example, create temporally varying
+"seasonality" tests in test_seasonality.py for the SI, SIR, and SEIR models. R0
+should be brought down between 1 and 2 so the outbreaks take longer to play out
+and temporal transmission factors can come to bear. Determine when the total infectious
+count (see sum of newly_infected) reaches 25% of its total and 75% of its total
+and set the "seasonal" forcing to decline from 1.0 to 0.0 during that timeframe.
+Do not modify or remove any existing code or tests.

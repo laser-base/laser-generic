@@ -704,6 +704,251 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     # ========================================================================
+    # Temporally Varying Seasonality Tests
+    # ========================================================================
+
+    def test_si_temporal_seasonality(self):
+        """Test SI model with temporally declining seasonality during outbreak."""
+        # Use lower beta and longer simulation to see temporal effects
+        scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population - 100
+        scenario["I"] = 100
+
+        # Lower R0 (between 1 and 2) for slower outbreak
+        beta = 0.2  # With SI model, this gives gradual spread
+        long_nticks = 1000  # Longer simulation to see full outbreak
+
+        params = PropertySet({"nticks": long_nticks, "beta": beta})
+        model = Model(scenario, params)
+
+        # Start with seasonality = 1.0, will update after first run
+        temp_seasonality = ValuesMap.from_scalar(1.0, 1, long_nticks)
+
+        model.components = [
+            SI.Susceptible(model),
+            SI.Infectious(model),
+            TransmissionSIX(model, seasonality=temp_seasonality),
+        ]
+
+        # First run to determine when cumulative infections reach 25% and 75%
+        model.run("SI Temporal - Initial Run")
+
+        # Calculate cumulative new infections (change in I + change in recovered if we had it)
+        # For SI model, cumulative infections = current I count
+        cumulative_infections = model.nodes.I[:, 0]
+        total_infections = cumulative_infections[-1]
+
+        # Find when we reach 25% and 75% of total infections
+        threshold_25 = total_infections * 0.25
+        threshold_75 = total_infections * 0.75
+
+        time_25 = np.argmax(cumulative_infections >= threshold_25)
+        time_75 = np.argmax(cumulative_infections >= threshold_75)
+
+        # Create declining seasonality between these times
+        seasonality_array = np.ones(long_nticks, dtype=np.float32)
+        decline_length = time_75 - time_25
+        if decline_length > 0:
+            seasonality_array[time_25:time_75] = np.linspace(1.0, 0.0, decline_length)
+            seasonality_array[time_75:] = 0.0
+
+        seasonality = ValuesMap.from_timeseries(seasonality_array, 1)
+
+        # Second run with declining seasonality
+        model2 = Model(scenario, params)
+        model2.components = [
+            SI.Susceptible(model2),
+            SI.Infectious(model2),
+            TransmissionSIX(model2, seasonality=seasonality),
+        ]
+
+        model2.run("SI Temporal - With Declining Seasonality")
+
+        # Verify that declining seasonality slowed the outbreak
+        final_I_baseline = model.nodes.I[-1, 0]
+        final_I_seasonal = model2.nodes.I[-1, 0]
+
+        # With declining transmission, final infections should be lower
+        assert final_I_seasonal < final_I_baseline, (
+            f"Declining seasonality should reduce final infections: seasonal={final_I_seasonal}, baseline={final_I_baseline}"
+        )
+
+        # Verify that the decline period shows reduced growth
+        growth_baseline = model.nodes.I[time_75, 0] - model.nodes.I[time_25, 0]
+        growth_seasonal = model2.nodes.I[time_75, 0] - model2.nodes.I[time_25, 0]
+
+        assert growth_seasonal < growth_baseline, (
+            f"Growth during decline period should be reduced: seasonal={growth_seasonal}, baseline={growth_baseline}"
+        )
+
+        return
+
+    def test_sir_temporal_seasonality(self):
+        """Test SIR model with temporally declining seasonality during outbreak."""
+        # Use R0 between 1 and 2 for slower outbreak
+        scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population - 100
+        scenario["I"] = 100
+        scenario["R"] = 0
+
+        beta = 0.2  # Lower beta for R0 ~ 1.4 (0.2 * 7 = 1.4)
+        inf_mean = 7.0
+        long_nticks = 1500
+
+        params = PropertySet({"nticks": long_nticks, "beta": beta})
+        infdurdist = dists.normal(loc=inf_mean, scale=2.0)
+
+        # First run without seasonality to determine timing
+        model = Model(scenario, params)
+        model.components = [
+            SIR.Susceptible(model),
+            SIR.Infectious(model, infdurdist),
+            SIR.Recovered(model),
+            TransmissionSI(model, infdurdist, seasonality=None),
+        ]
+
+        model.run("SIR Temporal - Initial Run")
+
+        # Calculate cumulative infections (sum of I + R over time)
+        cumulative_infections = model.nodes.I[:, 0] + model.nodes.R[:, 0]
+        total_infections = cumulative_infections[-1]
+
+        threshold_25 = total_infections * 0.25
+        threshold_75 = total_infections * 0.75
+
+        time_25 = np.argmax(cumulative_infections >= threshold_25)
+        time_75 = np.argmax(cumulative_infections >= threshold_75)
+
+        # Create declining seasonality
+        seasonality_array = np.ones(long_nticks, dtype=np.float32)
+        decline_length = time_75 - time_25
+        if decline_length > 0:
+            seasonality_array[time_25:time_75] = np.linspace(1.0, 0.0, decline_length)
+            seasonality_array[time_75:] = 0.0
+
+        seasonality = ValuesMap.from_timeseries(seasonality_array, 1)
+
+        # Second run with declining seasonality
+        model2 = Model(scenario, params)
+        model2.components = [
+            SIR.Susceptible(model2),
+            SIR.Infectious(model2, infdurdist),
+            SIR.Recovered(model2),
+            TransmissionSI(model2, infdurdist, seasonality=seasonality),
+        ]
+
+        model2.run("SIR Temporal - With Declining Seasonality")
+
+        # Verify that declining seasonality reduced final attack rate
+        final_ar_baseline = model.nodes.R[-1, 0] / POPULATION
+        final_ar_seasonal = model2.nodes.R[-1, 0] / POPULATION
+
+        assert final_ar_seasonal < final_ar_baseline, (
+            f"Declining seasonality should reduce final attack rate: seasonal={final_ar_seasonal:.4f}, baseline={final_ar_baseline:.4f}"
+        )
+
+        # Check cumulative infections at time_75
+        cum_inf_baseline_75 = cumulative_infections[time_75]
+        cum_inf_seasonal_75 = model2.nodes.I[time_75, 0] + model2.nodes.R[time_75, 0]
+
+        assert cum_inf_seasonal_75 < cum_inf_baseline_75, (
+            f"Cumulative infections at 75% mark should be lower with declining seasonality: "
+            f"seasonal={cum_inf_seasonal_75}, baseline={cum_inf_baseline_75}"
+        )
+
+        return
+
+    def test_seir_temporal_seasonality(self):
+        """Test SEIR model with temporally declining seasonality during outbreak."""
+        # Use R0 between 1 and 2 for slower outbreak
+        scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population - 100
+        scenario["E"] = 0
+        scenario["I"] = 100
+        scenario["R"] = 0
+
+        beta = 0.2  # Lower beta for R0 ~ 1.4 (0.2 * 7 = 1.4)
+        exp_mean = 5.0
+        inf_mean = 7.0
+        long_nticks = 1500
+
+        params = PropertySet({"nticks": long_nticks, "beta": beta})
+        expdurdist = dists.normal(loc=exp_mean, scale=1.0)
+        infdurdist = dists.normal(loc=inf_mean, scale=2.0)
+
+        # First run without seasonality to determine timing
+        model = Model(scenario, params)
+        model.components = [
+            SEIR.Susceptible(model),
+            SEIR.Exposed(model, expdurdist, infdurdist),
+            SEIR.Infectious(model, infdurdist),
+            SEIR.Recovered(model),
+            TransmissionSE(model, expdurdist, seasonality=None),
+        ]
+
+        model.run("SEIR Temporal - Initial Run")
+
+        # Calculate cumulative infections (E + I + R over time)
+        cumulative_infections = model.nodes.E[:, 0] + model.nodes.I[:, 0] + model.nodes.R[:, 0]
+        total_infections = cumulative_infections[-1]
+
+        threshold_25 = total_infections * 0.25
+        threshold_75 = total_infections * 0.75
+
+        time_25 = np.argmax(cumulative_infections >= threshold_25)
+        time_75 = np.argmax(cumulative_infections >= threshold_75)
+
+        # Create declining seasonality
+        seasonality_array = np.ones(long_nticks, dtype=np.float32)
+        decline_length = time_75 - time_25
+        if decline_length > 0:
+            seasonality_array[time_25:time_75] = np.linspace(1.0, 0.0, decline_length)
+            seasonality_array[time_75:] = 0.0
+
+        seasonality = ValuesMap.from_timeseries(seasonality_array, 1)
+
+        # Second run with declining seasonality
+        model2 = Model(scenario, params)
+        model2.components = [
+            SEIR.Susceptible(model2),
+            SEIR.Exposed(model2, expdurdist, infdurdist),
+            SEIR.Infectious(model2, infdurdist),
+            SEIR.Recovered(model2),
+            TransmissionSE(model2, expdurdist, seasonality=seasonality),
+        ]
+
+        model2.run("SEIR Temporal - With Declining Seasonality")
+
+        # Verify that declining seasonality reduced final attack rate
+        final_ar_baseline = model.nodes.R[-1, 0] / POPULATION
+        final_ar_seasonal = model2.nodes.R[-1, 0] / POPULATION
+
+        assert final_ar_seasonal < final_ar_baseline, (
+            f"Declining seasonality should reduce final attack rate: seasonal={final_ar_seasonal:.4f}, baseline={final_ar_baseline:.4f}"
+        )
+
+        # Verify E peaks before I in the seasonal model (if epidemic actually grows)
+        E_peak_seasonal = np.argmax(model2.nodes.E[:, 0])
+        I_peak_seasonal = np.argmax(model2.nodes.I[:, 0])
+
+        # Only check if I_peak is not at the start (epidemic actually develops)
+        if I_peak_seasonal > 10:
+            assert E_peak_seasonal < I_peak_seasonal, (
+                f"E should peak before I even with declining seasonality: E_peak={E_peak_seasonal}, I_peak={I_peak_seasonal}"
+            )
+
+        # Verify reduced cumulative infections at time_75
+        cum_inf_baseline_75 = cumulative_infections[time_75]
+        cum_inf_seasonal_75 = model2.nodes.E[time_75, 0] + model2.nodes.I[time_75, 0] + model2.nodes.R[time_75, 0]
+
+        assert cum_inf_seasonal_75 < cum_inf_baseline_75, (
+            f"Cumulative infections at 75% mark should be lower with declining seasonality: "
+            f"seasonal={cum_inf_seasonal_75}, baseline={cum_inf_baseline_75}"
+        )
+
+        return
+
+    # ========================================================================
     # Helper Methods
     # ========================================================================
 
