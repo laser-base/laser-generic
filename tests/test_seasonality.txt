@@ -1,0 +1,8 @@
+Make a plan for a comprehensive set of tests of transmission with seasonal forcing
+using the seasonality argument of TransmissionSIX (SI model), TransmissionSI (SIR model),
+and TransmissionSE (SEIR model). For each model run with a reasonable beta and no
+seasonality (seasonality = None). Then, for each model run with seasonality attenuating
+the transmission to one half and with seasonality amplifying the transmission to
+twice the stated rate. Compare the results to validate the effect of seasonality.
+For the SIR and SEIR model use the kermack-mckendrick values to validate. For the
+SI model, check the rate of infection to validate the effect of seasonality.
