@@ -33,7 +33,7 @@ INFECTIOUS_DURATION_MEAN = 7.0
 WANING_DURATION_MEAN = 30.0
 
 
-def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None, pyramid=None, survival=None, nticks=NTICKS):
+def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None, pyramid=None, survival=None, nticks=NTICKS, beta=None):
     """
     Helper: Construct an SEIRS model with configurable demography and waning immunity.
 
@@ -48,7 +48,8 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
     scenario["S"] -= init_recovered
     scenario["R"] = init_recovered
 
-    beta = R0 / INFECTIOUS_DURATION_MEAN
+    if not beta:
+        beta = R0 / INFECTIOUS_DURATION_MEAN
     params = PropertySet({"nticks": nticks, "beta": beta})
 
     with ts.start("Model Initialization"):
@@ -104,25 +105,76 @@ class Default(unittest.TestCase):
           • Re-infections occur after R wanes (R→S flow visible).
           • Population constant within 0.01%.
         """
+
         with ts.start("test_single_node"):
-            model = build_model(1, 1, lambda x, y: 100_000, init_infected=10)
+            model = build_model(1, 1, lambda x, y: 100_000, init_infected=10, beta=0.45)
             model.run("SEIRS Single Node")
 
-            E_series = model.nodes.E.sum(axis=1)
-            I_series = model.nodes.I.sum(axis=1)
-            R_series = model.nodes.R.sum(axis=1)
-            S_series = model.nodes.S.sum(axis=1)
+            # Extract node-level arrays
+            S_nodes = model.nodes.S  # shape (T, N)
+            E_nodes = model.nodes.E
+            I_nodes = model.nodes.I
+            R_nodes = model.nodes.R
 
+            # Aggregate time series
+            S_series = S_nodes.sum(axis=1)
+            E_series = E_nodes.sum(axis=1)
+            I_series = I_nodes.sum(axis=1)
+            R_series = R_nodes.sum(axis=1)
+
+            T, N = S_nodes.shape
+            ticks = np.arange(T)
+
+            # -------------------------
+            # Assertions for SEIRS logic
+            # -------------------------
             assert np.argmax(E_series) < np.argmax(I_series), "E should peak before I."
             assert np.argmax(I_series) < np.argmax(R_series), "I should peak before R."
             assert S_series[-1] < S_series[0], "S decreased initially due to infection."
-            # assert R_series[-1] < R_series.max(), "Some waning expected (R decreases over time)."
-            # Some waning must happen somewhere in the time series
             assert np.any(np.diff(R_series) < 0), "No waning evident: R(t) never showed any decrease."
 
-            N0 = (model.nodes.S[0] + model.nodes.E[0] + model.nodes.I[0] + model.nodes.R[0]).sum()
-            NT = (model.nodes.S[-1] + model.nodes.E[-1] + model.nodes.I[-1] + model.nodes.R[-1]).sum()
+            N0 = (S_nodes[0] + E_nodes[0] + I_nodes[0] + R_nodes[0]).sum()
+            NT = (S_nodes[-1] + E_nodes[-1] + I_nodes[-1] + R_nodes[-1]).sum()
             assert abs(NT - N0) / N0 < 1e-4, "Population not conserved."
+
+            # -------------------------
+            # Plotting function (fixed)
+            # -------------------------
+            def plot():
+                # Make variables available inside the function
+                nonlocal S_nodes, E_nodes, I_nodes, R_nodes, ticks, N
+
+                # Optimal subplot grid
+                cols = math.ceil(math.sqrt(N))
+                rows = math.ceil(N / cols)
+
+                fig, axes = plt.subplots(rows, cols, figsize=(4 * cols, 3 * rows), sharex=True)
+                if isinstance(axes, np.ndarray):
+                    axes = axes.flatten()
+                else:
+                    axes = np.array([axes])
+                for node in range(N):
+                    ax = axes[node]
+                    ax.plot(ticks, S_nodes[:, node], label="S", alpha=0.8)
+                    ax.plot(ticks, E_nodes[:, node], label="E", alpha=0.8)
+                    ax.plot(ticks, I_nodes[:, node], label="I", alpha=0.8)
+                    ax.plot(ticks, R_nodes[:, node], label="R", alpha=0.8)
+
+                    ax.set_title(f"Node {node}")
+                    ax.set_xlabel("Time (days)")
+                    ax.set_ylabel("Count")
+                    ax.legend(fontsize=8)
+
+                # Hide unused subplots (only matters if N < grid size)
+                for ax in axes[N:]:
+                    ax.axis("off")
+
+                fig.suptitle("SEIRS Dynamics per Node", fontsize=16)
+                plt.tight_layout()
+                plt.show()
+
+            if PLOTTING:
+                plot()
 
     def test_grid(self):
         """
