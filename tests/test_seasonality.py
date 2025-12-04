@@ -21,7 +21,11 @@ from laser.generic.components import TransmissionSE
 from laser.generic.components import TransmissionSI
 from laser.generic.components import TransmissionSIX
 from laser.generic.newutils import ValuesMap
-from tests.utils import stdgrid
+
+try:
+    from tests.utils import stdgrid
+except ImportError:
+    from utils import stdgrid
 
 # Shared test parameters
 NTICKS = 730  # 2 years to observe seasonal patterns
@@ -507,6 +511,199 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     # ========================================================================
+    # Spatially Varying Seasonality Tests
+    # ========================================================================
+
+    def test_si_spatial_seasonality(self):
+        """Test SI model with spatially varying seasonality across three nodes."""
+        # Create 3-node scenario with no spatial transmission
+        scenario = stdgrid(M=1, N=3, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population - 1000
+        scenario["I"] = 1000
+
+        # Disable spatial transmission by setting gravity_k to 0
+        params = PropertySet({"nticks": NTICKS, "beta": 0.5, "gravity_k": 0.0})
+        model = Model(scenario, params)
+
+        # Create spatially varying seasonality: [0.5, 1.0, 2.0]
+        seasonality_values = np.array([0.5, 1.0, 2.0], dtype=np.float32)
+        seasonality = ValuesMap.from_nodes(seasonality_values, NTICKS)
+
+        model.components = [
+            SI.Susceptible(model),
+            SI.Infectious(model),
+            TransmissionSIX(model, seasonality=seasonality),
+        ]
+
+        model.run("SI Spatial Seasonality")
+
+        # Calculate time to reach 50% prevalence for each node
+        half_pop = POPULATION / 2
+        half_times = []
+        for node_idx in range(3):
+            I_series = model.nodes.I[:, node_idx]
+            half_time = np.argmax(I_series >= half_pop)
+            half_times.append(half_time)
+
+        attenuated_time, baseline_time, amplified_time = half_times
+
+        # Attenuated node should reach 50% later than baseline
+        assert attenuated_time > baseline_time, (
+            f"Attenuated node (0.5x) should reach 50% later (day {attenuated_time}) than baseline (day {baseline_time})"
+        )
+
+        # Amplified node should reach 50% earlier than baseline
+        assert amplified_time < baseline_time, (
+            f"Amplified node (2.0x) should reach 50% earlier (day {amplified_time}) than baseline (day {baseline_time})"
+        )
+
+        # Verify ordering: amplified < baseline < attenuated
+        assert amplified_time < baseline_time < attenuated_time, (
+            f"Time ordering should be amplified ({amplified_time}) < baseline ({baseline_time}) < attenuated ({attenuated_time})"
+        )
+
+        return
+
+    def test_sir_spatial_seasonality(self):
+        """Test SIR model with spatially varying seasonality across three nodes."""
+        # Create 3-node scenario with no spatial transmission
+        scenario = stdgrid(M=1, N=3, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population - 500
+        scenario["I"] = 500
+        scenario["R"] = 0
+
+        beta = 0.25
+        inf_mean = 7.0
+
+        # Disable spatial transmission by setting gravity_k to 0
+        params = PropertySet({"nticks": NTICKS, "beta": beta, "gravity_k": 0.0})
+        model = Model(scenario, params)
+
+        # Create spatially varying seasonality: [0.5, 1.0, 2.0]
+        seasonality_values = np.array([0.5, 1.0, 2.0], dtype=np.float32)
+        seasonality = ValuesMap.from_nodes(seasonality_values, NTICKS)
+
+        infdurdist = dists.normal(loc=inf_mean, scale=2.0)
+
+        model.components = [
+            SIR.Susceptible(model),
+            SIR.Infectious(model, infdurdist),
+            SIR.Recovered(model),
+            TransmissionSI(model, infdurdist, seasonality=seasonality),
+        ]
+
+        model.run("SIR Spatial Seasonality")
+
+        # Calculate peak times for each node
+        peak_times = []
+        for node_idx in range(3):
+            I_series = model.nodes.I[:, node_idx]
+            peak_time = np.argmax(I_series)
+            peak_times.append(peak_time)
+
+        attenuated_peak, baseline_peak, amplified_peak = peak_times
+
+        # With effective R0 = 0.875 (0.5 * 0.25 * 7), attenuated node should have early, low peak
+        # Baseline R0 = 1.75, amplified R0 = 3.5 should have earlier peaks due to faster spread
+        assert amplified_peak < baseline_peak, (
+            f"Amplified node peak (day {amplified_peak}) should occur before baseline peak (day {baseline_peak})"
+        )
+
+        # Calculate final attack rates
+        attack_rates = []
+        for node_idx in range(3):
+            attack_rate = model.nodes.R[-1, node_idx] / POPULATION
+            attack_rates.append(attack_rate)
+
+        attenuated_ar, baseline_ar, amplified_ar = attack_rates
+
+        # Amplified should have higher attack rate than baseline
+        assert amplified_ar > baseline_ar, f"Amplified node attack rate ({amplified_ar:.4f}) should exceed baseline ({baseline_ar:.4f})"
+
+        # Attenuated with R0 < 1 should have much lower attack rate
+        assert attenuated_ar < baseline_ar, (
+            f"Attenuated node attack rate ({attenuated_ar:.4f}) should be less than baseline ({baseline_ar:.4f})"
+        )
+
+        return
+
+    def test_seir_spatial_seasonality(self):
+        """Test SEIR model with spatially varying seasonality across three nodes."""
+        # Create 3-node scenario with no spatial transmission
+        scenario = stdgrid(M=1, N=3, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population - 500
+        scenario["E"] = 0
+        scenario["I"] = 500
+        scenario["R"] = 0
+
+        beta = 0.25
+        exp_mean = 5.0
+        inf_mean = 7.0
+
+        # Disable spatial transmission by setting gravity_k to 0
+        params = PropertySet({"nticks": NTICKS, "beta": beta, "gravity_k": 0.0})
+        model = Model(scenario, params)
+
+        # Create spatially varying seasonality: [0.5, 1.0, 2.0]
+        seasonality_values = np.array([0.5, 1.0, 2.0], dtype=np.float32)
+        seasonality = ValuesMap.from_nodes(seasonality_values, NTICKS)
+
+        expdurdist = dists.normal(loc=exp_mean, scale=1.0)
+        infdurdist = dists.normal(loc=inf_mean, scale=2.0)
+
+        model.components = [
+            SEIR.Susceptible(model),
+            SEIR.Exposed(model, expdurdist, infdurdist),
+            SEIR.Infectious(model, infdurdist),
+            SEIR.Recovered(model),
+            TransmissionSE(model, expdurdist, seasonality=seasonality),
+        ]
+
+        model.run("SEIR Spatial Seasonality")
+
+        # For nodes with R0 > 1 (baseline and amplified), verify E peaks before I
+        # Skip attenuated node (node 0) where epidemic dies out immediately
+        for node_idx in [1, 2]:  # Baseline and amplified nodes only
+            E_series = model.nodes.E[:, node_idx]
+            I_series = model.nodes.I[:, node_idx]
+            E_peak_time = np.argmax(E_series)
+            I_peak_time = np.argmax(I_series)
+
+            assert E_peak_time < I_peak_time, f"Node {node_idx}: E should peak (day {E_peak_time}) before I (day {I_peak_time})"
+
+        # Calculate I peak times for each node
+        I_peak_times = []
+        for node_idx in range(3):
+            I_series = model.nodes.I[:, node_idx]
+            peak_time = np.argmax(I_series)
+            I_peak_times.append(peak_time)
+
+        attenuated_peak, baseline_peak, amplified_peak = I_peak_times
+
+        # Amplified node should peak earlier than baseline
+        assert amplified_peak < baseline_peak, (
+            f"Amplified node I peak (day {amplified_peak}) should occur before baseline peak (day {baseline_peak})"
+        )
+
+        # Calculate final attack rates
+        attack_rates = []
+        for node_idx in range(3):
+            attack_rate = model.nodes.R[-1, node_idx] / POPULATION
+            attack_rates.append(attack_rate)
+
+        attenuated_ar, baseline_ar, amplified_ar = attack_rates
+
+        # Amplified should have higher attack rate than baseline
+        assert amplified_ar > baseline_ar, f"Amplified node attack rate ({amplified_ar:.4f}) should exceed baseline ({baseline_ar:.4f})"
+
+        # Attenuated with R0 < 1 should have much lower attack rate
+        assert attenuated_ar < baseline_ar, (
+            f"Attenuated node attack rate ({attenuated_ar:.4f}) should be less than baseline ({baseline_ar:.4f})"
+        )
+
+        return
+
+    # ========================================================================
     # Helper Methods
     # ========================================================================
 
@@ -527,6 +724,31 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.run("SI Baseline")
         return model
+
+
+def plot_model(model):
+    """Utility to plot model compartments for debugging."""
+    import matplotlib.pyplot as plt
+
+    plt.figure(figsize=(12, 9))
+
+    if hasattr(model.nodes, "S"):
+        plt.plot(model.nodes.S.sum(axis=1), label="Susceptible")
+    if hasattr(model.nodes, "E"):
+        plt.plot(model.nodes.E.sum(axis=1), label="Exposed")
+    if hasattr(model.nodes, "I"):
+        plt.plot(model.nodes.I.sum(axis=1), label="Infectious")
+    if hasattr(model.nodes, "R"):
+        plt.plot(model.nodes.R.sum(axis=1), label="Recovered")
+
+    plt.xlabel("Time (days)")
+    plt.ylabel("Population")
+    plt.title("Model Compartments Over Time")
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+    return
 
 
 if __name__ == "__main__":
