@@ -971,20 +971,24 @@ class TestSeasonalForcing(unittest.TestCase):
         return model
 
 
-def plot_model(model):
+def plot_models(*models):
     """Utility to plot model compartments for debugging."""
     import matplotlib.pyplot as plt
 
     plt.figure(figsize=(12, 9))
 
-    if hasattr(model.nodes, "S"):
-        plt.plot(model.nodes.S.sum(axis=1), label="Susceptible")
-    if hasattr(model.nodes, "E"):
-        plt.plot(model.nodes.E.sum(axis=1), label="Exposed")
-    if hasattr(model.nodes, "I"):
-        plt.plot(model.nodes.I.sum(axis=1), label="Infectious")
-    if hasattr(model.nodes, "R"):
-        plt.plot(model.nodes.R.sum(axis=1), label="Recovered")
+    traces = [("S", "Susceptible", "blue"), ("E", "Exposed", "orange"), ("I", "Infectious", "red"), ("R", "Recovered", "green")]
+    styles = ["-", "--", "-.", ":"]
+
+    for i, model in enumerate(models):
+        for comp, label, color in traces:
+            if hasattr(model.nodes, comp):
+                plt.plot(
+                    getattr(model.nodes, comp).sum(axis=1),
+                    label=f"{label} (Model {i + 1})",
+                    color=color,
+                    linestyle=styles[i % len(styles)],
+                )
 
     plt.xlabel("Time (days)")
     plt.ylabel("Population")
