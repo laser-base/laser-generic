@@ -12,7 +12,7 @@ from laser.core import PropertySet
 from laser.generic import SI
 from laser.generic import Model
 from laser.generic.newutils import ValuesMap
-from laser.generic.newutils import grid
+from laser.core.utils import grid
 from laser.generic.vitaldynamics import ConstantPopVitalDynamics
 from tests.utils import base_maps
 from tests.utils import stdgrid
@@ -241,10 +241,10 @@ class Default(unittest.TestCase):
         with ts.start("test_constant_pop"):
             pop = 1e6
             init_inf = 10
-            scenario = grid(M=1, N=1, node_size_km=10, population_fn=lambda x, y: pop)
+            scenario = grid(M=1, N=1, node_size_degs=0.08983, population_fn=lambda x, y: pop)
             scenario["S"] = scenario.population - init_inf
             scenario["I"] = init_inf
-            parameters = PropertySet({"seed": 2, "nticks": NTICKS, "verbose": True, "beta": 0.04, "cbr": 400})
+            parameters = PropertySet({"prng_seed": 2, "nticks": NTICKS, "verbose": True, "beta": 0.04, "cbr": 400})
 
             birthrate_map = ValuesMap.from_scalar(parameters.cbr, nsteps=parameters.nticks, nnodes=1)
 

@@ -1,0 +1,28 @@
+Make a plan for a comprehensive set of tests of transmission with seasonal forcing
+using the seasonality argument of TransmissionSIX (SI model), TransmissionSI (SIR model),
+and TransmissionSE (SEIR model). For each model run with a reasonable beta and no
+seasonality (seasonality = None). Then, for each model run with seasonality attenuating
+the transmission to one half and with seasonality amplifying the transmission to
+twice the stated rate. Compare the results to validate the effect of seasonality.
+For the SIR and SEIR model use the kermack-mckendrick values to validate. For the
+SI model, check the rate of infection to validate the effect of seasonality.
+
+Update test_seasonality.py with three additional tests for spatially varying seasonality.
+Create a test for the SI model, the SIR model, and the SEIR mode each with three nodes.
+Set up seasonality as expected, 1.0, for one node and 0.5 for the second node, and
+2.0 for the third node. Modify the spatial transmission network so there is no spatial
+spread of contagion. Verify that in each case the infections in the attenuated node
+increase more slowly than the baseline which increases more slowly than the amplified
+node. Do not modify or remove any existing code or tests.
+
+Using the example in seasonality.ipynb as an example, create temporally varying
+"seasonality" tests in test_seasonality.py for the SI, SIR, and SEIR models. R0
+should be brought down between 1 and 2 so the outbreaks take longer to play out
+and temporal transmission factors can come to bear. Determine when the total infectious
+count (see sum of newly_infected) reaches 25% of its total and 75% of its total
+and set the "seasonal" forcing to decline from 1.0 to 0.0 during that timeframe.
+Do not modify or remove any existing code or tests.
+
+Please propose docstrings for each test in test_seasonality.py that explains what
+is being validated, how the scenario sets up the validation, and what it means if
+the test fails. Do not modify any code, merely propose more descriptive docstrings.

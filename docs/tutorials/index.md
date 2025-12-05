@@ -18,18 +18,17 @@ Suggested order:
 1. [Intrinsic periodicity of the SIR model](notebooks/06_SIR_wbirths_natural_periodicity.ipynb)
 1. [Exploring the critical community size of an SIR model](notebooks/07_SIR_CCS.ipynb)
 1. [The relationship between coupling and incidence correlation in a 2-patch model](notebooks/08_2patch_SIR_wbirths_correlation.ipynb)
-<!-- 1. [Modeling the spread of rabies in one dimension](notebooks/09_rabies_diffusion_1D.ipynb)
-1. [Periodicity of measles in England and Wales](notebooks/10_EW_periodicity.ipynb) -->
+1. [Modeling the spread of rabies in one dimension](notebooks/09_rabies_diffusion_1D.ipynb)
+1. [Periodicity of measles in England and Wales](notebooks/10_EW_periodicity.ipynb)
 
-<!-- Once completing the above notebooks, please explore the following notebooks in any desired order:
+Once you have completed the above notebooks, please explore the following notebooks in any desired order to learn how to implement and integrate custom components:
 
-- [EW analysis](notebooks/EW_analysis.ipynb)
-- [SEI and SEIS implementations](notebooks/SEI_and_SEIS_implementation.ipynb)
-- [Births](notebooks/births.ipynb)
-- [Constant population](notebooks/constant_pop.ipynb)
-- [Distributions](notebooks/distributions.ipynb)
-- [Grid examples](notebooks/grid_examples.ipynb)
-- [Mortality](notebooks/mortality.ipynb)
-- [Routine immunization](notebooks/ri_exploration.ipynb)
-- [Seasonality](notebooks/seasonality.ipynb)
--->
+- [England and Wales measles analysis](notebooks/EW_analysis.ipynb)
+- [SEI and SEIS model implementations](notebooks/SEI_and_SEIS_implementation.ipynb)
+- [Explore the vital dynamics births components](notebooks/births.ipynb)
+- [Test constant population components](notebooks/constant_pop.ipynb)
+- [Numba compatible distributions](notebooks/distributions.ipynb)
+- [Grid function examples](notebooks/grid_examples.ipynb)
+- [Explore the vital dynamics mortality components](notebooks/mortality.ipynb)
+- [Explore routine immunization](notebooks/ri_exploration.ipynb)
+- [Seasonality in transmission](notebooks/seasonality.ipynb)

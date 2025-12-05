@@ -42,8 +42,11 @@ class Model:
         if additional_states is not None:
             self.states.update(set(additional_states))
 
-        # Use arbitrary but fixed seed for reproducibility
-        set_seed(getattr(self.params, "prng_seed", 20260101))
+        # Use arbitrary but fixed seed, if none specified in params, for reproducibility
+        # This bit of code looks for prng_seed, prngseed, or seed in that order and uses the first one found or defaults to 20260101
+        prng_seed = next((getattr(self.params, k) for k in ("prng_seed", "prngseed", "seed") if hasattr(self.params, k)), 20260101)
+
+        set_seed(prng_seed)
 
         num_nodes = max(np.unique(scenario.nodeid)) + 1
 

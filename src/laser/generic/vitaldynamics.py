@@ -10,6 +10,23 @@ from .shared import sample_dods
 
 
 class BirthsByCBR:
+    r"""
+    Component to model births based on crude birth rates (CBR).
+
+    On each tick, selects the number of agents to be born in each node based on the CBR for that tick and the total population at that tick.
+    $#births = Poisson (N \times ((1 + \frac {CBR} {1000})^{\frac {1} {365}} - 1))$
+    Newborns are added to the susceptible state by default.
+    Calls the `on_birth()` method of other components in the model, if they implement it, with the indices of the newborn agents.
+    Optionally tracks date of birth (dob) for individuals which may be required for other components (see `MortalityByEstimator`) or otherwise useful, e.g., age-based intervention targeting.
+
+    Args:
+        model: The simulation model instance.
+        birthrates (np.ndarray): Array of crude birth rates (per 1000 per year) for each time step.
+        pyramid: Age pyramid data structure for sampling dates of birth.
+        track (bool): Whether to track date of birth (dob) for individuals. Default is True.
+        validating (bool): Whether to enable validation checks. Default is False.
+    """
+
     def __init__(self, model, birthrates, pyramid, track=True, validating=False):
         self.model = model
         self.birthrates = birthrates
@@ -82,6 +99,22 @@ class BirthsByCBR:
 
 
 class MortalityByCDR:
+    r"""
+    Component to model mortality based on crude death rates (CDR).
+
+    On each tick, probabilistically "recycles" agents based on the CDR for that tick and the total population at that tick.
+
+        $p(death) = 1 - e^{1 - (1 - \frac {CDR} {1000})^{\frac {1} {365}}}$
+
+    Uses a mapping of (state_value, state_name) tuples to decrement counts in the specified states when individuals die. The default mapping is for 'S', 'E', 'I', and 'R' states.
+
+    Args:
+        model: The simulation model instance.
+        mortalityrates (np.ndarray): Array of crude death rates (per 1000 per year) for each time step.
+        mappings (list of tuples): Optional list of (state_value, state_name) tuples to map states for decrementing counts.
+        validating (bool): Whether to enable validation checks. Default is False.
+    """
+
     def __init__(self, model, mortalityrates, mappings=None, validating=False):
         self.model = model
         self.mortalityrates = mortalityrates
@@ -181,6 +214,22 @@ class MortalityByCDR:
 
 
 class MortalityByEstimator:
+    """
+    Component to model mortality based on a life table estimator.
+
+    Uses a Kaplan-Meier or other estimator to sample dates of death for individuals based on their date of birth.
+    At initialization, samples dates of death for all individuals in the population based on their initial age. *Requires that individuals have a 'dob' property.*
+    At each tick, individuals whose date of death is equal to the current tick are marked as deceased.
+    Uses a mapping of (state_value, state_name) tuples to decrement counts in the specified states when individuals die. The default mapping is for 'S', 'E', 'I', and 'R' states.
+    Implements an `on_birth()` method to sample dates of death for newborn individuals.
+
+    Args:
+        model: The simulation model instance.
+        estimator: Life table estimator instance with a method to sample dates of death.
+        mappings (list of tuples): Optional list of (state_value, state_name) tuples to map states for decrementing counts. 'S', 'E', 'I', 'R' by default.
+        validating (bool): Whether to enable validation checks. Default is False.
+    """
+
     def __init__(self, model, estimator, mappings=None, validating=False):
         self.model = model
         self.estimator = estimator
@@ -272,6 +321,25 @@ class MortalityByEstimator:
 
 
 class ConstantPopVitalDynamics:
+    r"""
+    Component to model vital dynamics with constant population via recycling - agents are returned to the susceptible state and, optionally, given a new date of birth.
+
+    On each tick, probabilistically "recycles" agents (resets state to susceptible and optionally resets `dob`) based on the CDR for that tick and the total population at that tick.
+
+        $p(recycle) = 1 - e^{1 - (1 - \frac {rate} {1000})^{\frac {1} {365}}}$
+
+    Uses a mapping of (state_value, state_name) tuples to decrement counts in the specified states when individuals die. The default mapping is for 'S', 'E', 'I', and 'R' states.
+
+    Optionally tracks date of birth (dob) for individuals which may be useful, e.g., age-based intervention targeting or age-at-infection tracking.
+
+    Args:
+        model: The simulation model instance.
+        recycle_rates (np.ndarray): Array of recycling rates (per 1000 per year) for each time step.
+        dobs (bool): Whether to track date of birth (dob) for recycled individuals. Default is False.
+        mappings (list of tuples): Optional list of (state_value, state_name) tuples to map states for recycling. 'S', 'E', 'I', 'R' by default.
+        validating (bool): Whether to enable validation checks. Default is False.
+    """
+
     def __init__(self, model, recycle_rates, dobs: bool = False, mappings=None, validating: bool = False) -> None:
         self.model = model
         self.recycle_rates = recycle_rates

@@ -59,17 +59,17 @@ nav: # Navigation structure for the documentation
       - Intrinsic periodicity of the SIR system: tutorials/notebooks/06_SIR_wbirths_natural_periodicity.ipynb
       - Exploring the critical community size of an SIR model: tutorials/notebooks/07_SIR_CCS.ipynb
       - The relationship between spatial coupling and incidence correlation in a 2-patch model: tutorials/notebooks/08_2patch_SIR_wbirths_correlation.ipynb
-     # - Modeling the spread of rabies in one dimension: tutorials/notebooks/09_rabies_diffusion_1D.ipynb
+      - Modeling the spread of rabies in one dimension: tutorials/notebooks/09_rabies_diffusion_1D.ipynb
       - Periodicity of measles in England and Wales: tutorials/notebooks/10_EW_periodicity.ipynb
-     # - EW analysis: tutorials/notebooks/EW_analysis.ipynb
-     # - SEI and SEIS implementations: tutorials/notebooks/SEI_and_SEIS_implementation.ipynb
-     # - Births: tutorials/notebooks/births.ipynb
-     # - Constant population: tutorials/notebooks/constant_pop.ipynb
-     # - Distributions: tutorials/notebooks/distributions.ipynb
-     # - Grid examples: tutorials/notebooks/grid_examples.ipynb
-     # - Mortality: tutorials/notebooks/mortality.ipynb
-     # - Routine immunization: tutorials/notebooks/ri_exploration.ipynb
-     # - Seasonality: tutorials/notebooks/seasonality.ipynb
+      - England and Wales measles analysis: tutorials/notebooks/EW_analysis.ipynb
+      - SEI and SEIS model implementations: tutorials/notebooks/SEI_and_SEIS_implementation.ipynb
+      - Explore the vital dynamics births components: tutorials/notebooks/births.ipynb
+      - Test constant population components: tutorials/notebooks/constant_pop.ipynb
+      - Numba compatible distributions: tutorials/notebooks/distributions.ipynb
+      - Grid function examples: tutorials/notebooks/grid_examples.ipynb
+      - Explore the vital dynamics mortality components: tutorials/notebooks/mortality.ipynb
+      - Explore routine immunization: tutorials/notebooks/ri_exploration.ipynb
+      - Seasonality in transmission: tutorials/notebooks/seasonality.ipynb
   - API reference: reference/
   - Contribution guide: contribute.md
 

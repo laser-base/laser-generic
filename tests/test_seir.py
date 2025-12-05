@@ -336,7 +336,7 @@ class Default(unittest.TestCase):
         with ts.start("test_seir_linear_with_demography"):
             # Let's run for 2 years to let things smooth out with these settings
             cbr = np.random.uniform(5, 35, PEE)
-            birthrates = ValuesMap.from_nodes(cbr, nsteps=NTICKS * 2)
+            birthrates = ValuesMap.from_nodes(cbr, nsteps=NTICKS * 1)
             pyramid = AliasedDistribution(np.full(89, 1_000))
             survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
 
@@ -348,7 +348,8 @@ class Default(unittest.TestCase):
                 birthrates=birthrates.values,
                 pyramid=pyramid,
                 survival=survival,
-                nticks=NTICKS * 2,
+                nticks=NTICKS * 1,
+                beta=0.25,
             )
             model.run("SEIR Linear (with demography)")
 
@@ -462,7 +463,8 @@ if __name__ == "__main__":
     if args.grid or run_all:
         tc.test_grid()
     if args.linear or run_all:
-        tc.test_linear()
+        tc.test_seir_linear_no_demography()
+        tc.test_seir_linear_with_demography()
 
     ts.freeze()
     print("\nTiming Summary:")

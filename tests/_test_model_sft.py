@@ -69,7 +69,7 @@ def test_si_model_nobirths():
     scenario = pd.DataFrame(data=[["homenode", pop, "47°36′35″N 122°19′59″W"]], columns=["name", "population", "location"])
     output = []
     for seed, beta in zip(seeds, betas):
-        parameters = PropertySet({"seed": seed, "nticks": nticks, "verbose": True, "beta": beta})
+        parameters = PropertySet({"prng_seed": seed, "nticks": nticks, "verbose": True, "beta": beta})
         model = Model(scenario, parameters)
         model.components = [
             Susceptibility,
@@ -126,7 +126,7 @@ def test_si_model_wbirths():
 
     output = []
     for seed, beta, cbr in zip(seeds, betas, cbrs):
-        parameters = PropertySet({"seed": seed, "nticks": nticks, "verbose": True, "beta": beta, "cbr": cbr})
+        parameters = PropertySet({"prng_seed": seed, "nticks": nticks, "verbose": True, "beta": beta, "cbr": cbr})
         model = Model(scenario, parameters)
         model.components = [
             Births_ConstantPop,  # where does this come from now?
@@ -192,7 +192,7 @@ def test_sir_nobirths():
     scenario = pd.DataFrame(data=[["homenode", pop]], columns=["name", "population"])
 
     for seed, beta, gamma in zip(seeds, betas, gammas):
-        parameters = PropertySet({"seed": seed, "nticks": nticks, "verbose": True, "beta": beta, "inf_mean": 1 / gamma})
+        parameters = PropertySet({"prng_seed": seed, "nticks": nticks, "verbose": True, "beta": beta, "inf_mean": 1 / gamma})
         model = Model(scenario, parameters)
         model.components = [
             Infectious_IS,
@@ -265,7 +265,7 @@ def test_sir_nobirths_outbreak():
 
     for index, row in output.iterrows():
         scenario = pd.DataFrame(data=[["homenode", population]], columns=["name", "population"])
-        parameters = PropertySet({"seed": 2, "nticks": 1460, "verbose": True, "inf_mean": inf_mean, "beta": row["R0"] / inf_mean})
+        parameters = PropertySet({"prng_seed": 2, "nticks": 1460, "verbose": True, "inf_mean": inf_mean, "beta": row["R0"] / inf_mean})
 
         model = Model(scenario, parameters)
         model.components = [
