@@ -68,7 +68,7 @@ class ValuesMap:
         Returns:
             ValuesMap: The created ValuesMap instance.
         """
-        assert all(data >= 0.0), "data must be non-negative"
+        assert np.all(data >= 0.0), "data must be non-negative"
         assert len(data.shape) == 1, "data must be a 1D array"
         assert data.shape[0] > 0, "data must have at least one element"
         assert nnodes > 0, "nnodes must be greater than 0"
@@ -94,7 +94,7 @@ class ValuesMap:
         Returns:
             ValuesMap: The created ValuesMap instance.
         """
-        assert all(data >= 0.0), "data must be non-negative"
+        assert np.all(data >= 0.0), "data must be non-negative"
         assert len(data.shape) == 1, "data must be a 1D array"
         assert data.shape[0] > 0, "data must have at least one element"
         assert nsteps > 0, "nsteps must be greater than 0"
@@ -116,7 +116,7 @@ class ValuesMap:
         Returns:
             ValuesMap: The created ValuesMap instance.
         """
-        assert all(data >= 0.0), "data must be non-negative"
+        assert np.all(data >= 0.0), "data must be non-negative"
         assert len(data.shape) == 2, "data must be a 2D array"
         assert data.shape[0] > 0, "data must have at least one row"
         assert data.shape[1] > 0, "data must have at least one column"
