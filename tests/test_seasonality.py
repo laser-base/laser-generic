@@ -84,7 +84,25 @@ class TestSeasonalForcing(unittest.TestCase):
     # ========================================================================
 
     def test_si_no_seasonality(self):
-        """Test SI model without seasonal forcing (baseline)."""
+        """
+        Validate baseline SI model transmission dynamics without seasonal forcing.
+
+        WHAT IS VALIDATED:
+        - Epidemic growth occurs (final infections > initial infections)
+        - Baseline infection rate is positive during exponential growth phase
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population
+        - 1,000 initial infections, 99,000 susceptible
+        - Beta = 0.5, no seasonality multiplier (baseline transmission)
+        - 730-day simulation (2 years)
+
+        FAILURE MEANING:
+        If this test fails, the baseline SI transmission model is broken. The epidemic
+        should always grow in a fully susceptible population with positive beta. Failure
+        indicates a fundamental problem with TransmissionSIX component or SI model logic.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 1000  # Start with 1000 infected
         scenario["I"] = 1000
@@ -112,7 +130,27 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_si_attenuated_seasonality(self):
-        """Test SI model with 0.5x seasonal forcing (slower epidemic)."""
+        """
+        Validate that 0.5× seasonal forcing correctly reduces SI transmission rates.
+
+        WHAT IS VALIDATED:
+        - Infection rate is approximately 50% of baseline (within 30-70% range)
+        - Time to 50% prevalence is delayed compared to baseline
+        - Force of infection (FOI) is approximately 50% of baseline during growth phase
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population, 1,000 initial infections
+        - Beta = 0.5, seasonality = 0.5× (constant attenuation)
+        - Compares against baseline run without seasonality
+        - Measures infection rate during days 1-40 (exponential growth window)
+
+        FAILURE MEANING:
+        If this test fails, seasonal forcing is not properly modulating transmission. The 0.5×
+        multiplier should halve the effective transmission rate, slowing the epidemic proportionally.
+        Failure suggests the seasonality parameter is not being applied to the force of infection
+        calculation in TransmissionSIX, or the multiplier is being applied incorrectly.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 1000
         scenario["I"] = 1000
@@ -157,7 +195,27 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_si_amplified_seasonality(self):
-        """Test SI model with 2.0x seasonal forcing (faster epidemic)."""
+        """
+        Validate that 2.0× seasonal forcing correctly amplifies SI transmission rates.
+
+        WHAT IS VALIDATED:
+        - Infection rate is approximately 200% of baseline (within 140-260% range)
+        - Time to 50% prevalence is accelerated compared to baseline
+        - Force of infection (FOI) is approximately 200% of baseline during growth phase
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population, 1,000 initial infections
+        - Beta = 0.5, seasonality = 2.0× (constant amplification)
+        - Compares against baseline run without seasonality
+        - Measures infection rate during days 1-40 (exponential growth window)
+
+        FAILURE MEANING:
+        If this test fails, seasonal forcing amplification is not working correctly. The 2.0×
+        multiplier should double the effective transmission rate, accelerating the epidemic
+        proportionally. Failure indicates the seasonality parameter is not properly scaling
+        up transmission in TransmissionSIX, possibly due to capping or incorrect multiplication.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 1000
         scenario["I"] = 1000
@@ -206,7 +264,27 @@ class TestSeasonalForcing(unittest.TestCase):
     # ========================================================================
 
     def test_sir_no_seasonality(self):
-        """Test SIR model without seasonal forcing (baseline with K-M validation)."""
+        """
+        Validate baseline SIR model with Kermack-McKendrick theoretical prediction.
+
+        WHAT IS VALIDATED:
+        - Epidemic curve shows characteristic rise and fall with peak in simulation window
+        - Final attack rate matches K-M analytical prediction (within 10% tolerance)
+        - Population is conserved (S + I + R = constant)
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population, 500 initial infections
+        - Beta = 0.25, infectious period mean = 7 days, giving R₀ ≈ 1.75
+        - No seasonality (baseline transmission)
+        - K-M formula predicts final size based on R₀ and initial conditions
+
+        FAILURE MEANING:
+        If this test fails, the SIR model implementation deviates from epidemic theory. The
+        Kermack-McKendrick equation provides an analytical solution for final attack rate
+        given R₀. Failure suggests errors in recovery timing (infdurdist), transmission
+        calculation (TransmissionSI), or state transitions between S/I/R compartments.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 500  # Start with 500 infected
         scenario["I"] = 500
@@ -247,7 +325,27 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_sir_attenuated_seasonality(self):
-        """Test SIR model with 0.5x seasonality (R0 < 1, epidemic dies out)."""
+        """
+        Validate SIR epidemic die-out when seasonal forcing reduces R₀ below 1.
+
+        WHAT IS VALIDATED:
+        - Final attack rate is minimal (<15%) indicating epidemic extinction
+        - Peak infections occur early (<100 days) and remain low (<3,500)
+        - Epidemic dies out rather than spreading through population
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population, 2,000 initial infections
+        - Beta = 0.25, infectious period = 7 days, seasonality = 0.5×
+        - Effective R₀ = 0.5 × 0.25 × 7 ≈ 0.875 < 1 (subcritical)
+        - Larger initial infected to observe dynamics before die-out
+
+        FAILURE MEANING:
+        If this test fails, seasonality is not reducing transmission below the epidemic threshold.
+        With R₀ < 1, each infected person infects <1 other on average, so the epidemic must die out.
+        Failure indicates seasonality isn't properly attenuating transmission, or recovery rates
+        are incorrect. An attack rate >15% suggests R₀ is still above 1 despite the multiplier.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         # Use larger initial infected to slow die-out
         scenario["S"] = scenario.population - 2000
@@ -290,7 +388,27 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_sir_amplified_seasonality(self):
-        """Test SIR model with 2.0x seasonality (R0 approx 3.5, large outbreak with K-M)."""
+        """
+        Validate SIR large outbreak dynamics with amplified seasonal forcing (R₀ ≈ 3.5).
+
+        WHAT IS VALIDATED:
+        - Final attack rate matches K-M prediction for R₀ ≈ 3.5 (within 10%)
+        - Attack rate exceeds baseline (no seasonality) scenario
+        - Peak infections are substantial (>10,000) and occur early (<200 days)
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population, 500 initial infections
+        - Beta = 0.25, infectious period = 7 days, seasonality = 2.0×
+        - Effective R₀ = 2.0 × 0.25 × 7 ≈ 3.5 (supercritical)
+        - K-M formula predicts ~95% final attack rate for R₀ = 3.5
+
+        FAILURE MEANING:
+        If this test fails, seasonal amplification is not properly scaling transmission upward.
+        With R₀ = 3.5, we expect a severe, fast outbreak affecting most of the population. Failure
+        suggests the 2.0× multiplier isn't being applied correctly, peak timing/magnitude indicates
+        slower-than-expected transmission, or K-M deviation suggests incorrect compartment dynamics.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 500
         scenario["I"] = 500
@@ -344,7 +462,27 @@ class TestSeasonalForcing(unittest.TestCase):
     # ========================================================================
 
     def test_seir_no_seasonality(self):
-        """Test SEIR model without seasonal forcing (baseline with K-M validation)."""
+        """
+        Validate baseline SEIR model with exposed compartment dynamics and K-M comparison.
+
+        WHAT IS VALIDATED:
+        - Exposed (E) compartment peaks before Infectious (I) compartment
+        - Final attack rate approximately matches K-M prediction (within 20% tolerance)
+        - Population is conserved (S + E + I + R = constant)
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population, 500 initial infections
+        - Beta = 0.25, exposed period = 5 days, infectious period = 7 days
+        - R₀ ≈ 1.75 (same as SIR for comparison)
+        - K-M prediction is approximate since K-M theory assumes SIR, not SEIR
+
+        FAILURE MEANING:
+        If this test fails, the SEIR exposed compartment dynamics are incorrect. E must peak
+        before I because people progress E→I→R. Failure indicates incorrect transition timing
+        (expdurdist/infdurdist), wrong compartment updates, or transmission applied to wrong
+        state. K-M tolerance is 20% (vs 10% for SIR) since K-M doesn't account for E compartment.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 500
         scenario["E"] = 0
@@ -393,7 +531,28 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_seir_attenuated_seasonality(self):
-        """Test SEIR model with 0.5x seasonality (R0 < 1, epidemic dies out)."""
+        """
+        Validate SEIR epidemic extinction when seasonal forcing reduces R₀ below 1.
+
+        WHAT IS VALIDATED:
+        - E and I compartments approach zero (<50 each) at simulation end
+        - Final attack rate is minimal (<15%) indicating die-out
+        - Peak E and I are low (<3,000) indicating failed outbreak
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population, 2,000 initial infections
+        - Beta = 0.25, exposed = 5d, infectious = 7d, seasonality = 0.5×
+        - Effective R₀ ≈ 0.875 < 1 (subcritical)
+        - Larger initial infections to observe dynamics before extinction
+
+        FAILURE MEANING:
+        If this test fails, the attenuated seasonality isn't reducing transmission below threshold.
+        With R₀ < 1, the epidemic cannot sustain itself and must die out. Persistence of E or I
+        compartments at simulation end indicates ongoing transmission despite R₀ < 1. High attack
+        rates suggest effective R₀ is still >1, meaning seasonality isn't properly applied in
+        TransmissionSE or the multiplier value is not respected.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         # Larger initial infected to observe dynamics before die-out
         scenario["S"] = scenario.population - 2000
@@ -446,7 +605,29 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_seir_amplified_seasonality(self):
-        """Test SEIR model with 2.0x seasonality (R0 approx 3.5, large outbreak with K-M)."""
+        """
+        Validate SEIR large outbreak with amplified seasonal forcing (R₀ ≈ 3.5).
+
+        WHAT IS VALIDATED:
+        - E peaks before I even with amplified transmission
+        - Final attack rate matches K-M prediction for R₀ ≈ 3.5 (within 20%)
+        - Attack rate exceeds baseline scenario
+        - Peak E and I are substantial (>5,000 each)
+
+        SCENARIO SETUP:
+        - Single node with 100,000 population, 500 initial infections
+        - Beta = 0.25, exposed = 5d, infectious = 7d, seasonality = 2.0×
+        - Effective R₀ = 2.0 × 0.25 × 7 ≈ 3.5 (severe outbreak)
+        - K-M comparison has 20% tolerance due to E compartment
+
+        FAILURE MEANING:
+        If this test fails, seasonal amplification isn't properly scaling SEIR transmission. The 2.0×
+        multiplier should create a severe, rapid outbreak with high attack rates. E-before-I failure
+        indicates broken compartment progression. Low peak values suggest transmission isn't being
+        amplified as expected. K-M deviation suggests the effective R₀ achieved doesn't match the
+        theoretical R₀ = seasonality × beta × infectious_period.
+        """
+
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 500
         scenario["E"] = 0
@@ -511,7 +692,28 @@ class TestSeasonalForcing(unittest.TestCase):
     # ========================================================================
 
     def test_si_spatial_seasonality(self):
-        """Test SI model with spatially varying seasonality across three nodes."""
+        """
+        Validate spatially independent seasonal forcing across disconnected nodes (SI model).
+
+        WHAT IS VALIDATED:
+        - Time to 50% prevalence follows ordering: amplified < baseline < attenuated
+        - Three independent nodes with different seasonality respond independently
+        - No spatial coupling affects results (gravity_k=0 disables spatial transmission)
+
+        SCENARIO SETUP:
+        - Three nodes (1×3 grid), each with 100,000 population, 1,000 initial infections
+        - Beta = 0.5, seasonality = [0.5×, 1.0×, 2.0×] for nodes [0, 1, 2]
+        - gravity_k = 0.0 (spatial transmission disabled - nodes are isolated)
+        - ValuesMap.from_nodes() assigns different constant seasonality per node
+
+        FAILURE MEANING:
+        If this test fails, spatial seasonality isn't working correctly. Each node should behave
+        like an independent SI model with its own seasonal multiplier. Failure indicates seasonality
+        isn't being applied per-node (maybe using global value), spatial transmission isn't actually
+        disabled (nodes affecting each other), or ValuesMap.from_nodes() isn't correctly mapping
+        values. Incorrect timing order suggests wrong seasonality applied to wrong node.
+        """
+
         # Create 3-node scenario with no spatial transmission
         scenario = stdgrid(M=1, N=3, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 1000
@@ -561,7 +763,28 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_sir_spatial_seasonality(self):
-        """Test SIR model with spatially varying seasonality across three nodes."""
+        """
+        Validate spatially independent seasonal forcing across disconnected nodes (SIR model).
+
+        WHAT IS VALIDATED:
+        - Amplified node (R₀=3.5) peaks before baseline node (R₀=1.75)
+        - Attack rates follow ordering: amplified > baseline > attenuated
+        - Attenuated node (R₀<1) has minimal attack rate from die-out
+
+        SCENARIO SETUP:
+        - Three nodes (1×3 grid), each with 100,000 population, 500 initial infections
+        - Beta = 0.25, inf_period = 7d, seasonality = [0.5×, 1.0×, 2.0×]
+        - Effective R₀ = [0.875, 1.75, 3.5] - subcritical, moderate, severe
+        - gravity_k = 0.0 (nodes isolated)
+
+        FAILURE MEANING:
+        If this test fails, spatial seasonality isn't correctly creating different epidemic outcomes
+        in different locations. Node 0 should see die-out (R₀<1), node 1 moderate outbreak (R₀≈1.75),
+        node 2 severe outbreak (R₀≈3.5). Failure indicates per-node seasonality not applied, spatial
+        transmission still coupling nodes despite gravity_k=0, or ValuesMap.from_nodes() not working.
+        Wrong attack rate ordering suggests seasonality values assigned to wrong nodes.
+        """
+
         # Create 3-node scenario with no spatial transmission
         scenario = stdgrid(M=1, N=3, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 500
@@ -624,7 +847,30 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_seir_spatial_seasonality(self):
-        """Test SEIR model with spatially varying seasonality across three nodes."""
+        """
+        Validate spatially independent seasonal forcing across disconnected nodes (SEIR model).
+
+        WHAT IS VALIDATED:
+        - E peaks before I for nodes with R₀>1 (baseline and amplified nodes)
+        - Amplified node peaks before baseline node
+        - Attack rates follow ordering: amplified > baseline > attenuated
+        - Attenuated node (R₀<1) has minimal attack rate
+
+        SCENARIO SETUP:
+        - Three nodes (1×3 grid), each with 100,000 population, 500 initial infections
+        - Beta = 0.25, exp=5d, inf=7d, seasonality = [0.5×, 1.0×, 2.0×]
+        - Effective R₀ = [0.875, 1.75, 3.5] across nodes
+        - gravity_k = 0.0 (nodes isolated)
+        - Skips E-before-I check for node 0 (immediate die-out)
+
+        FAILURE MEANING:
+        If this test fails, spatial seasonality isn't correctly applied to SEIR transmission. Each
+        node should exhibit independent SEIR dynamics with its assigned R₀. Node 0 epidemic dies out
+        immediately (R₀<1), so its I peak is at t=0 - checking E-before-I there would spuriously fail.
+        Failure in E-before-I for nodes 1-2 indicates broken SEIR progression. Wrong attack rate or
+        timing order suggests seasonality not applied per-node or values mapped incorrectly.
+        """
+
         # Create 3-node scenario with no spatial transmission
         scenario = stdgrid(M=1, N=3, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 500
@@ -704,7 +950,30 @@ class TestSeasonalForcing(unittest.TestCase):
     # ========================================================================
 
     def test_si_temporal_seasonality(self):
-        """Test SI model with temporally declining seasonality during outbreak."""
+        """
+        Validate time-varying seasonal forcing that declines during outbreak (SI model).
+
+        WHAT IS VALIDATED:
+        - Final infections are lower with declining seasonality vs baseline
+        - Growth during decline period (25%-75% of infections) is reduced vs baseline
+        - Declining transmission from 1.0→0.0 slows epidemic progression
+
+        SCENARIO SETUP:
+        - Two-phase approach:
+            (1) baseline run to find 25%/75% infection thresholds
+            (2) seasonal run with seasonality declining from 1.0 to 0.0 between those times
+        - Beta = 0.2 (R₀ between 1-2 for slower outbreak), 1000-day simulation
+        - Seasonality = 1.0 until 25%, linearly declines to 0.0 by 75%, stays 0.0 after
+        - 100 initial infections (small seed for gradual spread)
+
+        FAILURE MEANING:
+        If this test fails, temporal seasonality isn't modulating transmission over time. The
+        declining seasonality should slow epidemic growth during the 25%-75% window, reducing
+        final infections compared to constant transmission. Failure indicates seasonality not
+        being updated each timestep, ValuesMap.from_timeseries() not working, or transmission
+        calculation not reading current seasonality value. Equal growth suggests seasonality ignored.
+        """
+
         # Use lower beta and longer simulation to see temporal effects
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 100
@@ -780,7 +1049,30 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_sir_temporal_seasonality(self):
-        """Test SIR model with temporally declining seasonality during outbreak."""
+        """
+        Validate time-varying seasonal forcing that declines during outbreak (SIR model).
+
+        WHAT IS VALIDATED:
+        - Final attack rate is lower with declining seasonality vs baseline
+        - Cumulative infections at 75% threshold are lower than baseline
+        - Declining seasonality interrupts natural SIR epidemic progression
+
+        SCENARIO SETUP:
+        - Two-phase:
+            (1) baseline run to find 25%/75% cumulative infection thresholds
+            (2) seasonal run with seasonality 1.0→0.0 between those times
+        - Beta = 0.2, inf_period = 7d (R₀ ≈ 1.4), 1500-day simulation
+        - Cumulative infections = I + R (total ever infected)
+        - 100 initial infections for gradual spread
+
+        FAILURE MEANING:
+        If this test fails, temporal seasonality isn't properly reducing SIR transmission over time.
+        The declining force should reduce the final attack rate below what natural SIR dynamics
+        would achieve. Failure indicates time-varying seasonality not applied each timestep, or the
+        decline isn't strong enough to overcome existing momentum. Equal attack rates suggest
+        seasonality parameter not being read or applied in TransmissionSI step function.
+        """
+
         # Use R0 between 1 and 2 for slower outbreak
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 100
@@ -855,7 +1147,32 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     def test_seir_temporal_seasonality(self):
-        """Test SEIR model with temporally declining seasonality during outbreak."""
+        """
+        Validate time-varying seasonal forcing that declines during outbreak (SEIR model).
+
+        WHAT IS VALIDATED:
+        - Final attack rate is lower with declining seasonality vs baseline
+        - E peaks before I (if epidemic develops beyond initial seed)
+        - Cumulative infections at 75% threshold are lower than baseline
+        - Declining seasonality interrupts natural SEIR progression
+
+        SCENARIO SETUP:
+        - Two-phase:
+            (1) baseline run to find 25%/75% cumulative infection thresholds
+            (2) seasonal run with seasonality 1.0→0.0 between those times
+        - Beta = 0.2, exp=5d, inf=7d (R₀ ≈ 1.4), 1500-day simulation
+        - Cumulative infections = E + I + R (total who left S)
+        - 100 initial infections for gradual spread
+        - E-before-I check only if I_peak > 10 (epidemic actually develops)
+
+        FAILURE MEANING:
+        If this test fails, temporal seasonality isn't properly reducing SEIR transmission over time.
+        The declining force should slow E→I→R progression and reduce final attack rate. Failure
+        indicates time-varying seasonality not applied in TransmissionSE, or compartment dynamics
+        don't respond to changing transmission. Equal attack rates mean seasonality ignored. E-before-I
+        failure (when I_peak>10) indicates broken SEIR compartment progression independent of seasonality.
+        """
+
         # Use R0 between 1 and 2 for slower outbreak
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 100
