@@ -9,6 +9,7 @@ import numpy as np
 
 from laser.core import PropertySet
 
+
 # Want to think about the ways to seed infections.  Not all infections have a timer!
 def seed_infections_randomly_SI(model: Any, ninfections: int = 100) -> None:
     """
@@ -39,6 +40,7 @@ def seed_infections_randomly_SI(model: Any, ninfections: int = 100) -> None:
 
     return
 
+
 def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     """
     Randomly seed initial infections across the entire population.
@@ -61,7 +63,7 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     pop = model.people
     params = model.params
 
-    myinds = np.flatnonzero(pop.state==0)
+    myinds = np.flatnonzero(pop.state == 0)
     if len(myinds) > ninfections:
         myinds = np.random.permutation(myinds)[:ninfections]
 
@@ -70,6 +72,7 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     inf_nodeids = pop.nodeid[myinds]
 
     return inf_nodeids
+
 
 def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> None:
     """
@@ -95,6 +98,7 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
     model.people.susceptibility[myinds] = 0
 
     return
+
 
 def get_default_parameters() -> PropertySet:
     """
