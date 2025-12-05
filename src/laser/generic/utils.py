@@ -32,9 +32,9 @@ def seed_infections_randomly_SI(model: Any, ninfections: int = 100) -> None:
     # Seed initial infections in random locations at the start of the simulation
     cinfections = 0
     while cinfections < ninfections:
-        index = model.prng.integers(0, model.population.count)
-        if model.population.susceptibility[index] > 0:
-            model.population.susceptibility[index] = 0
+        index = model.prng.integers(0, model.people.count)
+        if model.people.susceptibility[index] > 0:
+            model.people.susceptibility[index] = 0
             cinfections += 1
 
     return
@@ -58,15 +58,15 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     """
 
     # Seed initial infections in random locations at the start of the simulation
-    pop = model.population
+    pop = model.people
     params = model.params
 
-    myinds = np.flatnonzero(pop.susceptibility)
+    myinds = np.flatnonzero(pop.state==0)
     if len(myinds) > ninfections:
         myinds = np.random.permutation(myinds)[:ninfections]
 
     pop.itimer[myinds] = params.inf_mean
-    pop.susceptibility[myinds] = 0
+    pop.state[myinds] = 1
     inf_nodeids = pop.nodeid[myinds]
 
     return inf_nodeids
@@ -88,11 +88,11 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
     """
 
     # Seed initial infections in a specific location at the start of the simulation
-    myinds = np.where((model.population.susceptibility > 0) & (model.population.nodeid == ipatch))[0]
+    myinds = np.where((model.people.susceptibility > 0) & (model.people.nodeid == ipatch))[0]
     if len(myinds) > ninfections:
         myinds = np.random.choice(myinds, ninfections, replace=False)
-    model.population.itimer[myinds] = model.params.inf_mean
-    model.population.susceptibility[myinds] = 0
+    model.people.itimer[myinds] = model.params.inf_mean
+    model.people.susceptibility[myinds] = 0
 
     return
 
