@@ -75,14 +75,14 @@ def test_si_logistic_beta_recovery():
 
         # Correct SI components — NO itimer needed
         S = SI.Susceptible(model)
-        I = SI.Infectious(model)
+        Inf = SI.Infectious(model)
         T = SI.Transmission(model)
 
-        model.components = [S, I, T]
+        model.components = [S, Inf, T]
 
         model.run("SI logistic test")
 
-        I_series = model.nodes.I[:, 0]
+        I_series = model.nodes.Inf[:, 0]
         t = np.arange(len(I_series))
 
         popt, _ = curve_fit(
@@ -179,15 +179,15 @@ def test_si_model_wbirths():
 
         # SI components — your working, validated SI implementation
         S = SI.Susceptible(model)
-        I = SI.Infectious(model)
+        Inf = SI.Infectious(model)
         T = SI.Transmission(model)
 
-        model.components = [V, S, I, T]
+        model.components = [V, S, Inf, T]
 
         model.run("SI + births logistic test")
 
         # Extract I(t)
-        I_series = model.nodes.I[:, 0]
+        I_series = model.nodes.Inf[:, 0]
         t = np.arange(len(I_series))
 
         # Fit approximate logistic curve
@@ -309,7 +309,7 @@ def test_sir_nobirths():
         )
 
         I_series = model.nodes.I[:, 0]
-        t = np.arange(len(I_series))   # ← always correct
+        t = np.arange(len(I_series))  # ← always correct
 
         fitted, _ = curve_fit(
             sir_logistic,
