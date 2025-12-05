@@ -3,10 +3,98 @@ This module provides utility functions for the laser-measles project.
 
 """
 
+from typing import Any
 from math import ceil
+import numpy as np
 
 from laser.core import PropertySet
 
+# Want to think about the ways to seed infections.  Not all infections have a timer!
+def seed_infections_randomly_SI(model: Any, ninfections: int = 100) -> None:
+    """
+    Randomly seed initial infections for SI-style models without using timers.
+
+    This function randomly selects `ninfections` individuals from the population who are currently susceptible
+    and marks them as infected by setting their `susceptibility` to zero. It does not assign any infection timers,
+    making it suitable for simple SI or SIR models where timers are not required.
+
+    Unlike other seeding methods, this function explicitly ensures that only susceptible individuals are infected,
+    even if the total population includes recovered or previously infected agents.
+
+    Args:
+        model: The simulation model, which must contain a `population` with
+               `count` and `susceptibility` attributes, and a PRNG in `model.prng`.
+        ninfections (int, optional): Number of initial infections to seed. Defaults to 100.
+
+    Returns:
+        None
+    """
+    # Seed initial infections in random locations at the start of the simulation
+    cinfections = 0
+    while cinfections < ninfections:
+        index = model.prng.integers(0, model.population.count)
+        if model.population.susceptibility[index] > 0:
+            model.population.susceptibility[index] = 0
+            cinfections += 1
+
+    return
+
+def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
+    """
+    Randomly seed initial infections across the entire population.
+
+    This function selects up to `ninfections` susceptible individuals at random
+    from the full population. It marks them as infected by:
+    - Setting their infection timer (`itimer`) to the model's mean infectious duration (`inf_mean`),
+    - Setting their susceptibility to zero.
+
+    Args:
+        model: The simulation model, which must contain a `population` with
+               `susceptibility`, `itimer`, and `nodeid` arrays, and a `params` object with `inf_mean`.
+        ninfections (int, optional): The number of individuals to infect. Defaults to 100.
+
+    Returns:
+        np.ndarray: The node IDs of the newly infected individuals.
+    """
+
+    # Seed initial infections in random locations at the start of the simulation
+    pop = model.population
+    params = model.params
+
+    myinds = np.flatnonzero(pop.susceptibility)
+    if len(myinds) > ninfections:
+        myinds = np.random.permutation(myinds)[:ninfections]
+
+    pop.itimer[myinds] = params.inf_mean
+    pop.susceptibility[myinds] = 0
+    inf_nodeids = pop.nodeid[myinds]
+
+    return inf_nodeids
+
+def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> None:
+    """
+    Seed initial infections in a specific patch of the population at the start of the simulation.
+    This function randomly selects individuals from the specified patch and sets their infection timer
+    to the mean infection duration, effectively marking them as infected. The process continues until
+    the desired number of initial infections is reached.
+
+    Args:
+        model: The simulation model containing the population and parameters.
+        ipatch (int): The identifier of the patch where infections should be seeded.
+        ninfections (int, optional): The number of initial infections to seed. Defaults to 100.
+
+    Returns:
+        None
+    """
+
+    # Seed initial infections in a specific location at the start of the simulation
+    myinds = np.where((model.population.susceptibility > 0) & (model.population.nodeid == ipatch))[0]
+    if len(myinds) > ninfections:
+        myinds = np.random.choice(myinds, ninfections, replace=False)
+    model.population.itimer[myinds] = model.params.inf_mean
+    model.population.susceptibility[myinds] = 0
+
+    return
 
 def get_default_parameters() -> PropertySet:
     """
