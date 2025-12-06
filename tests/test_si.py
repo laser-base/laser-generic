@@ -1,4 +1,4 @@
-from laser.generic.newutils import TimingStats as ts  # noqa: I001
+from laser.generic.utils import TimingStats as ts  # noqa: I001
 
 import json
 import unittest
@@ -11,7 +11,7 @@ from laser.core import PropertySet
 
 from laser.generic import SI
 from laser.generic import Model
-from laser.generic.newutils import ValuesMap
+from laser.generic.utils import ValuesMap
 from laser.core.utils import grid
 from laser.generic.vitaldynamics import ConstantPopVitalDynamics
 from tests.utils import base_maps

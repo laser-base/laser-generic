@@ -20,7 +20,7 @@ from laser.generic import Model
 from laser.generic.components import TransmissionSE
 from laser.generic.components import TransmissionSI
 from laser.generic.components import TransmissionSIX
-from laser.generic.newutils import ValuesMap
+from laser.generic.utils import ValuesMap
 
 try:
     from tests.utils import stdgrid

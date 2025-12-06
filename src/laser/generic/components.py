@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
 
-from laser.generic.newutils import validate
+from laser.generic.utils import ValuesMap
+from laser.generic.utils import validate
 
-from .newutils import ValuesMap
 from .shared import State
 
 

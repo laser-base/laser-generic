@@ -12,7 +12,7 @@ from laser.core.random import seed as set_seed
 from laser.generic import SEIR
 from laser.generic import Model
 from laser.generic import State
-from laser.generic.newutils import ValuesMap
+from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByCDR
 from laser.generic.vitaldynamics import MortalityByEstimator

@@ -10,7 +10,7 @@ from scipy.stats import chisquare
 
 from laser.generic import SEIR
 from laser.generic import Model
-from laser.generic.newutils import ValuesMap
+from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR
 from tests.utils import stdgrid
 

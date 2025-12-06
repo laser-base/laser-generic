@@ -18,11 +18,11 @@ from matplotlib import pyplot as plt
 
 from laser.generic import SEIR
 from laser.generic import Model
-from laser.generic.newutils import ValuesMap
+from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByEstimator
-from tests.age_at_infection import TransmissionWithDOI
-from tests.utils import stdgrid
+from age_at_infection import TransmissionWithDOI
+from utils import stdgrid
 
 State = SEIR.State
 

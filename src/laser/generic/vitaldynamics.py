@@ -1,10 +1,10 @@
-from laser.generic.newutils import TimingStats as ts  # noqa: I001
+from laser.generic.utils import TimingStats as ts  # noqa: I001
 
 import numba as nb
 import numpy as np
 
-from .newutils import validate
-from laser.generic import State
+from laser.generic.utils import validate
+from .shared import State
 from .shared import sample_dobs
 from .shared import sample_dods
 
