@@ -4,7 +4,7 @@ Compare SIR, SIRS, SEIR, and SEIRS models on a standard grid.
 Generates timing data and plots of S, E (if applicable), I, and R over time.
 """
 
-from laser.generic.newutils import TimingStats as ts  # noqa: I001
+from laser.generic.utils import TimingStats as ts  # noqa: I001
 
 import json
 from argparse import ArgumentParser
@@ -21,7 +21,7 @@ from laser.generic import SIRS
 from laser.generic import SEIR
 from laser.generic import SEIRS
 from laser.generic import Model
-from tests.utils import stdgrid
+from utils import stdgrid
 
 EM = 10
 EN = 10
