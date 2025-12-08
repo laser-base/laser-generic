@@ -301,7 +301,7 @@ from typing import Callable  # noqa: E402
 
 import numba as nb  # noqa: E402
 
-from .shared import State  # noqa: E402
+from laser.generic.shared import State  # noqa: E402
 
 
 class RoutineImmunizationEx:

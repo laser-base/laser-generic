@@ -4,9 +4,9 @@ import numba as nb
 import numpy as np
 
 from laser.generic.utils import validate
-from .shared import State
-from .shared import sample_dobs
-from .shared import sample_dods
+from laser.generic.shared import State
+from laser.generic.shared import sample_dobs
+from laser.generic.shared import sample_dods
 
 
 class BirthsByCBR:

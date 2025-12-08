@@ -5,9 +5,9 @@ Agents transition from Susceptible to Infectious upon infection and are infectio
 Agents transition from Infectious back to Susceptible upon recovery.
 """
 
-from .components import InfectiousIS as Infectious
-from .components import Susceptible
-from .components import TransmissionSI as Transmission
-from .shared import State
+from laser.generic.components import InfectiousIS as Infectious
+from laser.generic.components import Susceptible
+from laser.generic.components import TransmissionSI as Transmission
+from laser.generic.shared import State
 
 __all__ = ["Infectious", "State", "Susceptible", "Transmission"]
