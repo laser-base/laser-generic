@@ -6,10 +6,9 @@ import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
 
+from laser.generic.shared import State
 from laser.generic.utils import ValuesMap
 from laser.generic.utils import validate
-
-from .shared import State
 
 
 @nb.njit(
