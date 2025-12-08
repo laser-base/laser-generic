@@ -14,15 +14,17 @@ class BirthsByCBR:
     Component to model births based on crude birth rates (CBR).
 
     On each tick, selects the number of agents to be born in each node based on the CBR for that tick and the total population at that tick.
-    $#births = Poisson (N \times ((1 + \frac {CBR} {1000})^{\frac {1} {365}} - 1))$
+
+    $\#births = Poisson (N \times ((1 + \frac {CBR} {1000})^{\frac {1} {365}} - 1))$
+
     Newborns are added to the susceptible state by default.
     Calls the `on_birth()` method of other components in the model, if they implement it, with the indices of the newborn agents.
     Optionally tracks date of birth (dob) for individuals which may be required for other components (see `MortalityByEstimator`) or otherwise useful, e.g., age-based intervention targeting.
 
     Args:
-        model: The simulation model instance.
+        model (Model): The simulation model instance.
         birthrates (np.ndarray): Array of crude birth rates (per 1000 per year) for each time step.
-        pyramid: Age pyramid data structure for sampling dates of birth.
+        pyramid (AliasedDistribution): Age pyramid data structure for sampling dates of birth.
         track (bool): Whether to track date of birth (dob) for individuals. Default is True.
         validating (bool): Whether to enable validation checks. Default is False.
     """
@@ -104,12 +106,12 @@ class MortalityByCDR:
 
     On each tick, probabilistically "recycles" agents based on the CDR for that tick and the total population at that tick.
 
-        $p(death) = 1 - e^{1 - (1 - \frac {CDR} {1000})^{\frac {1} {365}}}$
+    $p(death) = 1 - e^{1 - (1 - \frac {CDR} {1000})^{\frac {1} {365}}}$
 
     Uses a mapping of (state_value, state_name) tuples to decrement counts in the specified states when individuals die. The default mapping is for 'S', 'E', 'I', and 'R' states.
 
     Args:
-        model: The simulation model instance.
+        model (Model): The simulation model instance.
         mortalityrates (np.ndarray): Array of crude death rates (per 1000 per year) for each time step.
         mappings (list of tuples): Optional list of (state_value, state_name) tuples to map states for decrementing counts.
         validating (bool): Whether to enable validation checks. Default is False.
@@ -224,8 +226,8 @@ class MortalityByEstimator:
     Implements an `on_birth()` method to sample dates of death for newborn individuals.
 
     Args:
-        model: The simulation model instance.
-        estimator: Life table estimator instance with a method to sample dates of death.
+        model (Model): The simulation model instance.
+        estimator (KaplanMeierEstimator): Life table estimator instance with a method to sample dates of death.
         mappings (list of tuples): Optional list of (state_value, state_name) tuples to map states for decrementing counts. 'S', 'E', 'I', 'R' by default.
         validating (bool): Whether to enable validation checks. Default is False.
     """
@@ -326,14 +328,14 @@ class ConstantPopVitalDynamics:
 
     On each tick, probabilistically "recycles" agents (resets state to susceptible and optionally resets `dob`) based on the CDR for that tick and the total population at that tick.
 
-        $p(recycle) = 1 - e^{1 - (1 - \frac {rate} {1000})^{\frac {1} {365}}}$
+    $p(recycle) = 1 - e^{1 - (1 - \frac {rate} {1000})^{\frac {1} {365}}}$
 
     Uses a mapping of (state_value, state_name) tuples to decrement counts in the specified states when individuals die. The default mapping is for 'S', 'E', 'I', and 'R' states.
 
     Optionally tracks date of birth (dob) for individuals which may be useful, e.g., age-based intervention targeting or age-at-infection tracking.
 
     Args:
-        model: The simulation model instance.
+        model (Model): The simulation model instance.
         recycle_rates (np.ndarray): Array of recycling rates (per 1000 per year) for each time step.
         dobs (bool): Whether to track date of birth (dob) for recycled individuals. Default is False.
         mappings (list of tuples): Optional list of (state_value, state_name) tuples to map states for recycling. 'S', 'E', 'I', 'R' by default.

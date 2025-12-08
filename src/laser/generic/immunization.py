@@ -122,9 +122,6 @@ class RoutineImmunization:
 
         Args:
             fig (Figure, optional): A Matplotlib Figure to draw into.
-
-        Returns:
-            None
         """
         yield
         return

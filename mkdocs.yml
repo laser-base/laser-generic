@@ -62,7 +62,7 @@ nav: # Navigation structure for the documentation
       - Modeling the spread of rabies in one dimension: tutorials/notebooks/09_rabies_diffusion_1D.ipynb
       - Periodicity of measles in England and Wales: tutorials/notebooks/10_EW_periodicity.ipynb
       - England and Wales measles analysis: tutorials/notebooks/EW_analysis.ipynb
-      - SEI and SEIS model implementations: tutorials/notebooks/SEI_and_SEIS_implementation.ipynb
+      - SEI and SEIS model implementations: tutorials/notebooks/SEI_and_SEIS_implementations.ipynb
       - Explore the vital dynamics births components: tutorials/notebooks/births.ipynb
       - Test constant population components: tutorials/notebooks/constant_pop.ipynb
       - Numba compatible distributions: tutorials/notebooks/distributions.ipynb

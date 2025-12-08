@@ -1194,7 +1194,7 @@ class TransmissionSIX:
         Transmission Component for SI-Style Models (S → I Only, No Recovery)
 
         Args:
-            model: The epidemic model instance.
+            model (Model): The epidemic model instance.
             seasonality (Union[ValuesMap, np.ndarray], optional): Seasonality modifier for transmission rate.
                 Can be a ValuesMap or a precomputed array. Defaults to None.
         """
@@ -1343,9 +1343,9 @@ class TransmissionSI:
         Initializes the TransmissionSI component.
 
         Args:
-            model: The epidemiological model instance.
-            infdurdist: A function that returns the infectious duration for a given tick and node.
-            infdurmin: Minimum infectious duration.
+            model (Model): The epidemiological model instance.
+            infdurdist (Callable[[int, int], float]): A function that returns the infectious duration for a given tick and node.
+            infdurmin (int): Minimum infectious duration.
         """
         self.model = model
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
@@ -1501,9 +1501,9 @@ class TransmissionSE:
         Initializes the TransmissionSE component.
 
         Args:
-            model: The epidemiological model instance.
-            expdurdist: A function that returns the incubation duration for a given tick and node.
-            expdurmin: Minimum incubation duration.
+            model (Model): The epidemiological model instance.
+            expdurdist (Callable[[int, int], float]): A function that returns the incubation duration for a given tick and node.
+            expdurmin (int): Minimum incubation duration.
         """
         self.model = model
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
