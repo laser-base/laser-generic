@@ -24,7 +24,7 @@ Suggested order:
 Once you have completed the above notebooks, please explore the following notebooks in any desired order to learn how to implement and integrate custom components:
 
 - [England and Wales measles analysis](notebooks/EW_analysis.ipynb)
-- [SEI and SEIS model implementations](notebooks/SEI_and_SEIS_implementation.ipynb)
+- [SEI and SEIS model implementations](notebooks/SEI_and_SEIS_implementations.ipynb)
 - [Explore the vital dynamics births components](notebooks/births.ipynb)
 - [Test constant population components](notebooks/constant_pop.ipynb)
 - [Numba compatible distributions](notebooks/distributions.ipynb)
