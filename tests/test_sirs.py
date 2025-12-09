@@ -50,9 +50,9 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
         wandurdist = dists.normal(loc=WANING_DURATION_MEAN, scale=5)
 
         s = SIRS.Susceptible(model)
-        i = SIRS.Infectious(model, infdurdist, wandurdist)
-        r = SIRS.Recovered(model, wandurdist)
-        tx = SIRS.Transmission(model, infdurdist)
+        i = SIRS.InfectiousIRS(model, infdurdist, wandurdist)
+        r = SIRS.RecoveredRS(model, wandurdist)
+        tx = SIRS.TransmissionSI(model, infdurdist)
 
         if birthrates is not None:
             assert pyramid is not None, "Pyramid must be provided for vital dynamics."
@@ -221,9 +221,9 @@ class Default(unittest.TestCase):
                 model.validating = VALIDATING
 
                 s = SIRS.Susceptible(model)
-                i = SIRS.Infectious(model, infdist, waningdist)
-                r = SIRS.Recovered(model, waningdist)
-                tx = SIRS.Transmission(model, infdist)
+                i = SIRS.InfectiousIRS(model, infdist, waningdist)
+                r = SIRS.RecoveredRS(model, waningdist)
+                tx = SIRS.TransmissionSI(model, infdist)
 
                 model.components = [s, i, r, tx]
 
@@ -329,9 +329,9 @@ class Default(unittest.TestCase):
                 model.validating = VALIDATING
 
                 s = SIRS.Susceptible(model)
-                i = SIRS.Infectious(model, infdist, waningdist)
-                r = SIRS.Recovered(model, waningdist)
-                tx = SIRS.Transmission(model, infdist)
+                i = SIRS.InfectiousIRS(model, infdist, waningdist)
+                r = SIRS.RecoveredRS(model, waningdist)
+                tx = SIRS.TransmissionSI(model, infdist)
 
                 births = BirthsByCBR(model, birthrates.values, pyramid)
                 mortality = MortalityByEstimator(model, survival)

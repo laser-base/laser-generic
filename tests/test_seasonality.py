@@ -1,4 +1,14 @@
 """
+FAILED tests/test_seasonality.py::TestSeasonalForcing::test_si_amplified_seasonality - AttributeError: module 'laser.generic.SI' has no attribute 'Infectious'. Did you mean: 'InfectiousSI'?
+FAILED tests/test_seasonality.py::TestSeasonalForcing::test_si_attenuated_seasonality - AttributeError: module 'laser.generic.SI' has no attribute 'Infectious'. Did you mean: 'InfectiousSI'?
+FAILED tests/test_seasonality.py::TestSeasonalForcing::test_si_spatial_seasonality - AttributeError: module 'laser.generic.SI' has no attribute 'Infectious'. Did you mean: 'InfectiousSI'?
+FAILED tests/test_seasonality.py::TestSeasonalForcing::test_si_temporal_seasonality - AttributeError: module 'laser.generic.SI' has no attribute 'InfectiousIR'. Did you mean: 'InfectiousSI'?
+FAILED tests/test_seasonality.py::TestSeasonalForcing::test_sir_amplified_seasonality - AttributeError: module 'laser.generic.SIR' has no attribute 'InfectiousSI'. Did you mean: 'InfectiousIR'?
+FAILED tests/test_seasonality.py::TestSeasonalForcing::test_sir_attenuated_seasonality - AttributeError: module 'laser.generic.SIR' has no attribute 'Infectious'. Did you mean: 'InfectiousIR'?
+FAILED tests/test_seasonality.py::TestSeasonalForcing::test_sir_temporal_seasonality - AttributeError: module 'laser.generic.SIR' has no attribute 'Infectious'. Did you mean: 'InfectiousIR'?
+"""
+
+"""
 Comprehensive tests for seasonal forcing in transmission components.
 
 Tests three transmission types (SI, SIR, SEIR) with three seasonality
@@ -112,7 +122,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SI.Susceptible(model),
-            SI.Infectious(model),
+            SI.InfectiousSI(model),
             TransmissionSIX(model, seasonality=None),
         ]
 
@@ -162,7 +172,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SI.Susceptible(model),
-            SI.Infectious(model),
+            SI.InfectiousSI(model),
             TransmissionSIX(model, seasonality=seasonality),
         ]
 
@@ -227,7 +237,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SI.Susceptible(model),
-            SI.Infectious(model),
+            SI.InfectiousSI(model),
             TransmissionSIX(model, seasonality=seasonality),
         ]
 
@@ -299,7 +309,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SIR.Susceptible(model),
-            SIR.Infectious(model, infdurdist),
+            SIR.InfectiousIR(model, infdurdist),
             SIR.Recovered(model),
             TransmissionSI(model, infdurdist, seasonality=None),
         ]
@@ -363,7 +373,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SIR.Susceptible(model),
-            SIR.Infectious(model, infdurdist),
+            SIR.InfectiousIR(model, infdurdist),
             SIR.Recovered(model),
             TransmissionSI(model, infdurdist, seasonality=seasonality),
         ]
@@ -425,7 +435,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SIR.Susceptible(model),
-            SIR.Infectious(model, infdurdist),
+            SIR.InfectiousIR(model, infdurdist),
             SIR.Recovered(model),
             TransmissionSI(model, infdurdist, seasonality=seasonality),
         ]
@@ -501,7 +511,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SEIR.Susceptible(model),
             SEIR.Exposed(model, expdurdist, infdurdist),
-            SEIR.Infectious(model, infdurdist),
+            SEIR.InfectiousIR(model, infdurdist),
             SEIR.Recovered(model),
             TransmissionSE(model, expdurdist, seasonality=None),
         ]
@@ -574,7 +584,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SEIR.Susceptible(model),
             SEIR.Exposed(model, expdurdist, infdurdist),
-            SEIR.Infectious(model, infdurdist),
+            SEIR.InfectiousIR(model, infdurdist),
             SEIR.Recovered(model),
             TransmissionSE(model, expdurdist, seasonality=seasonality),
         ]
@@ -648,7 +658,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SEIR.Susceptible(model),
             SEIR.Exposed(model, expdurdist, infdurdist),
-            SEIR.Infectious(model, infdurdist),
+            SEIR.InfectiousIR(model, infdurdist),
             SEIR.Recovered(model),
             TransmissionSE(model, expdurdist, seasonality=seasonality),
         ]
@@ -729,7 +739,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SI.Susceptible(model),
-            SI.Infectious(model),
+            SI.InfectiousSI(model),
             TransmissionSIX(model, seasonality=seasonality),
         ]
 
@@ -806,7 +816,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SIR.Susceptible(model),
-            SIR.Infectious(model, infdurdist),
+            SIR.InfectiousIR(model, infdurdist),
             SIR.Recovered(model),
             TransmissionSI(model, infdurdist, seasonality=seasonality),
         ]
@@ -896,7 +906,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SEIR.Susceptible(model),
             SEIR.Exposed(model, expdurdist, infdurdist),
-            SEIR.Infectious(model, infdurdist),
+            SEIR.InfectiousIR(model, infdurdist),
             SEIR.Recovered(model),
             TransmissionSE(model, expdurdist, seasonality=seasonality),
         ]
@@ -991,7 +1001,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SI.Susceptible(model),
-            SI.Infectious(model),
+            SI.InfectiousSI(model),
             TransmissionSIX(model, seasonality=temp_seasonality),
         ]
 
@@ -1023,7 +1033,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model2 = Model(scenario, params)
         model2.components = [
             SI.Susceptible(model2),
-            SI.Infectious(model2),
+            SI.InfectiousSI(model2),
             TransmissionSIX(model2, seasonality=seasonality),
         ]
 
@@ -1090,7 +1100,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model = Model(scenario, params)
         model.components = [
             SIR.Susceptible(model),
-            SIR.Infectious(model, infdurdist),
+            SIR.InfectiousIR(model, infdurdist),
             SIR.Recovered(model),
             TransmissionSI(model, infdurdist, seasonality=None),
         ]
@@ -1120,7 +1130,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model2 = Model(scenario, params)
         model2.components = [
             SIR.Susceptible(model2),
-            SIR.Infectious(model2, infdurdist),
+            SIR.InfectiousIR(model2, infdurdist),
             SIR.Recovered(model2),
             TransmissionSI(model2, infdurdist, seasonality=seasonality),
         ]
@@ -1194,7 +1204,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SEIR.Susceptible(model),
             SEIR.Exposed(model, expdurdist, infdurdist),
-            SEIR.Infectious(model, infdurdist),
+            SEIR.InfectiousIR(model, infdurdist),
             SEIR.Recovered(model),
             TransmissionSE(model, expdurdist, seasonality=None),
         ]
@@ -1225,7 +1235,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model2.components = [
             SEIR.Susceptible(model2),
             SEIR.Exposed(model2, expdurdist, infdurdist),
-            SEIR.Infectious(model2, infdurdist),
+            SEIR.InfectiousIR(model2, infdurdist),
             SEIR.Recovered(model2),
             TransmissionSE(model2, expdurdist, seasonality=seasonality),
         ]
@@ -1276,7 +1286,7 @@ class TestSeasonalForcing(unittest.TestCase):
 
         model.components = [
             SI.Susceptible(model),
-            SI.Infectious(model),
+            SI.InfectiousSI(model),
             TransmissionSIX(model, seasonality=None),
         ]
 

@@ -75,8 +75,8 @@ class Default(unittest.TestCase):
                 model.validating = VALIDATING
 
                 s = SI.Susceptible(model)
-                i = SI.Infectious(model)
-                tx = SI.Transmission(model)
+                i = SI.InfectiousSI(model)
+                tx = SI.TransmissionSIX(model)
                 # births = BirthsByCBR(model, birthrate_map, pyramid)
                 # mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, tx]  # , births, mortality]
@@ -167,8 +167,8 @@ class Default(unittest.TestCase):
                 model.validating = VALIDATING
 
                 s = SI.Susceptible(model)
-                i = SI.Infectious(model)
-                tx = SI.Transmission(model)
+                i = SI.InfectiousSI(model)
+                tx = SI.TransmissionSIX(model)
                 model.components = [s, i, tx]  # , births, mortality]
 
             model.run(f"SI Linear ({model.people.count:,}/{model.nodes.count:,})")
@@ -254,8 +254,8 @@ class Default(unittest.TestCase):
 
                 model.components = [
                     SI.Susceptible(model),
-                    SI.Infectious(model),
-                    SI.Transmission(model),
+                    SI.InfectiousSI(model),
+                    SI.TransmissionSIX(model),
                     ConstantPopVitalDynamics(model, birthrate_map),
                 ]
 

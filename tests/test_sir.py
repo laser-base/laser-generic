@@ -70,9 +70,9 @@ class Default(unittest.TestCase):
 
                 infdist = dists.normal(loc=infectious_duration_mean, scale=2)
                 s = SIR.Susceptible(model)
-                i = SIR.Infectious(model, infdist)
+                i = SIR.InfectiousIR(model, infdist)
                 r = SIR.Recovered(model)
-                tx = SIR.Transmission(model, infdist)
+                tx = SIR.TransmissionSI(model, infdist)
                 model.components = [s, i, r, tx]
                 model.validating = VALIDATING
 
@@ -139,9 +139,9 @@ class Default(unittest.TestCase):
                 pyramid = AliasedDistribution(np.full(89, 1_000))
                 survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
                 s = SIR.Susceptible(model)
-                i = SIR.Infectious(model, infdist)
+                i = SIR.InfectiousIR(model, infdist)
                 r = SIR.Recovered(model)
-                tx = SIR.Transmission(model, infdist)
+                tx = SIR.TransmissionSI(model, infdist)
                 births = BirthsByCBR(model, birthrates=birthrate_map, pyramid=pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, r, tx, births, mortality]
@@ -229,9 +229,9 @@ class Default(unittest.TestCase):
                 model.validating = VALIDATING
 
                 s = SIR.Susceptible(model)
-                i = SIR.Infectious(model, infdist)
+                i = SIR.InfectiousIR(model, infdist)
                 r = SIR.Recovered(model)
-                tx = SIR.Transmission(model, infdist)
+                tx = SIR.TransmissionSI(model, infdist)
                 model.components = [s, i, r, tx]
 
             model.run("SIR Linear (no demography)")
@@ -326,9 +326,9 @@ class Default(unittest.TestCase):
                 model.validating = VALIDATING
 
                 s = SIR.Susceptible(model)
-                i = SIR.Infectious(model, infdist)
+                i = SIR.InfectiousIR(model, infdist)
                 r = SIR.Recovered(model)
-                tx = SIR.Transmission(model, infdist)
+                tx = SIR.TransmissionSI(model, infdist)
 
                 births = BirthsByCBR(model, birthrate_map, pyramid)
                 mortality = MortalityByEstimator(model, survival)
@@ -420,9 +420,9 @@ class Default(unittest.TestCase):
                 model = Model(scenario, params)
                 infdurdist = dists.normal(loc=inf_mean, scale=2)
                 s = SIR.Susceptible(model)
-                i = SIR.Infectious(model, infdurdist)
+                i = SIR.InfectiousIR(model, infdurdist)
                 r = SIR.Recovered(model)
-                tx = SIR.Transmission(model, infdurdist)
+                tx = SIR.TransmissionSI(model, infdurdist)
                 model.components = [s, i, r, tx]
                 model.run("SIR KM")
 

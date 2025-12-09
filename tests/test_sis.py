@@ -86,8 +86,8 @@ class Default(unittest.TestCase):
                 survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
 
                 s = SIS.Susceptible(model)
-                i = SIS.Infectious(model, infdist)
-                tx = SIS.Transmission(model, infdist)
+                i = SIS.InfectiousIS(model, infdist)
+                tx = SIS.TransmissionSI(model, infdist)
                 births = BirthsByCBR(model, birthrate_map, pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, tx, births, mortality]
@@ -170,8 +170,8 @@ class Default(unittest.TestCase):
                 survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
 
                 s = SIS.Susceptible(model)
-                i = SIS.Infectious(model, infdist)
-                tx = SIS.Transmission(model, infdist)
+                i = SIS.InfectiousIS(model, infdist)
+                tx = SIS.TransmissionSI(model, infdist)
                 births = BirthsByCBR(model, birthrate_map, pyramid)
                 mortality = MortalityByEstimator(model, survival)
                 model.components = [s, i, tx, births, mortality]

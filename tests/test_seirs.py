@@ -61,9 +61,9 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
 
         s = SEIRS.Susceptible(model)
         e = SEIRS.Exposed(model, expdist, infdist)
-        i = SEIRS.Infectious(model, infdist, wandist)
-        r = SEIRS.Recovered(model, wandist)
-        tx = SEIRS.Transmission(model, expdist)
+        i = SEIRS.InfectiousIRS(model, infdist, wandist)
+        r = SEIRS.RecoveredRS(model, wandist)
+        tx = SEIRS.TransmissionSE(model, expdist)
 
         if birthrates is not None:
             assert pyramid is not None, "Pyramid must be provided for vital dynamics."
@@ -290,9 +290,9 @@ class Default(unittest.TestCase):
 
                 s = SEIRS.Susceptible(model)
                 e = SEIRS.Exposed(model, expdur, infdur)
-                i = SEIRS.Infectious(model, infdur, wandur)
-                r = SEIRS.Recovered(model, wandur)
-                tx = SEIRS.Transmission(model, infdur)
+                i = SEIRS.InfectiousIRS(model, infdur, wandur)
+                r = SEIRS.RecoveredRS(model, wandur)
+                tx = SEIRS.TransmissionSE(model, infdur)
 
                 model.components = [s, e, i, r, tx]
 

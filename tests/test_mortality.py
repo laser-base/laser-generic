@@ -42,7 +42,7 @@ def create_seir_scenario_with_mortality(cdr=20.0):
     model.components = [
         SEIR.Susceptible(model),
         SEIR.Exposed(model, expdurdist, infdurdist),
-        SEIR.Infectious(model, infdurdist),
+        SEIR.InfectiousIR(model, infdurdist),
         SEIR.Recovered(model),
         MortalityByCDR(model, mortalityrates),
     ]
@@ -94,7 +94,7 @@ def create_seir_scenario_with_age_specific_mortality(CBR: float = 0.0):
     model.components = [
         SEIR.Susceptible(model),
         SEIR.Exposed(model, expdurdist, infdurdist),
-        SEIR.Infectious(model, infdurdist),
+        SEIR.InfectiousIR(model, infdurdist),
         SEIR.Recovered(model),
         BirthsByCBR(model, birthrates=ValuesMap.from_scalar(CBR, 1, NTICKS), pyramid=pyramid, track=True),
         MortalityByEstimator(model, survival),

@@ -16,7 +16,7 @@ from laser.generic.utils import get_default_parameters, seed_infections_randomly
 
 # Scenario construction and ValuesMap
 from laser.core.utils import grid
-from laser.generic.newutils import ValuesMap
+from laser.generic.utils import ValuesMap
 
 # SI model components
 import laser.generic.SI as SI
@@ -24,8 +24,8 @@ import laser.generic.SI as SI
 # SIR model components (do NOT import from generic.components!)
 from laser.generic.SIR import (
     Susceptible,
-    Transmission,
-    Infectious,
+    TransmissionSI as Transmission,
+    InfectiousIR as Infectious,
     Recovered,
 )
 

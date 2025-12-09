@@ -75,9 +75,9 @@ def create_equilibrium_seir_scenario(cbr=20.0):
     model.components = [
         SEIR.Susceptible(model),
         SEIR.Exposed(model, expdurdist, infdurdist),
-        SEIR.Infectious(model, infdurdist),
+        SEIR.InfectiousIR(model, infdurdist),
         SEIR.Recovered(model),
-        SEIR.Transmission(model, expdurdist),
+        SEIR.TransmissionSE(model, expdurdist),
         BirthsByCBR(model, birthrates, pyramid),  # Last so end of tick populations are correct.
     ]
 
@@ -112,7 +112,7 @@ def create_scenario_with_additional_states(cbr=20.0):
     model.components = [
         SEIR.Susceptible(model),
         SEIR.Exposed(model, expdurdist, infdurdist),
-        SEIR.Infectious(model, infdurdist),
+        SEIR.InfectiousIR(model, infdurdist),
         SEIR.Recovered(model),
         BirthsByCBR(model, birthrates, pyramid),  # Needs to go last so end of tick populations are correct.
     ]
@@ -143,7 +143,7 @@ def create_multi_node_scenario(cbr=20.0):
     model.components = [
         SEIR.Susceptible(model),
         SEIR.Exposed(model, expdurdist, infdurdist),
-        SEIR.Infectious(model, infdurdist),
+        SEIR.InfectiousIR(model, infdurdist),
         SEIR.Recovered(model),
         BirthsByCBR(model, birthrates, pyramid),
     ]
