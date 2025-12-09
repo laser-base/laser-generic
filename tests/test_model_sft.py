@@ -279,7 +279,6 @@ def test_sir_nobirths():
             }
         )
 
-        # _scenario = scenario.copy()
         scenario["S"] = pop - 3
         scenario["I"] = 3
         scenario["R"] = 0
