@@ -6,10 +6,10 @@ Agents transition from Infectious to Recovered upon recovery after the infectiou
 Agents transition from Recovered back to Susceptible upon waning immunity after the waning duration.
 """
 
-from .components import InfectiousIRS
-from .components import RecoveredRS
-from .components import Susceptible
-from .components import TransmissionSI
-from .shared import State
+from laser.generic.components import InfectiousIRS
+from laser.generic.components import RecoveredRS
+from laser.generic.components import Susceptible
+from laser.generic.components import TransmissionSI
+from laser.generic.shared import State
 
 __all__ = ["InfectiousIRS", "RecoveredRS", "State", "Susceptible", "TransmissionSI"]

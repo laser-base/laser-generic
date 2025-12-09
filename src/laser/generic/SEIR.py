@@ -7,11 +7,11 @@ Agents transition from Infectious to Recovered after the infectious period.
 Agents remain in the Recovered state indefinitely (no waning immunity).
 """
 
-from .components import Exposed
-from .components import InfectiousIR
-from .components import Recovered
-from .components import Susceptible
-from .components import TransmissionSE
-from .shared import State
+from laser.generic.components import Exposed
+from laser.generic.components import InfectiousIR
+from laser.generic.components import Recovered
+from laser.generic.components import Susceptible
+from laser.generic.components import TransmissionSE
+from laser.generic.shared import State
 
 __all__ = ["Exposed", "InfectiousIR", "Recovered", "State", "Susceptible", "TransmissionSE"]

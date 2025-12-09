@@ -1,4 +1,4 @@
-from laser.generic.newutils import TimingStats as ts  # noqa: I001
+from laser.generic.utils import TimingStats as ts  # noqa: I001
 
 import datetime
 
@@ -16,8 +16,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 from tqdm import tqdm
 
-from laser.generic.newutils import ValuesMap
-from laser.generic.newutils import get_centroids
+from laser.generic.utils import ValuesMap
+from laser.generic.utils import get_centroids
 
 
 class Model:
