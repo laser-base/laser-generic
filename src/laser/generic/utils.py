@@ -67,7 +67,7 @@ class ValuesMap:
 
         All nodes have the same time series data.
 
-        nticks is inferred from the length of data.
+        nticks is inferred from the length of data if not explicitly provided.
 
         Args:
             data (np.ndarray): 1D array of time series data.
