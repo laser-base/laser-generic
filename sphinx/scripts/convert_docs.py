@@ -161,9 +161,9 @@ def main():
 
     successes, failures = 0, 0
     for md in md_files:
-        #if md.name.lower() == "index.md":
-            #log(f"Skipping index file: {md}")
-            #continue
+        # if md.name.lower() == "index.md":
+        # log(f"Skipping index file: {md}")
+        # continue
 
         rel = md.relative_to(md_dir)
         out = rst_dir / rel.with_suffix(".rst")

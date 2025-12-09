@@ -3,7 +3,6 @@ This module provides utility functions for the laser-measles project.
 
 """
 
-
 import time
 from math import ceil
 from typing import Any

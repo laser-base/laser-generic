@@ -118,7 +118,7 @@ We attach the components in this exact order to ensure state updates and populat
 
 ---
 
-### `SIR.Susceptible(model)`
+#### `SIR.Susceptible(model)`
 
 This component:
 - Initializes agents' state to `SUSCEPTIBLE` (code 0)
@@ -132,7 +132,7 @@ No parameters or distributions are required.
 #### `SIR.TransmissionSI(model, infdurdist=...)`
 
 This is the **S → I transition** component:
-- Computes **force of infection**:  
+- Computes **force of infection**:
   $$
   \lambda = \beta \cdot \frac{I}{N}
   $$
@@ -205,7 +205,7 @@ model.components = [
 
 ---
 
-### Optional Enhancements
+#### Optional Enhancements
 
 - You can replace `SIR.InfectiousIR` with `SIR.InfectiousIRS` for **waning immunity** (SIRS model).
 - You can use `SIR.TransmissionSE` and `SIR.Exposed` components for SEIR models.

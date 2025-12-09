@@ -5,7 +5,6 @@ Agents transition from Susceptible to Infectious upon infection.
 Agents remain in the Infectious state indefinitely (no recovery).
 """
 
-
 from laser.generic.components import InfectiousSI
 from laser.generic.components import Susceptible
 from laser.generic.components import TransmissionSIX
