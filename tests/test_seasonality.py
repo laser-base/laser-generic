@@ -1,14 +1,4 @@
 """
-FAILED tests/test_seasonality.py::TestSeasonalForcing::test_si_amplified_seasonality - AttributeError: module 'laser.generic.SI' has no attribute 'Infectious'. Did you mean: 'InfectiousSI'?
-FAILED tests/test_seasonality.py::TestSeasonalForcing::test_si_attenuated_seasonality - AttributeError: module 'laser.generic.SI' has no attribute 'Infectious'. Did you mean: 'InfectiousSI'?
-FAILED tests/test_seasonality.py::TestSeasonalForcing::test_si_spatial_seasonality - AttributeError: module 'laser.generic.SI' has no attribute 'Infectious'. Did you mean: 'InfectiousSI'?
-FAILED tests/test_seasonality.py::TestSeasonalForcing::test_si_temporal_seasonality - AttributeError: module 'laser.generic.SI' has no attribute 'InfectiousIR'. Did you mean: 'InfectiousSI'?
-FAILED tests/test_seasonality.py::TestSeasonalForcing::test_sir_amplified_seasonality - AttributeError: module 'laser.generic.SIR' has no attribute 'InfectiousSI'. Did you mean: 'InfectiousIR'?
-FAILED tests/test_seasonality.py::TestSeasonalForcing::test_sir_attenuated_seasonality - AttributeError: module 'laser.generic.SIR' has no attribute 'Infectious'. Did you mean: 'InfectiousIR'?
-FAILED tests/test_seasonality.py::TestSeasonalForcing::test_sir_temporal_seasonality - AttributeError: module 'laser.generic.SIR' has no attribute 'Infectious'. Did you mean: 'InfectiousIR'?
-"""
-
-"""
 Comprehensive tests for seasonal forcing in transmission components.
 
 Tests three transmission types (SI, SIR, SEIR) with three seasonality
