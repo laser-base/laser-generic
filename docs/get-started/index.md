@@ -32,7 +32,6 @@ This example demonstrates how to construct and run a simple **SIR** model in LAS
 import numpy as np
 import pandas as pd
 
-from laser.core.utils import grid
 from laser.core import PropertySet
 from laser.core.distributions import poisson
 
@@ -66,9 +65,10 @@ rng = np.random.default_rng(params.seed)
 
 ### 3. Define Scenario (Single Patch)
 
-We use the `grid()` utility to create a 1x1 spatial node ("patch") with 50,000 people. The population is then split into S, I, and R:
+Always use the `grid()` utility to create a scenario so that it's compliant with expectations downstream in the Model class. Here we use it even to create a 1x1 spatial node ("patch") with 50,000 people. The population is then split into S, I, and R:
 
 ```python
+from laser.core.utils import grid
 scenario = grid(
     M=1,
     N=1,
