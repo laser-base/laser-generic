@@ -8,10 +8,10 @@ Agents remain in the Recovered state indefinitely (no waning immunity).
 """
 
 from .components import Exposed
-from .components import InfectiousIR as Infectious
+from .components import InfectiousIR
 from .components import Recovered
 from .components import Susceptible
-from .components import TransmissionSE as Transmission
+from .components import TransmissionSE
 from .shared import State
 
-__all__ = ["Exposed", "Infectious", "Recovered", "State", "Susceptible", "Transmission"]
+__all__ = ["Exposed", "InfectiousIR", "Recovered", "State", "Susceptible", "TransmissionSE"]

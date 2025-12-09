@@ -6,10 +6,10 @@ Agents transition from Infectious to Recovered upon recovery.
 Agents remain in the Recovered state indefinitely (no waning immunity).
 """
 
-from .components import InfectiousIR as Infectious
+from .components import InfectiousIR
 from .components import Recovered
 from .components import Susceptible
-from .components import TransmissionSI as Transmission
+from .components import TransmissionSI
 from .shared import State
 
-__all__ = ["Infectious", "Recovered", "State", "Susceptible", "Transmission"]
+__all__ = ["InfectiousIR", "Recovered", "State", "Susceptible", "TransmissionSI"]

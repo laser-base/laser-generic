@@ -5,9 +5,9 @@ Agents transition from Susceptible to Infectious upon infection and are infectio
 Agents transition from Infectious back to Susceptible upon recovery.
 """
 
-from .components import InfectiousIS as Infectious
+from .components import InfectiousIS
 from .components import Susceptible
-from .components import TransmissionSI as Transmission
+from .components import TransmissionSI
 from .shared import State
 
-__all__ = ["Infectious", "State", "Susceptible", "Transmission"]
+__all__ = ["InfectiousIS", "State", "Susceptible", "TransmissionSI"]
