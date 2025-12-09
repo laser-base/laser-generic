@@ -133,9 +133,9 @@ No parameters or distributions are required.
 
 This is the **S → I transition** component:
 - Computes **force of infection**:  
-  \[
+  $$
   \lambda = \beta \cdot \frac{I}{N}
-  \]
+  $$
 - For each susceptible agent, performs a Bernoulli trial with probability \( p = 1 - e^{-\lambda} \)
 - If infected, agent's state becomes `INFECTIOUS`, and they are assigned an **infection duration** drawn from `infdurdist`
 - The timer is stored in `itimer` (infection timer)
