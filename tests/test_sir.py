@@ -128,7 +128,7 @@ class Default(unittest.TestCase):
             scenario["R"] = 0
 
             cbr = np.random.uniform(5, 35, len(scenario))
-            birthrate_map = ValuesMap.from_nodes(cbr, nsteps=NTICKS)
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
             infectious_duration_mean = 7.0
             beta = R0 / infectious_duration_mean
             params = PropertySet({"nticks": NTICKS, "beta": beta})
@@ -308,7 +308,7 @@ class Default(unittest.TestCase):
             # --- Vital Dynamics ---
             # Birthrate moderately large; mortality via Kaplan–Meier curve.
             cbr = np.random.uniform(5, 35, len(scenario))  # births per 1000 per year
-            birthrate_map = ValuesMap.from_nodes(cbr, nsteps=NTICKS)
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
 
             pyramid = AliasedDistribution(np.full(89, 1_000))
             survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())

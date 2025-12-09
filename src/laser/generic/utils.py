@@ -23,55 +23,56 @@ class ValuesMap:
 
     Arguments:
         nnodes (int): Number of nodes.
-        nsteps (int): Number of time steps.
+        nticks (int): Number of time steps.
 
     Methods to create ValuesMap from different data sources:
-        - from_scalar(scalar: float, nnodes: int, nsteps: int)
+        - from_scalar(scalar: float, nnodes: int, nticks: int)
         - from_timeseries(data: np.ndarray, nnodes: int)
-        - from_nodes(data: np.ndarray, nsteps: int)
+        - from_nodes(data: np.ndarray, nticks: int)
         - from_array(data: np.ndarray, writeable: bool = False)
     """
 
-    def __init__(self, nnodes: int, nsteps: int):
+    def __init__(self, nnodes: int, nticks: int):
         self._nnodes = nnodes
-        self._nsteps = nsteps
+        self._nticks = nticks
 
         return
 
     @staticmethod
-    def from_scalar(scalar: float, nnodes: int, nsteps: int) -> "ValuesMap":
+    def from_scalar(scalar: float, nnodes: int, nticks: int) -> "ValuesMap":
         """
         Create a ValuesMap with the same scalar value for all nodes and time steps.
 
         Args:
             scalar (float): The scalar value to fill the map.
             nnodes (int): Number of nodes.
-            nsteps (int): Number of time steps.
+            nticks (int): Number of time steps.
 
         Returns:
             ValuesMap: The created ValuesMap instance.
         """
         assert scalar >= 0.0, "scalar must be non-negative"
         assert nnodes > 0, "nnodes must be greater than 0"
-        assert nsteps > 0, "nsteps must be greater than 0"
-        instance = ValuesMap(nnodes=nnodes, nsteps=nsteps)
+        assert nticks > 0, "nticks must be greater than 0"
+        instance = ValuesMap(nnodes=nnodes, nticks=nticks)
         tmp = np.array([[scalar]], dtype=np.float32)
-        instance._data = np.broadcast_to(tmp, (nsteps, nnodes))
+        instance._data = np.broadcast_to(tmp, (nticks, nnodes))
 
         return instance
 
     @staticmethod
-    def from_timeseries(data: np.ndarray, nnodes: int) -> "ValuesMap":
+    def from_timeseries(data: np.ndarray, nnodes: int, nticks: int = None) -> "ValuesMap":
         """
         Create a ValuesMap from a time series array for all nodes.
 
         All nodes have the same time series data.
 
-        nsteps is inferred from the length of data.
+        nticks is inferred from the length of data.
 
         Args:
             data (np.ndarray): 1D array of time series data.
             nnodes (int): Number of nodes.
+            nticks (int, optional): Number of ticks. Defaults to None.
 
         Returns:
             ValuesMap: The created ValuesMap instance.
@@ -80,14 +81,19 @@ class ValuesMap:
         assert len(data.shape) == 1, "data must be a 1D array"
         assert data.shape[0] > 0, "data must have at least one element"
         assert nnodes > 0, "nnodes must be greater than 0"
-        nsteps = data.shape[0]
-        instance = ValuesMap(nnodes=nnodes, nsteps=nsteps)
-        instance._data = np.broadcast_to(data[:, None], (nsteps, nnodes))
+        nticks = data.shape[0] if nticks is None else nticks
+        assert nticks > 0, "nticks must be greater than 0"
+        instance = ValuesMap(nnodes=nnodes, nticks=nticks)
+        if data.shape[0] == nticks:
+            row = data
+        else:
+            row = data[np.arange(nticks) % data.shape[0]]
+        instance._data = np.broadcast_to(row[:, None], (nticks, nnodes))
 
         return instance
 
     @staticmethod
-    def from_nodes(data: np.ndarray, nsteps: int) -> "ValuesMap":
+    def from_nodes(data: np.ndarray, nticks: int) -> "ValuesMap":
         """
         Create a ValuesMap from a nodes array for all time steps.
 
@@ -97,7 +103,7 @@ class ValuesMap:
 
         Args:
             data (np.ndarray): 1D array of node data.
-            nsteps (int): Number of time steps.
+            nticks (int): Number of time steps.
 
         Returns:
             ValuesMap: The created ValuesMap instance.
@@ -105,10 +111,10 @@ class ValuesMap:
         assert np.all(data >= 0.0), "data must be non-negative"
         assert len(data.shape) == 1, "data must be a 1D array"
         assert data.shape[0] > 0, "data must have at least one element"
-        assert nsteps > 0, "nsteps must be greater than 0"
+        assert nticks > 0, "nticks must be greater than 0"
         nnodes = data.shape[0]
-        instance = ValuesMap(nnodes=nnodes, nsteps=nsteps)
-        instance._data = np.broadcast_to(data[None, :], (nsteps, nnodes))
+        instance = ValuesMap(nnodes=nnodes, nticks=nticks)
+        instance._data = np.broadcast_to(data[None, :], (nticks, nnodes))
 
         return instance
 
@@ -118,7 +124,7 @@ class ValuesMap:
         Create a ValuesMap from a 2D array of data.
 
         Args:
-            data (np.ndarray): 2D array of shape (nsteps, nnodes).
+            data (np.ndarray): 2D array of shape (nticks, nnodes).
             writeable (bool): If True, the underlying data array is writeable and can be modified during simulation. Default is False.
 
         Returns:
@@ -128,8 +134,8 @@ class ValuesMap:
         assert len(data.shape) == 2, "data must be a 2D array"
         assert data.shape[0] > 0, "data must have at least one row"
         assert data.shape[1] > 0, "data must have at least one column"
-        nsteps, nnodes = data.shape
-        instance = ValuesMap(nnodes=nnodes, nsteps=nsteps)
+        nticks, nnodes = data.shape
+        instance = ValuesMap(nnodes=nnodes, nticks=nticks)
         instance._data = data.astype(np.float32)
         instance._data.flags.writeable = writeable
 
@@ -141,18 +147,18 @@ class ValuesMap:
         return self._nnodes
 
     @property
-    def nsteps(self):
+    def nticks(self):
         """Number of time steps."""
-        return self._nsteps
+        return self._nticks
 
     @property
     def shape(self):
-        """Shape of the underlying data array (nsteps, nnodes)."""
+        """Shape of the underlying data array (nticks, nnodes)."""
         return self._data.shape
 
     @property
     def values(self):
-        """Underlying data array of shape (nsteps, nnodes)."""
+        """Underlying data array of shape (nticks, nnodes)."""
         return self._data
 
     def __getitem__(self, access):
