@@ -33,9 +33,9 @@ SEED = 271828
 POPULATION = 100_000
 
 
-def create_seasonality_valuesmap(multiplier: float, nnodes: int, nsteps: int) -> ValuesMap:
+def create_seasonality_valuesmap(multiplier: float, nnodes: int, nticks: int) -> ValuesMap:
     """Create constant seasonality forcing."""
-    return ValuesMap.from_timeseries(np.full(nsteps, multiplier, dtype=np.float32), nnodes)
+    return ValuesMap.from_timeseries(np.full(nticks, multiplier, dtype=np.float32), nnodes)
 
 
 def calculate_infection_rate(model, start=1, end=40):
@@ -158,7 +158,7 @@ class TestSeasonalForcing(unittest.TestCase):
         params = PropertySet({"nticks": NTICKS, "beta": 0.5})
         model = Model(scenario, params)
 
-        seasonality = create_seasonality_valuesmap(0.5, nnodes=1, nsteps=NTICKS)
+        seasonality = create_seasonality_valuesmap(0.5, nnodes=1, nticks=NTICKS)
 
         model.components = [
             SI.Susceptible(model),
@@ -223,7 +223,7 @@ class TestSeasonalForcing(unittest.TestCase):
         params = PropertySet({"nticks": NTICKS, "beta": 0.5})
         model = Model(scenario, params)
 
-        seasonality = create_seasonality_valuesmap(2.0, nnodes=1, nsteps=NTICKS)
+        seasonality = create_seasonality_valuesmap(2.0, nnodes=1, nticks=NTICKS)
 
         model.components = [
             SI.Susceptible(model),
@@ -358,7 +358,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model = Model(scenario, params)
 
         # With 0.5x seasonality: effective beta = 0.125, R0 approx 0.875 < 1
-        seasonality = create_seasonality_valuesmap(0.5, nnodes=1, nsteps=NTICKS)
+        seasonality = create_seasonality_valuesmap(0.5, nnodes=1, nticks=NTICKS)
         infdurdist = dists.normal(loc=inf_mean, scale=2.0)
 
         model.components = [
@@ -420,7 +420,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model = Model(scenario, params)
 
         # With 2.0x seasonality: effective beta = 0.5, R0 approx 3.5
-        seasonality = create_seasonality_valuesmap(2.0, nnodes=1, nsteps=NTICKS)
+        seasonality = create_seasonality_valuesmap(2.0, nnodes=1, nticks=NTICKS)
         infdurdist = dists.normal(loc=inf_mean, scale=2.0)
 
         model.components = [
@@ -567,7 +567,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model = Model(scenario, params)
 
         # With 0.5x seasonality: effective R0 approx 0.875 < 1
-        seasonality = create_seasonality_valuesmap(0.5, nnodes=1, nsteps=NTICKS)
+        seasonality = create_seasonality_valuesmap(0.5, nnodes=1, nticks=NTICKS)
         expdurdist = dists.normal(loc=exp_mean, scale=1.0)
         infdurdist = dists.normal(loc=inf_mean, scale=2.0)
 
@@ -641,7 +641,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model = Model(scenario, params)
 
         # With 2.0x seasonality: effective R0 approx 3.5
-        seasonality = create_seasonality_valuesmap(2.0, nnodes=1, nsteps=NTICKS)
+        seasonality = create_seasonality_valuesmap(2.0, nnodes=1, nticks=NTICKS)
         expdurdist = dists.normal(loc=exp_mean, scale=1.0)
         infdurdist = dists.normal(loc=inf_mean, scale=2.0)
 
