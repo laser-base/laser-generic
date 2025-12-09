@@ -71,7 +71,7 @@ class Default(unittest.TestCase):
 
             # Birthrates and parameters
             cbr = np.random.uniform(5, 35, len(scenario))  # per 1,000 per year
-            birthrate_map = ValuesMap.from_nodes(cbr, nsteps=NTICKS)
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
 
             R0 = 1.2
             infectious_duration_mean = 7.0
@@ -155,7 +155,7 @@ class Default(unittest.TestCase):
             assert np.all(scenario["I"] >= 0)
 
             cbr = np.random.uniform(5, 35, len(scenario))
-            birthrate_map = ValuesMap.from_nodes(cbr, nsteps=NTICKS)
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
 
             R0 = 1.2
             infectious_duration_mean = 7.0
