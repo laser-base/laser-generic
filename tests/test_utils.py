@@ -493,6 +493,7 @@ class TestGetCentroids(unittest.TestCase):
         self.assertEqual(len(centroids), 1)
         self.assertEqual(centroids.crs.to_epsg(), 4326)
 
+
 class TestGetDefaultParameters(unittest.TestCase):
     """
     Test suite for get_default_parameters() function that provides baseline parameter sets.
