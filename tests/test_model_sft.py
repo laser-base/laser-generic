@@ -301,6 +301,7 @@ def test_sir_nobirths():
 
         # Extract I(t) from node 0
         I_series = model.nodes.I[:, 0]
+        t = np.arange(len(I_series))  # ← always correct
 
         # Fit logistic approximation
         p0 = [np.mean(betarange), pop, np.mean(gammarange), 10]
@@ -308,9 +309,6 @@ def test_sir_nobirths():
             [betarange[0] / 2, pop * 0.9, gammarange[0] / 2, -300],
             [betarange[1] * 2, pop * 1.1, gammarange[1] * 2, 300],
         )
-
-        I_series = model.nodes.I[:, 0]
-        t = np.arange(len(I_series))  # ← always correct
 
         fitted, _ = curve_fit(
             sir_logistic,
