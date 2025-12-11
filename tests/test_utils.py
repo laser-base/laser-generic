@@ -42,7 +42,6 @@ class DummyModel:
 
         def __init__(self, count):
             self.count = count
-            self.susceptibility = np.ones(count)  # never updated
             self.state = np.zeros(count, dtype=np.int8)
             self.itimer = np.zeros(count)
             self.nodeid = np.arange(count)
