@@ -19,6 +19,8 @@ from typing import Optional
 import numpy as np
 from matplotlib.figure import Figure
 
+from laser.generic.utils import validate
+
 
 class RoutineImmunization:
     """
@@ -313,11 +315,13 @@ class RoutineImmunizationEx:
         dose_timing_min: int = 1,
         initialize: bool = True,
         track: bool = False,
+        validating: bool = False,
     ) -> None:
         self.model = model
         self.coverage_fn = coverage_fn
         self.dose_timing_dist = dose_timing_dist
         self.dose_timing_min = dose_timing_min
+        self.validating = validating
 
         self.track = track
 
@@ -341,6 +345,30 @@ class RoutineImmunizationEx:
             if track:
                 non_zero = self.model.people.ritimer > 0
                 self.model.people.initial_ri[non_zero] = (self.model.people.ritimer - self.model.people.dob)[non_zero]
+
+        return
+
+    def prevalidate_step(self, tick: int) -> None:
+        # Snapshot indices of currently recovered agents
+        self.prv_recovered = self.model.people.state == State.RECOVERED.value
+        # Capture indices of agents who are SUSCEPTIBLE and have ritimer == 1 before the step.
+        self.prv_qualified = (self.model.people.state == State.SUSCEPTIBLE.value) & (self.model.people.ritimer == 1)
+
+        return
+
+    def postvalidate_step(self, tick: int) -> None:
+        # Check that any agent _newly_ recovered should be in the prior "qualified" set (SUSCEPTIBLE with ritimer == 1).
+        newly_recovered = (self.model.people.state == State.RECOVERED.value) & (~self.prv_recovered)
+        assert np.all(self.prv_qualified[newly_recovered]), (
+            "Some agents became RECOVERED who were not SUSCEPTIBLE with ritimer == 1 in the prior step."
+        )
+
+        # Check that newly_immunized[tick] = number of newly recovered agents
+        n_newly_recovered = np.sum(newly_recovered)
+        n_recorded = np.sum(self.model.nodes.ri_immunized[tick])
+        assert n_newly_recovered == n_recorded, (
+            f"At tick {tick}, recorded ri_immunized {n_recorded} does not match actual newly recovered {n_newly_recovered}."
+        )
 
         return
 
@@ -399,6 +427,7 @@ class RoutineImmunizationEx:
 
         return
 
+    @validate(pre=prevalidate_step, post=postvalidate_step)
     def step(self, tick: int) -> None:
         newly_immunized = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         new_doses = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)

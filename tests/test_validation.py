@@ -31,7 +31,7 @@ from laser.generic.components import (
     Susceptible,
     TransmissionSE,
     TransmissionSI,
-    TransmissionSIX,
+    TransmissionSIx,
 )
 from laser.generic.vitaldynamics import (
     BirthsByCBR,
@@ -80,7 +80,7 @@ class TestComponentsValidation(unittest.TestCase):
         """
         Test SI model components with validation enabled.
 
-        Components tested: Susceptible, InfectiousSI, TransmissionSIX
+        Components tested: Susceptible, InfectiousSI, TransmissionSIx
 
         WHAT IS VALIDATED:
         - Susceptible counts match agent-level state at each tick
@@ -104,7 +104,7 @@ class TestComponentsValidation(unittest.TestCase):
         model.components = [
             Susceptible(model),
             InfectiousSI(model),
-            TransmissionSIX(model),
+            TransmissionSIx(model),
         ]
 
         # Should complete without validation errors

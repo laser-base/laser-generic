@@ -19,7 +19,7 @@ from laser.generic import SIR
 from laser.generic import Model
 from laser.generic.components import TransmissionSE
 from laser.generic.components import TransmissionSI
-from laser.generic.components import TransmissionSIX
+from laser.generic.components import TransmissionSIx
 from laser.generic.utils import ValuesMap
 
 try:
@@ -80,7 +80,7 @@ class TestSeasonalForcing(unittest.TestCase):
         return
 
     # ========================================================================
-    # SI Model Tests (TransmissionSIX)
+    # SI Model Tests (TransmissionSIx)
     # ========================================================================
 
     def test_si_no_seasonality(self):
@@ -100,7 +100,7 @@ class TestSeasonalForcing(unittest.TestCase):
         FAILURE MEANING:
         If this test fails, the baseline SI transmission model is broken. The epidemic
         should always grow in a fully susceptible population with positive beta. Failure
-        indicates a fundamental problem with TransmissionSIX component or SI model logic.
+        indicates a fundamental problem with TransmissionSIx component or SI model logic.
         """
 
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
@@ -113,7 +113,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SI.Susceptible(model),
             SI.Infectious(model),
-            TransmissionSIX(model, seasonality=None),
+            TransmissionSIx(model, seasonality=None),
         ]
 
         model.run("SI No Seasonality")
@@ -148,7 +148,7 @@ class TestSeasonalForcing(unittest.TestCase):
         If this test fails, seasonal forcing is not properly modulating transmission. The 0.5×
         multiplier should halve the effective transmission rate, slowing the epidemic proportionally.
         Failure suggests the seasonality parameter is not being applied to the force of infection
-        calculation in TransmissionSIX, or the multiplier is being applied incorrectly.
+        calculation in TransmissionSIx, or the multiplier is being applied incorrectly.
         """
 
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
@@ -163,7 +163,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SI.Susceptible(model),
             SI.Infectious(model),
-            TransmissionSIX(model, seasonality=seasonality),
+            TransmissionSIx(model, seasonality=seasonality),
         ]
 
         model.run("SI Attenuated Seasonality")
@@ -213,7 +213,7 @@ class TestSeasonalForcing(unittest.TestCase):
         If this test fails, seasonal forcing amplification is not working correctly. The 2.0×
         multiplier should double the effective transmission rate, accelerating the epidemic
         proportionally. Failure indicates the seasonality parameter is not properly scaling
-        up transmission in TransmissionSIX, possibly due to capping or incorrect multiplication.
+        up transmission in TransmissionSIx, possibly due to capping or incorrect multiplication.
         """
 
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
@@ -228,7 +228,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SI.Susceptible(model),
             SI.Infectious(model),
-            TransmissionSIX(model, seasonality=seasonality),
+            TransmissionSIx(model, seasonality=seasonality),
         ]
 
         model.run("SI Amplified Seasonality")
@@ -730,7 +730,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SI.Susceptible(model),
             SI.Infectious(model),
-            TransmissionSIX(model, seasonality=seasonality),
+            TransmissionSIx(model, seasonality=seasonality),
         ]
 
         model.run("SI Spatial Seasonality")
@@ -992,7 +992,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SI.Susceptible(model),
             SI.Infectious(model),
-            TransmissionSIX(model, seasonality=temp_seasonality),
+            TransmissionSIx(model, seasonality=temp_seasonality),
         ]
 
         # First run to determine when cumulative infections reach 25% and 75%
@@ -1024,7 +1024,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model2.components = [
             SI.Susceptible(model2),
             SI.Infectious(model2),
-            TransmissionSIX(model2, seasonality=seasonality),
+            TransmissionSIx(model2, seasonality=seasonality),
         ]
 
         model2.run("SI Temporal - With Declining Seasonality")
@@ -1277,7 +1277,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model.components = [
             SI.Susceptible(model),
             SI.Infectious(model),
-            TransmissionSIX(model, seasonality=None),
+            TransmissionSIx(model, seasonality=None),
         ]
 
         model.run("SI Baseline")
