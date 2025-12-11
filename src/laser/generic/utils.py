@@ -409,9 +409,7 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
     pop = model.people
 
     # Candidates: susceptible individuals in the target patch
-    susceptible_in_patch = np.where(
-        (pop.state == State.SUSCEPTIBLE.value) & (pop.nodeid == ipatch)
-    )[0]
+    susceptible_in_patch = np.where((pop.state == State.SUSCEPTIBLE.value) & (pop.nodeid == ipatch))[0]
 
     if len(susceptible_in_patch) == 0:
         # Nothing to do: no susceptibles in this patch
@@ -419,15 +417,14 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
 
     # If there are more candidates than requested infections, sample without replacement
     if len(susceptible_in_patch) > ninfections:
-        susceptible_in_patch = np.random.choice(
-            susceptible_in_patch, ninfections, replace=False
-        )
+        susceptible_in_patch = np.random.choice(susceptible_in_patch, ninfections, replace=False)
 
     # Set timers and mark as infectious
     pop.itimer[susceptible_in_patch] = model.params.inf_mean
     pop.state[susceptible_in_patch] = State.INFECTIOUS.value
 
     return
+
 
 def get_default_parameters() -> PropertySet:
     """
