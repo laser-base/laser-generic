@@ -406,7 +406,7 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
     if len(myinds) > ninfections:
         myinds = np.random.choice(myinds, ninfections, replace=False)
     model.people.itimer[myinds] = model.params.inf_mean
-    model.people.susceptibility[myinds] = 0
+    model.people.state[myinds] = State.INFECTIOUS.value
 
     return
 

@@ -563,22 +563,45 @@ class TestSeedingFunctions(unittest.TestCase):
     def test_seed_infections_in_patch(self):
         """
         Test that seed_infections_in_patch() correctly infects a specified number of agents
-        within a single node (patch).
+        within a single node (patch), using the state array rather than susceptibility.
 
         Test design:
-        - Use a population of 10 agents assigned to 5 nodes (2 per node).
-        - Request 2 infections in node 2.
-        - Validate that exactly 2 individuals with nodeid==2 have susceptibility==0.
+        - Use a population of 10 agents assigned to 5 nodes (2 agents per node).
+        - Request 2 infections in node 2 (ipatch=2).
+        - Validate that exactly 2 individuals with nodeid==2 transition to
+          INFECTIOUS state (state == State.INFECTIOUS.value).
         - Confirm that their itimers are initialized to inf_mean.
+        - Optionally verify that no agents in other nodes become infectious.
 
-        Pass = Exactly 2 agents in node 2 become infected and receive correct timers.
-        Fail = Infections spill to other nodes, wrong count infected, or incorrect timers.
+        Pass =
+        - Exactly 2 agents in node 2 are marked INFECTIOUS and receive correct timers.
+        - No agents in other nodes are marked INFECTIOUS.
+
+        Fail =
+        - Infections spill to other nodes,
+        - Wrong number of agents in node 2 become infectious,
+        - Or their timers are not initialized to the expected value.
         """
+        # Arrange: 5 nodes, 2 agents per node
         self.model.people.nodeid = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
+
+        # Act: seed infections only in patch 2
         utils.seed_infections_in_patch(self.model, ipatch=2, ninfections=2)
-        infected = (self.model.people.nodeid == 2) & (self.model.people.susceptibility == 0)
-        self.assertEqual(np.sum(infected), 2)
-        self.assertTrue(np.all(self.model.people.itimer[infected] == self.model.params.inf_mean))
+
+        # Agents in node 2 that are INFECTIOUS
+        infected_in_patch = (self.model.people.nodeid == 2) & (self.model.people.state == State.INFECTIOUS.value)
+
+        # Agents in other nodes that are INFECTIOUS (should be none)
+        infected_elsewhere = (self.model.people.nodeid != 2) & (self.model.people.state == State.INFECTIOUS.value)
+
+        # Assert: exactly two infectious in node 2
+        self.assertEqual(np.sum(infected_in_patch), 2)
+
+        # Assert: no infectious agents outside node 2
+        self.assertEqual(np.sum(infected_elsewhere), 0)
+
+        # Assert: their timers are set to inf_mean
+        self.assertTrue(np.all(self.model.people.itimer[infected_in_patch] == self.model.params.inf_mean))
 
 
 if __name__ == "__main__":
