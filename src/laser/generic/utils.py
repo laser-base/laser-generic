@@ -12,6 +12,7 @@ import geopandas as gpd
 import numpy as np
 
 from laser.core import PropertySet
+from laser.generic.shared import State
 from pyproj import Transformer
 from shapely.geometry import Point
 
@@ -408,7 +409,7 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
         myinds = np.random.permutation(myinds)[:ninfections]
 
     pop.itimer[myinds] = params.inf_mean
-    pop.state[myinds] = 1
+    pop.state[myinds] = State.INFECTIOUS.value
     inf_nodeids = pop.nodeid[myinds]
 
     return inf_nodeids
