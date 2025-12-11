@@ -104,8 +104,10 @@ class Susceptible:
         ]
     """
 
-    def __init__(self, model):
+    def __init__(self, model, validating: bool = False):
         self.model = model
+        self.validating = validating
+
         self.model.people.add_scalar_property("nodeid", dtype=np.uint16)
         self.model.people.add_scalar_property("state", dtype=np.int8, default=State.SUSCEPTIBLE.value)
         self.model.nodes.add_vector_property("S", model.params.nticks + 1, dtype=np.int32)
@@ -203,8 +205,10 @@ class Exposed:
         ]
     """
 
-    def __init__(self, model, expdurdist, infdurdist, expdurmin=1, infdurmin=1):
+    def __init__(self, model, expdurdist, infdurdist, expdurmin=1, infdurmin=1, validating: bool = False):
         self.model = model
+        self.validating = validating
+
         self.model.people.add_scalar_property("etimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("E", model.params.nticks + 1, dtype=np.int32)
         self.model.nodes.add_vector_property("newly_infectious", model.params.nticks + 1, dtype=np.int32)
@@ -262,6 +266,7 @@ class Exposed:
 
         return
 
+    @validate(pre=prevalidate_step, post=postvalidate_step)
     def step(self, tick: int) -> None:
         newly_infectious_by_node = np.zeros((nb.get_num_threads(), self.model.nodes.count), dtype=np.int32)
         nb_timer_update_timer_set(
@@ -348,8 +353,10 @@ class InfectiousSI:
         ]
     """
 
-    def __init__(self, model):
+    def __init__(self, model, validating: bool = False):
         self.model = model
+        self.validating = validating
+
         self.model.nodes.add_vector_property("I", model.params.nticks + 1, dtype=np.int32)
 
         # convenience
@@ -462,8 +469,10 @@ class InfectiousIS:
         ]
     """
 
-    def __init__(self, model, infdurdist, infdurmin=1):
+    def __init__(self, model, infdurdist, infdurmin=1, validating: bool = False):
         self.model = model
+        self.validating = validating
+
         self.model.people.add_scalar_property("itimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("I", model.params.nticks + 1, dtype=np.int32)
         self.model.nodes.add_vector_property("newly_recovered", model.params.nticks + 1, dtype=np.int32)
@@ -613,8 +622,10 @@ class InfectiousIR:
         ]
     """
 
-    def __init__(self, model, infdurdist, infdurmin=1):
+    def __init__(self, model, infdurdist, infdurmin=1, validating: bool = False):
         self.model = model
+        self.validating = validating
+
         self.model.people.add_scalar_property("itimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("I", model.params.nticks + 1, dtype=np.int32)
         self.model.nodes.add_vector_property("newly_recovered", model.params.nticks + 1, dtype=np.int32)
@@ -773,8 +784,10 @@ class InfectiousIRS:
         ]
     """
 
-    def __init__(self, model, infdurdist, wandurdist, infdurmin=1, wandurmin=1):
+    def __init__(self, model, infdurdist, wandurdist, infdurmin=1, wandurmin=1, validating: bool = False):
         self.model = model
+        self.validating = validating
+
         self.model.people.add_scalar_property("itimer", dtype=np.uint16)
         if not hasattr(self.model.people, "rtimer"):
             self.model.people.add_scalar_property("rtimer", dtype=np.uint16)
@@ -923,8 +936,10 @@ class Recovered:
         ]
     """
 
-    def __init__(self, model):
+    def __init__(self, model, validating: bool = False):
         self.model = model
+        self.validating = validating
+
         self.model.nodes.add_vector_property("R", model.params.nticks + 1, dtype=np.int32)
 
         self.model.nodes.R[0] = self.model.scenario.R
@@ -1031,8 +1046,10 @@ class RecoveredRS:
         ]
     """
 
-    def __init__(self, model, wandurdist, wandurmin=1):
+    def __init__(self, model, wandurdist, wandurmin=1, validating: bool = False):
         self.model = model
+        self.validating = validating
+
         if not hasattr(self.model.people, "rtimer"):
             self.model.people.add_scalar_property("rtimer", dtype=np.uint16)
         self.model.nodes.add_vector_property("R", model.params.nticks + 1, dtype=np.int32)
@@ -1136,7 +1153,7 @@ class RecoveredRS:
         return
 
 
-class TransmissionSIX:
+class TransmissionSIx:
     """
     Transmission Component for SI-Style Models (S → I Only, No Recovery)
 
@@ -1183,12 +1200,12 @@ class TransmissionSIX:
     Example:
         model.components = [
             SIR.Susceptible(model),
-            TransmissionSIX(model),
+            TransmissionSIx(model),
             InfectiousSI(model),
         ]
     """
 
-    def __init__(self, model, seasonality: Union[ValuesMap, np.ndarray] = None):
+    def __init__(self, model, seasonality: Union[ValuesMap, np.ndarray] = None, validating: bool = False):
         """
         Transmission Component for SI-Style Models (S → I Only, No Recovery)
 
@@ -1196,8 +1213,10 @@ class TransmissionSIX:
             model (Model): The epidemic model instance.
             seasonality (Union[ValuesMap, np.ndarray], optional): Seasonality modifier for transmission rate.
                 Can be a ValuesMap or a precomputed array. Defaults to None.
+            validating (bool): Enable component-level validation. Defaults to False.
         """
         self.model = model
+        self.validating = validating
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
         self.model.nodes.add_vector_property("newly_infected", model.params.nticks + 1, dtype=np.int32)
 
@@ -1336,7 +1355,12 @@ class TransmissionSI:
     """
 
     def __init__(
-        self, model, infdurdist: Callable[[int, int], float], infdurmin: int = 1, seasonality: Union[ValuesMap, np.ndarray] = None
+        self,
+        model,
+        infdurdist: Callable[[int, int], float],
+        infdurmin: int = 1,
+        seasonality: Union[ValuesMap, np.ndarray] = None,
+        validating: bool = False,
     ):
         """
         Initializes the TransmissionSI component.
@@ -1345,8 +1369,11 @@ class TransmissionSI:
             model (Model): The epidemiological model instance.
             infdurdist (Callable[[int, int], float]): A function that returns the infectious duration for a given tick and node.
             infdurmin (int): Minimum infectious duration.
+            seasonality (Union[ValuesMap, np.ndarray], optional): Seasonality modifier for transmission rate. Defaults to None.
+            validating (bool): Enable component-level validation. Defaults to False.
         """
         self.model = model
+        self.validating = validating
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
         self.model.nodes.add_vector_property("newly_infected", model.params.nticks + 1, dtype=np.int32)
 
@@ -1494,7 +1521,12 @@ class TransmissionSE:
     """
 
     def __init__(
-        self, model, expdurdist: Callable[[int, int], float], expdurmin: int = 1, seasonality: Union[ValuesMap, np.ndarray] = None
+        self,
+        model,
+        expdurdist: Callable[[int, int], float],
+        expdurmin: int = 1,
+        seasonality: Union[ValuesMap, np.ndarray] = None,
+        validating: bool = False,
     ):
         """
         Initializes the TransmissionSE component.
@@ -1503,8 +1535,11 @@ class TransmissionSE:
             model (Model): The epidemiological model instance.
             expdurdist (Callable[[int, int], float]): A function that returns the incubation duration for a given tick and node.
             expdurmin (int): Minimum incubation duration.
+            seasonality (Union[ValuesMap, np.ndarray], optional): Seasonality modifier for transmission rate. Defaults to None.
+            validating (bool): Enable component-level validation. Defaults to False.
         """
         self.model = model
+        self.validating = validating
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
         self.model.nodes.add_vector_property("newly_infected", model.params.nticks + 1, dtype=np.int32)
 
