@@ -1,6 +1,7 @@
 # Authors
 
-- Christopher Lorton - <https://www.idmod.org>
-- Jonathan Bloedow - <https://www.idmod.org>
-- Katherine Rosenfeld - <https://www.idmod.org>
-- Kevin McCarthy - <https://www.idmod.org>
+- Christopher Lorton - Tech Lead, Author, Maintiner
+- Kevin McCarthy - Research Lead, Author
+- Paul Saxman - Author, Maintainer
+- Jonathan Bloedow - Author
+- Katherine Rosenfeld - Author
