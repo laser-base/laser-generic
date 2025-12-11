@@ -66,10 +66,13 @@ extensions = [
 ]
 
 autoapi_type = "python"
-autoapi_dirs = ["../src/laser/generic"]
+# autoapi_dirs = ["../src/laser/generic"]
+autoapi_dirs = ["../src/"]
 autoapi_add_toctree_entry = True
 autoapi_keep_files = True
+autoapi_root = "autoapi"
 autoapi_imported_members = False
+autoapi_ignore = ["*SIR.py", "*SIRS.py", "*SEIR.py", "*SEIRS.py", "*SIS.py", "*SI.py"]
 
 autosummary_generate = True
 autoclass_content = "both"

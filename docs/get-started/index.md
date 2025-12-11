@@ -15,165 +15,277 @@ import laser.generic
 laser.generic.compute(...)
 ```
 
-## Build a model
+## LASER SIR Example – Annotated
 
-LASER is designed to be modular and flexible to accommodate a variety of modeling needs. The example below will demonstrate the basic set up of a LASER model, using a simple, 25-patch SEIR-like model with vital dynamics (births).
+This example demonstrates how to construct and run a simple **SIR** model in LASER using the `laser-core` and `laser-generic` libraries. It features:
 
+- One spatial node (`1x1` grid)
+- Poisson-distributed infectious periods
+- Correct S → I → R transitions
+- CSV output and plotting
 
-1. Define the scenario.
+---
 
-    You must define a `scenario` DataFrame with one row per patch, each including a `population`, and optionally `latitude` and `longitude` for plotting or spatial coupling.
+### 1. Import Dependencies
 
-    This example defines a 5×5 grid of patches with larger center and smaller outer nodes.
+```python
+import numpy as np
+import pandas as pd
 
-    ``` python
-    import pandas as pd
+from laser.core import PropertySet
+from laser.core.distributions import poisson
 
-    def make_city_scenario(n=5, spacing=1.0):
-        coords = [(i*spacing, j*spacing) for i in range(-(n//2), n//2+1)
-                                        for j in range(-(n//2), n//2+1)]
-        pops = []
-        for (x, y) in coords:
-            dist = abs(x) + abs(y)
-            if dist == 0:
-                pops.append(5000)    # city center
-            elif dist == 1:
-                pops.append(2000)    # suburbs
-            else:
-                pops.append(500)     # rural
-        return pd.DataFrame({
-            "population": pops,
-            "latitude": [y for (x, y) in coords],
-            "longitude": [x for (x, y) in coords],
-        })
+from laser.generic.model import Model
+from laser.generic import SIR
+```
 
-    scenario = make_city_scenario()
-    ```
+---
 
-1. Define the simulation parameters.
+### 2. Define Parameters
 
-    LASER uses a `PropertySet` (like a dict) to define model-wide parameters. Start with defaults and override as needed.
+We configure simulation-wide parameters using a `PropertySet`, including:
+- Simulation length (`nticks`)
+- Infection rate (`beta`)
+- Average infectious period
+- Number of initial infections
+- RNG seed
 
-    ``` python
-    from laser.generic.utils import get_default_parameters
+```python
+params = PropertySet({
+    "nticks": 160,
+    "beta": 0.8,                    # Per-day infection rate
+    "mean_infectious_period": 7.0,  # Average duration of infectiousness
+    "initial_infected": 10,
+    "seed": 123,
+})
+rng = np.random.default_rng(params.seed)
+```
 
-    params = get_default_parameters() | {
-        "seed": 42,
-        "beta": 0.3,         # transmission rate
-        "inf_mean": 5.0,     # mean infectious period
-        "inf_sigma": 1.0,    # stddev infectious period
-    }
+---
 
-    # Optional importation settings
-    # params |= {
-    #     "importation_period": 10,
-    #     "importation_count": 5,
-    #     "importation_start": 0,
-    #     "importation_end": 50,
-    # }
-    ```
+### 3. Define Scenario (Single Patch)
 
-1. Create the model.
+Always use the `grid()` utility to create a scenario so that it's compliant with expectations downstream in the Model class. Here we use it even to create a 1x1 spatial node ("patch") with 50,000 people. The population is then split into S, I, and R:
 
-    This initializes patch-level arrays and allocates the population frame.
+```python
+from laser.core.utils import grid
+scenario = grid(
+    M=1,
+    N=1,
+    population_fn=lambda r, c: 50_000
+)
 
-    ``` python
-    from laser.generic.model import Model
+scenario["I"] = params.initial_infected
+scenario["S"] = scenario["population"] - params.initial_infected
+scenario["R"] = 0
+```
 
-    model = Model(scenario, params)
-    ```
+---
 
-1. Attach components.
+### 4. Build Model
 
-    Components are step functions called every tick. Attach those you want in order.
+Initialize the `Model` using the scenario and parameters. The `.people` frame is automatically constructed with internal state fields.
 
-    ``` python
-    from laser.generic.transmission import Transmission
-    from laser.generic.susceptibility import Susceptibility
-    from laser.generic.exposure import Exposure
-    from laser.generic.infection import Infection
-    from laser.generic.importation import Infect_Random_Agents
-    from laser.generic.births import Births
+```python
+model = Model(scenario, params)
+people = model.people  # Auto-generated LaserFrame for agents
+```
 
-    model.components = [
-        Births,                # assigns dob
-        Susceptibility,        # creates .susceptibility property
-        Transmission,          # simulates infection pressure
-        Exposure,              # tracks latent infections
-        Infection,             # resolves infectious → recovered
-        Infect_Random_Agents,  # seeds infections over time
-    ]
+---
 
-    # Optional: ensure safe integer arithmetic
-    import numpy as np
-    model.patches.populations = model.patches.populations.astype(np.int64)
-    ```
+### 5. Infectious Duration Distribution
 
-1. Run the simulation.
+We define a **Numba-wrapped Poisson distribution** for the infectious period using LASER’s distribution API.
 
-    Once components are attached, run the simulation.
+```python
+infectious_duration = poisson(params.mean_infectious_period)
+```
 
-    ``` python
-    model.run()
-    ```
+---
 
-1. Export patch-level time series.
+### 6. Attach Components
 
-    Use this helper to export all `(tick, patch, variable)` values into a long-format CSV or HDF file.
+LASER models are built from **modular components**, each responsible for a specific part of the disease process. These components are called **once per timestep** in the order provided.
 
-    ``` python
-    def export_patch_timeseries(model, filename="report.csv", format="csv"):
-        import pandas as pd
-        import numpy as np
+The standard **SIR progression** involves:
 
-        npatches = len(model.patches)
-        vars = {}
-        for name in dir(model.patches):
-            arr = getattr(model.patches, name, None)
-            if isinstance(arr, np.ndarray) and arr.ndim == 2 and arr.shape[1] == npatches:
-                vars[name] = arr
+1. Tracking the number of **Susceptible** agents (S)
+2. Modeling the **Transmission** (S → I)
+3. Modeling **Infectiousness and Recovery** (I → R)
+4. Tracking the **Recovered** population (R)
 
-        records = []
-        maxtime = max(arr.shape[0] for arr in vars.values())
-        for t in range(maxtime):
-            for p in range(npatches):
-                row = {"tick": t, "patch": p}
-                for v, arr in vars.items():
-                    if t < arr.shape[0]:
-                        row[v] = arr[t, p]
-                records.append(row)
+We attach the components in this exact order to ensure state updates and population counts are handled consistently.
 
-        df = pd.DataFrame(records)
+---
 
-        if format == "csv":
-            df.to_csv(filename, index=False)
-        elif format == "h5":
-            df.to_hdf(filename, key="laser", mode="w")
-        else:
-            raise ValueError(f"Unsupported format: {format}")
+#### `SIR.Susceptible(model)`
 
-        print(f"Exported patch-level time series to {filename}")
-        return df
+This component:
+- Initializes agents' state to `SUSCEPTIBLE` (code 0)
+- Records the number of susceptible agents per node at each timestep
+- **Does not modify** state on its own—it simply keeps track
 
-    # Export to disk
-    df = export_patch_timeseries(model, "patch_report.csv", format="csv")
-    ```
+No parameters or distributions are required.
 
-1. Inspect or visualize output.
+---
 
-    LASER provides built-in visualizations: scenario maps, birth distributions, and timing pie charts.
+#### `SIR.TransmissionSI(model, infdurdist=...)`
 
-    ``` python
-    model.visualize(pdf=False)
+This is the **S → I transition** component:
+- Computes **force of infection**:
+  $$
+  \lambda = \beta \cdot \frac{I}{N}
+  $$
+- For each susceptible agent, performs a Bernoulli trial with probability \( p = 1 - e^{-\lambda} \)
+- If infected, agent's state becomes `INFECTIOUS`, and they are assigned an **infection duration** drawn from `infdurdist`
+- The timer is stored in `itimer` (infection timer)
 
-    print("Simulation complete.")
-    print("Patch populations over time (first 10 ticks):")
-    print(model.patches.populations[:10, :])
-    print("Cases test over time (first 100 ticks):")
-    print(model.patches.cases_test[:100, :])
-    ```
+##### Parameterization
 
-### Using AI
+The keyword argument:
+
+```python
+infdurdist=infectious_duration
+```
+
+is a Numba-wrapped distribution function. In this example, we use:
+
+```python
+from laser.core.distributions import poisson
+infectious_duration = poisson(7.0)
+```
+
+This means newly infected agents will remain infectious for a random number of days drawn from a **Poisson distribution with mean 7**.
+
+**Alternative distributions** available in `laser.core.distributions`:
+- `exponential(scale)`
+- `gamma(shape, scale)`
+- `lognormal(mean, sigma)`
+- `constant_int(value)`
+- `custom` (with tick/node-dependent logic)
+
+> You must use a **Numba-compatible function** with signature `(tick: int, node: int) → float/int`
+
+---
+
+#### `SIR.InfectiousIR(model, infdurdist=...)`
+
+This is the **I → R transition** component:
+- Decrements each agent's `itimer` (infection timer) every timestep
+- When `itimer == 0`, agent moves to `RECOVERED` state (code 3)
+- Records the number of infectious and recovered agents per node at each timestep
+
+This component **must use the same distribution** (`infdurdist`) as `TransmissionSI`, because it expects that `itimer` was set there.
+
+---
+
+#### `SIR.Recovered(model)`
+
+This component:
+- Tracks the number of recovered agents
+- Propagates `R[t+1] = R[t] + new_recoveries`
+- Does **not** initiate any transitions or timers
+
+No parameters are needed.
+
+---
+
+#### Full Component Setup
+
+```python
+model.components = [
+    SIR.Susceptible(model),                         # Track S
+    SIR.TransmissionSI(model, infdurdist=infectious_duration),  # S → I
+    SIR.InfectiousIR(model, infdurdist=infectious_duration),    # I → R
+    SIR.Recovered(model),                           # Track R
+]
+```
+
+> **Order matters** — make sure Susceptible and Recovered components wrap the transition steps.
+
+---
+
+#### Optional Enhancements
+
+- You can replace `SIR.InfectiousIR` with `SIR.InfectiousIRS` for **waning immunity** (SIRS model).
+- You can use `SIR.TransmissionSE` and `SIR.Exposed` components for SEIR models.
+- Add importation (`Infect_Random_Agents`) or demography (`Births`, `Deaths`) as additional components.
+
+```python
+from laser.generic.importation import Infect_Random_Agents
+model.components.append(Infect_Random_Agents(model))
+```
+
+---
+---
+
+### 7. Run Simulation
+
+Run the simulation for the configured number of timesteps.
+
+```python
+model.run()
+```
+
+---
+
+### 8. Extract SIR Time Series
+
+Extract patch-level S, I, R results as a Pandas DataFrame.
+
+```python
+df = pd.DataFrame({
+    "time": np.arange(params.nticks + 1),
+    "S": model.nodes.S[:, 0],
+    "I": model.nodes.I[:, 0],
+    "R": model.nodes.R[:, 0],
+})
+
+print(df.head())
+print("Peak infectious:", df["I"].max())
+```
+
+---
+
+### 9. Save to CSV
+
+Export the results to disk for downstream analysis or plotting.
+
+```python
+df.to_csv("sir_timeseries.csv", index=False)
+print("Saved sir_timeseries.csv")
+```
+
+---
+
+### 10. Plot Results
+
+Plot the trajectory of S, I, and R over time using `matplotlib`.
+
+```python
+import matplotlib.pyplot as plt
+
+plt.plot(df["time"], df["S"], label="S")
+plt.plot(df["time"], df["I"], label="I")
+plt.plot(df["time"], df["R"], label="R")
+
+plt.xlabel("Time")
+plt.ylabel("Population")
+plt.legend()
+plt.grid(True)
+plt.title("LASER SIR Example (1 node)")
+plt.show()
+```
+
+---
+
+### Notes
+
+- This example uses the `laser-generic` components for SIR modeling.
+- Timers (itimer) are automatically assigned using the specified distribution.
+- The `grid()` function defines the spatial layout but is used here with a single node.
+
+#### Using AI
 
 For internal IDM users, you can use a pre-built AI interface, [JENNER-GPT](https://chatgpt.com/g/g-67e6b80cd3e88191ae01e058f9df665e-jenner-ic) to create your simulations.
 

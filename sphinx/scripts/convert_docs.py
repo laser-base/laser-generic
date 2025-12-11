@@ -161,10 +161,15 @@ def main():
 
     successes, failures = 0, 0
     for md in md_files:
-        if md.name.lower() == "index.md":
-            log(f"Skipping index file: {md}")
-            continue
-
+        # if md.name.lower() == "index.md":
+        # log(f"Skipping index file: {md}")
+        # continue
+        # Skip index.md in reference/laser/generic/S*/index.md
+        if md.name == "index.md" and "reference/laser/generic" in md.as_posix():
+            parts = md.relative_to(md_dir).parts
+            if len(parts) >= 4 and parts[0] == "reference" and parts[1] == "laser" and parts[2] == "generic":
+                log(f"Skipping S*/ index file: {md}")
+                continue
         rel = md.relative_to(md_dir)
         out = rst_dir / rel.with_suffix(".rst")
         out.parent.mkdir(parents=True, exist_ok=True)
