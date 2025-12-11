@@ -352,36 +352,6 @@ def get_centroids(gdf: gpd.GeoDataFrame) -> np.ndarray:
 
 
 # Want to think about the ways to seed infections.  Not all infections have a timer!
-def seed_infections_randomly_SI(model: Any, ninfections: int = 100) -> None:
-    """
-    Randomly seed initial infections for SI-style models without using timers.
-
-    This function randomly selects `ninfections` individuals from the population who are currently susceptible
-    and marks them as infected by setting their `susceptibility` to zero. It does not assign any infection timers,
-    making it suitable for simple SI or SIR models where timers are not required.
-
-    Unlike other seeding methods, this function explicitly ensures that only susceptible individuals are infected,
-    even if the total population includes recovered or previously infected agents.
-
-    Args:
-        model: The simulation model, which must contain a `population` with
-               `count` and `susceptibility` attributes, and a PRNG in `model.prng`.
-        ninfections (int, optional): Number of initial infections to seed. Defaults to 100.
-
-    Returns:
-        None
-    """
-    # Seed initial infections in random locations at the start of the simulation
-    cinfections = 0
-    while cinfections < ninfections:
-        index = model.prng.integers(0, model.people.count)
-        if model.people.susceptibility[index] > 0:
-            model.people.susceptibility[index] = 0
-            cinfections += 1
-
-    return
-
-
 def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     """
     Randomly seed initial infections across the entire population.

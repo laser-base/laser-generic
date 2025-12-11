@@ -3,6 +3,7 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Polygon
 from laser.generic import utils
+from laser.generic.shared import State
 
 
 class DummyModel:
@@ -15,7 +16,7 @@ class DummyModel:
     - Allows testing seeding functions, validation decorators, and other utilities in isolation
 
     STRUCTURE:
-    - DummyModel.Population: Mock population with susceptibility, itimer, nodeid arrays
+    - DummyModel.Population: Mock population with susceptibility, itimer, nodeid arrays (not used)
     - DummyModel.Params: Mock parameters (inf_mean)
     - DummyModel.PRNG: Mock random number generator with fixed seed (42) for reproducibility
 
@@ -41,7 +42,8 @@ class DummyModel:
 
         def __init__(self, count):
             self.count = count
-            self.susceptibility = np.ones(count)
+            self.susceptibility = np.ones(count)  # never updated
+            self.state = np.zeros(count, dtype=np.int8)
             self.itimer = np.zeros(count)
             self.nodeid = np.arange(count)
 
@@ -83,6 +85,7 @@ class DummyModel:
 
     def __init__(self, count=10):
         self.population = DummyModel.Population(count)
+        self.people = self.population  # got tired of picking one
         self.params = DummyModel.Params()
         self.prng = DummyModel.PRNG()
         self.model = self
@@ -532,6 +535,50 @@ class TestGetDefaultParameters(unittest.TestCase):
         self.assertEqual(params["nticks"], 730)
         self.assertEqual(params["beta"], 0.15)
         self.assertEqual(params["verbose"], False)
+
+
+class TestSeedingFunctions(unittest.TestCase):
+    def setUp(self):
+        self.model = DummyModel(10)
+
+    def test_seed_infections_randomly(self):
+        """
+        Test that seed_infections_randomly() correctly infects a specified number of agents
+        across the entire population.
+
+        Test design:
+        - Start with a population of 10 fully susceptible agents.
+        - Request 5 random infections.
+        - Validate that exactly 5 agents transition to INFECTIOUS.
+        - Confirm that their itimers are initialized to the model's inf_mean.
+
+        Pass = The correct number of agents are infected and initialized properly.
+        Fail = Too few/many infected, incorrect states, or incorrect timer values.
+        """
+        nodeids = utils.seed_infections_randomly(self.model, ninfections=5)
+        self.assertEqual(len(nodeids), 5)
+        self.assertEqual(np.sum(self.model.people.state == State.INFECTIOUS.value), 5)
+        self.assertTrue(np.all(self.model.people.itimer[nodeids] == self.model.params.inf_mean))
+
+    def test_seed_infections_in_patch(self):
+        """
+        Test that seed_infections_in_patch() correctly infects a specified number of agents
+        within a single node (patch).
+
+        Test design:
+        - Use a population of 10 agents assigned to 5 nodes (2 per node).
+        - Request 2 infections in node 2.
+        - Validate that exactly 2 individuals with nodeid==2 have susceptibility==0.
+        - Confirm that their itimers are initialized to inf_mean.
+
+        Pass = Exactly 2 agents in node 2 become infected and receive correct timers.
+        Fail = Infections spill to other nodes, wrong count infected, or incorrect timers.
+        """
+        self.model.people.nodeid = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
+        utils.seed_infections_in_patch(self.model, ipatch=2, ninfections=2)
+        infected = (self.model.people.nodeid == 2) & (self.model.people.susceptibility == 0)
+        self.assertEqual(np.sum(infected), 2)
+        self.assertTrue(np.all(self.model.people.itimer[infected] == self.model.params.inf_mean))
 
 
 if __name__ == "__main__":
