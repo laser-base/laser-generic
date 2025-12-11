@@ -388,28 +388,46 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
 def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> None:
     """
     Seed initial infections in a specific patch of the population at the start of the simulation.
-    This function randomly selects individuals from the specified patch and sets their infection timer
-    to the mean infection duration, effectively marking them as infected. The process continues until
-    the desired number of initial infections is reached.
+
+    This function randomly selects up to `ninfections` individuals from the specified patch
+    who are currently susceptible (state == State.SUSCEPTIBLE) and marks them as infected by:
+      - Setting their infection timer (`itimer`) to the model's mean infectious duration (`inf_mean`),
+      - Setting their infection `state` to State.INFECTIOUS.
 
     Args:
-        model: The simulation model containing the population and parameters.
+        model: The simulation model containing the population and parameters. It must expose:
+               - model.people.state (integer infection state),
+               - model.people.itimer (infection timers),
+               - model.people.nodeid (patch index),
+               - model.params.inf_mean (mean infectious period).
         ipatch (int): The identifier of the patch where infections should be seeded.
-        ninfections (int, optional): The number of initial infections to seed. Defaults to 100.
+        ninfections (int, optional): The number of initial infections to seed. Defaults to 1.
 
     Returns:
         None
     """
+    pop = model.people
 
-    # Seed initial infections in a specific location at the start of the simulation
-    myinds = np.where((model.people.susceptibility > 0) & (model.people.nodeid == ipatch))[0]
-    if len(myinds) > ninfections:
-        myinds = np.random.choice(myinds, ninfections, replace=False)
-    model.people.itimer[myinds] = model.params.inf_mean
-    model.people.state[myinds] = State.INFECTIOUS.value
+    # Candidates: susceptible individuals in the target patch
+    susceptible_in_patch = np.where(
+        (pop.state == State.SUSCEPTIBLE.value) & (pop.nodeid == ipatch)
+    )[0]
+
+    if len(susceptible_in_patch) == 0:
+        # Nothing to do: no susceptibles in this patch
+        return
+
+    # If there are more candidates than requested infections, sample without replacement
+    if len(susceptible_in_patch) > ninfections:
+        susceptible_in_patch = np.random.choice(
+            susceptible_in_patch, ninfections, replace=False
+        )
+
+    # Set timers and mark as infectious
+    pop.itimer[susceptible_in_patch] = model.params.inf_mean
+    pop.state[susceptible_in_patch] = State.INFECTIOUS.value
 
     return
-
 
 def get_default_parameters() -> PropertySet:
     """
