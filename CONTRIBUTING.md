@@ -1,38 +1,26 @@
 # Contributing
 
-Contributions are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given.
+Contributions are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given where it's due.
 
-## Bug reports
+A few things to note before you begin:
+- The LASER team is committed to maintaining a welcoming community. We ask that all contributors adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
+- Code contributions should follow the Google Python [Style Guide](https://google.github.io/styleguide/pyguide.html).
+- When [reporting a bug](https://github.com/laser-base/laser-core/issues) please include details, such as your operating system and the exact steps to reproduce the issue.
+- LASER could always use more documentation, whether as part of the official LASER docs, in docstrings, or even on the web in blog posts, articles, and such.
+- The best way to send feedback on LASER is to [file an issue](https://github.com/laser-base/laser-core/issues).
 
-When [reporting a bug](https://github.com/InstituteforDiseaseModeling/laser-generic/issues) please include:
+If you have any questions, please reach out to the LASER moderators, [Christopher Lorton](chrisotpher.lorton@gatesfoundation.org) and [Paul Saxman](paul.saxman@gatesfoundation.org).
 
-- Your operating system name and version.
-- Any details about your local setup that might be helpful in troubleshooting.
-- Detailed steps to reproduce the bug.
+## Contributing Code
 
-## Documentation improvements
+For contriburing code to LASER, you'll need to set up a local development environment:
 
-laser-generic could always use more documentation, whether as part of the official laser-generic docs, in docstrings, or even on the web in blog posts, articles, and such.
+1. Fork [`laser-generic`](https://github.com/laser-base/laser-generic) (look for the "Fork" button).
 
-## Feature requests and feedback
-
-The best way to send feedback is to file an issue at https://github.com/InstituteforDiseaseModeling/laser-generic/issues.
-
-If you are proposing a feature:
-
-- Explain in detail how it would work.
-- Keep the scope as narrow as possible, to make it easier to implement.
-- Remember that this is a volunteer-driven project, and that code contributions are welcome :)
-
-## Development
-
-To set up `laser-generic` for local development:
-
-1. Fork [`laser-generic`](https://github.com/InstituteforDiseaseModeling/laser-generic) (look for the "Fork" button).
-2. Clone your fork locally:
+2. Create a local clone of your fork:
 
    ```sh
-   git clone git@github.com:YOURGITHUBNAME/laser-generic.git
+   git clone git@github.com:YOUR_GITHUB_NAME/laser-generic.git
    ```
 
 3. Create a branch for local development:
@@ -41,15 +29,15 @@ To set up `laser-generic` for local development:
    git checkout -b name-of-your-bugfix-or-feature
    ```
 
-   Now you can make your changes locally.
+4. Make your changes locally.
 
-4. When you're done making changes run all the checks and docs builder with one command:
+5. When you're done making changes run all the checks and docs builder with one command:
 
    ```sh
    tox
    ```
 
-5. Commit your changes and push your branch to GitHub:
+6. Commit your changes and push your branch to GitHub:
 
    ```sh
    git add .
@@ -57,20 +45,20 @@ To set up `laser-generic` for local development:
    git push origin name-of-your-bugfix-or-feature
    ```
 
-6. Submit a pull request through the GitHub website.
+7. Submit a pull request through the GitHub website.
 
-## Pull Request Guidelines
+### Pull Request Guidelines
 
 If you need some code review or feedback while you're developing the code just make the pull request.
 
 For merging, you should:
 
 1. Include passing tests (run `tox`).
-2. Update documentation when there's new API, functionality etc.
-3. Add a note to `CHANGELOG.rst` about the changes.
-4. Add yourself to `AUTHORS.rst`.
+2. Update documentation when there are new APIs, functionality, etc.
+3. Add a note to `CHANGELOG.md` about the changes.
+4. Add yourself to `AUTHORS.md`.
 
-## Tips
+### Tips
 
 To run a subset of tests:
 
