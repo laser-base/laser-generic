@@ -151,7 +151,7 @@ For each timestep, it:
     p = 1 - e^{-\lambda}
     $$
 - If infection occurs:
-  
+
     - The agent’s state is set to **INFECTIOUS** - An infection duration is drawn from `infdurdist`
     - The duration is stored in the agent’s `itimer` property
 

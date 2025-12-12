@@ -41,4 +41,3 @@ exclude tests/harvest_test_docstrings.py
 include CODE_OF_CONDUCT.md
 exclude mkdocs_jenner.yml
 exclude sphinx/Makefile
-
