@@ -13,17 +13,26 @@ the automatically generated API reference from AutoAPI.
    :caption: Getting Started
 
    source/converted/index
+   source/converted/code_of_conduct
+   source/converted/contribute
    source/converted/get-started/index
    source/converted/get-started/calibration
-   source/converted/get-started/initialization
    source/converted/get-started/optimization
+   source/converted/includes/glossary
    source/converted/software-overview/index
    source/converted/software-overview/database
    source/converted/software-overview/demographics/index
    source/converted/software-overview/migration
+   source/converted/software-overview/scenario
    source/converted/software-overview/transmission
-   source/converted/includes/glossary
+   source/converted/tutorials/index
+   source/converted/tutorials/census_tracker_sir
+   source/converted/tutorials/sir
    source/converted/whatsnew
+   source/converted/census_tracker_sir
+
+
+   
 
 .. toctree::
    :maxdepth: 2
