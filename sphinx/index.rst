@@ -30,9 +30,6 @@ the automatically generated API reference from AutoAPI.
    source/converted/tutorials/sir
    source/converted/whatsnew
 
-
-
-
 .. toctree::
    :maxdepth: 2
    :caption: API Reference
