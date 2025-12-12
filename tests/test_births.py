@@ -33,7 +33,7 @@ def create_basic_scenario_susceptible_only(cbr=20.0):
     scenario["E"] = scenario["I"] = scenario["R"] = 0
 
     parameters = PropertySet({"nticks": NTICKS})
-    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
+    birthrates = ValuesMap.from_scalar(cbr, NTICKS, 1)
     pyramid, _ = load_age_distribution()
 
     model = Model(scenario, parameters, birthrates=birthrates)
@@ -65,7 +65,7 @@ def create_equilibrium_seir_scenario(cbr=20.0):
 
     parameters = PropertySet({"nticks": NTICKS, "beta": R0 / INFECTIOUS_DURATION_MEAN})
 
-    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
+    birthrates = ValuesMap.from_scalar(cbr, NTICKS, 1)
     pyramid, _ = load_age_distribution()
 
     expdurdist = dists.normal(loc=EXPOSED_DURATION_MEAN, scale=EXPOSED_DURATION_SCALE)
@@ -98,7 +98,7 @@ def create_scenario_with_additional_states(cbr=20.0):
     scenario["V"] = initial_vaccinated
 
     parameters = PropertySet({"nticks": NTICKS})
-    birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
+    birthrates = ValuesMap.from_scalar(cbr, NTICKS, 1)
     pyramid, _ = load_age_distribution()
 
     expdurdist = dists.normal(loc=5.0, scale=1.0)
@@ -133,7 +133,7 @@ def create_multi_node_scenario(cbr=20.0):
     scenario["S"] = (total_pop - (scenario.E + scenario.I + scenario.R)).astype(np.int32)
 
     parameters = PropertySet({"nticks": NTICKS, "beta": 2.0 / 7.0})
-    birthrates = ValuesMap.from_scalar(cbr, 4, NTICKS)
+    birthrates = ValuesMap.from_scalar(cbr, NTICKS, 4)
     pyramid, _ = load_age_distribution()
 
     expdurdist = dists.normal(loc=5.0, scale=1.0)
@@ -399,7 +399,7 @@ class TestBirthsByCBR(unittest.TestCase):
 
         parameters = PropertySet({"nticks": NTICKS})
         cbr = 20.0
-        birthrates = ValuesMap.from_scalar(cbr, 1, NTICKS)
+        birthrates = ValuesMap.from_scalar(cbr, NTICKS, 1)
         pyramid, age_dist = load_age_distribution()
 
         model = Model(scenario, parameters, birthrates=birthrates)

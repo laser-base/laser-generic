@@ -987,7 +987,7 @@ class TestSeasonalForcing(unittest.TestCase):
         model = Model(scenario, params)
 
         # Start with seasonality = 1.0, will update after first run
-        temp_seasonality = ValuesMap.from_scalar(1.0, 1, long_nticks)
+        temp_seasonality = ValuesMap.from_scalar(1.0, long_nticks, 1)
 
         model.components = [
             SI.Susceptible(model),

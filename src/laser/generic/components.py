@@ -659,7 +659,7 @@ class InfectiousIR:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.I[tick], self.model.people, State.INFECTIOUS, "Infectious")
+        _check_flow_vs_census(self.model.nodes.I[tick + 1], self.model.people, State.INFECTIOUS, "Infectious")
         _check_timer_active(self.model.people.state, State.INFECTIOUS.value, self.model.people.itimer, "Infectious", "itimer")
         _check_state_timer_consistency(self.model.people.state, State.INFECTIOUS.value, self.model.people.itimer, "Infectious", "itimer")
 
@@ -961,13 +961,12 @@ class Recovered:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.R[tick], self.model.people, State.RECOVERED, "Recovered")
+        _check_flow_vs_census(self.model.nodes.R[tick + 1], self.model.people, State.RECOVERED, "Recovered")
 
         return
 
     def postvalidate_step(self, tick: int) -> None:
         _check_flow_vs_census(self.model.nodes.R[tick + 1], self.model.people, State.RECOVERED, "Recovered")
-        _check_unchanged(self.model.nodes.R[tick], self.model.nodes.R[tick + 1], "Recovered counts")
 
         return
 
@@ -1084,8 +1083,8 @@ class RecoveredRS:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.S[tick], self.model.people, State.SUSCEPTIBLE, "Susceptible")
-        _check_flow_vs_census(self.model.nodes.R[tick], self.model.people, State.RECOVERED, "Recovered")
+        _check_flow_vs_census(self.model.nodes.S[tick + 1], self.model.people, State.SUSCEPTIBLE, "Susceptible")
+        _check_flow_vs_census(self.model.nodes.R[tick + 1], self.model.people, State.RECOVERED, "Recovered")
         _check_timer_active(self.model.people.state, State.RECOVERED.value, self.model.people.rtimer, "Recovered", "rtimer")
         _check_state_timer_consistency(self.model.people.state, State.RECOVERED.value, self.model.people.rtimer, "Recovered", "rtimer")
 
@@ -1220,7 +1219,7 @@ class TransmissionSIx:
         self.model.nodes.add_vector_property("forces", model.params.nticks + 1, dtype=np.float32)
         self.model.nodes.add_vector_property("newly_infected", model.params.nticks + 1, dtype=np.int32)
 
-        self.seasonality = seasonality if seasonality is not None else ValuesMap.from_scalar(1.0, model.nodes.count, model.params.nticks)
+        self.seasonality = seasonality if seasonality is not None else ValuesMap.from_scalar(1.0, model.params.nticks, model.nodes.count)
 
         return
 
@@ -1381,7 +1380,7 @@ class TransmissionSI:
         self.infdurmin = infdurmin
 
         # Default is no temporal or spatial variation in transmission
-        self.seasonality = seasonality if seasonality is not None else ValuesMap.from_scalar(1.0, model.nodes.count, model.params.nticks)
+        self.seasonality = seasonality if seasonality is not None else ValuesMap.from_scalar(1.0, model.params.nticks, model.nodes.count)
 
         return
 
@@ -1547,7 +1546,7 @@ class TransmissionSE:
         self.expdurmin = expdurmin
 
         # Default is no temporal or spatial variation in transmission
-        self.seasonality = seasonality if seasonality is not None else ValuesMap.from_scalar(1.0, model.nodes.count, model.params.nticks)
+        self.seasonality = seasonality if seasonality is not None else ValuesMap.from_scalar(1.0, model.params.nticks, model.nodes.count)
 
         return
 

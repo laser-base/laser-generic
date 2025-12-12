@@ -53,7 +53,7 @@ class Model:
         if birthrates is not None:
             self.birthrates = birthrates if not isinstance(birthrates, ValuesMap) else birthrates.values
         else:
-            self.birthrates = ValuesMap.from_scalar(0, num_nodes, self.params.nticks).values
+            self.birthrates = ValuesMap.from_scalar(0, self.params.nticks, num_nodes).values
 
         num_active = scenario.population.sum()
         if not skip_capacity:

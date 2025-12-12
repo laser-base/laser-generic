@@ -18,6 +18,7 @@ import laser.core.distributions as dists
 import numpy as np
 from laser.core import PropertySet
 from laser.core.random import seed as set_seed
+from laser.generic.utils import ValuesMap
 
 from laser.generic import Model
 from laser.generic.components import (
@@ -33,6 +34,7 @@ from laser.generic.components import (
     TransmissionSI,
     TransmissionSIx,
 )
+from laser.generic.immunization import RoutineImmunizationEx
 from laser.generic.vitaldynamics import (
     BirthsByCBR,
     ConstantPopVitalDynamics,
@@ -40,10 +42,19 @@ from laser.generic.vitaldynamics import (
     MortalityByEstimator,
 )
 
+from laser.core.demographics import KaplanMeierEstimator
+from laser.generic.shared import AliasedDistribution
+
+
 try:
     from tests.utils import stdgrid
 except ImportError:
     from utils import stdgrid
+
+try:
+    from tests.age_at_infection import Importation, TransmissionWithDOI
+except ImportError:
+    from age_at_infection import Importation, TransmissionWithDOI
 
 # Test parameters
 NTICKS = 100
@@ -345,7 +356,6 @@ class TestVitalDynamicsValidation(unittest.TestCase):
         not being added to susceptible state, incorrect population count updates, or
         dob tracking not matching actual births.
         """
-        from laser.generic.shared import AliasedDistribution
 
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population
@@ -353,13 +363,13 @@ class TestVitalDynamicsValidation(unittest.TestCase):
         scenario["R"] = 0
 
         params = PropertySet({"nticks": 50, "beta": 0.1})
-        model = Model(scenario, params)
+        birthrates = ValuesMap.from_scalar(20.0, 50, 1)  # 20 per 1000 per year (50 ticks, 1 node)
+        model = Model(scenario, params, birthrates)
         model.validating = True  # Enable validation
 
         # Create simple pyramid and birth rates
         pyramid_data = np.ones(365 * 50)  # 50 years worth of ages
         pyramid = AliasedDistribution(pyramid_data)
-        birthrates = np.full(51, 20.0)  # 20 per 1000 per year
 
         model.components = [
             Susceptible(model),
@@ -398,7 +408,7 @@ class TestVitalDynamicsValidation(unittest.TestCase):
         model = Model(scenario, params)
         model.validating = True  # Enable validation
 
-        mortalityrates = np.full(51, 10.0)  # 10 per 1000 per year
+        mortalityrates = ValuesMap.from_scalar(10.0, 50, 1)  # 10 per 1000 per year (50 ticks, 1 node)
 
         model.components = [
             Susceptible(model),
@@ -429,8 +439,6 @@ class TestVitalDynamicsValidation(unittest.TestCase):
         not dying when dod is reached, incorrect dod sampling, or on_birth hook
         not properly initializing dod for newborns.
         """
-        from laser.core.estimators import KaplanMeierEstimator
-        from laser.generic.shared import AliasedDistribution
 
         scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
         scenario["S"] = scenario.population - 50
@@ -438,18 +446,23 @@ class TestVitalDynamicsValidation(unittest.TestCase):
         scenario["R"] = 0
 
         params = PropertySet({"nticks": 50, "beta": 0.0})
-        model = Model(scenario, params)
+        birthrates = ValuesMap.from_scalar(15.0, 50, 1)  # 15 per 1000 per year (50 ticks, 1 node)
+        model = Model(scenario, params, birthrates)
         model.validating = True  # Enable validation
 
         # Create simple survival curve (uniform hazard)
-        ages = np.arange(0, 365 * 100)
-        survival = np.exp(-ages / (365 * 70))  # Mean survival ~70 years
-        estimator = KaplanMeierEstimator(ages, survival)
+        years = np.arange(0, 100)  # 0..99
+        avg = 70.0  # Average lifespan
+        pows = np.power(1.0 - 1.0 / avg, years)
+        removed = 1.0 - pows
+        scaled = removed * (1.0 / removed[-1])
+        deaths = np.round(POPULATION * scaled).astype(np.int32)
+
+        estimator = KaplanMeierEstimator(deaths[1:])
 
         # Need births to test on_birth hook
-        pyramid_data = np.ones(365 * 50)
+        pyramid_data = np.diff(deaths) * 10  # complementary to survival curve
         pyramid = AliasedDistribution(pyramid_data)
-        birthrates = np.full(51, 15.0)
 
         model.components = [
             Susceptible(model),
@@ -490,7 +503,7 @@ class TestVitalDynamicsValidation(unittest.TestCase):
         model = Model(scenario, params)
         model.validating = True  # Enable validation
 
-        recycle_rates = np.full(51, 15.0)  # 15 per 1000 per year
+        recycle_rates = ValuesMap.from_scalar(15.0, 50, 1)  # 15 per 1000 per year (50 ticks, 1 node)
 
         model.components = [
             Susceptible(model),
@@ -509,9 +522,138 @@ class TestVitalDynamicsValidation(unittest.TestCase):
 
         return
 
+    def test_routine_immunization_ex_validation(self):
+        """
+        Test RoutineImmunizationEx component with validation enabled.
 
-# Note: Immunization and Importation components currently lack validation infrastructure
-# and cannot be tested in the same way. See suggestions below for implementing validation.
+        WHAT IS VALIDATED:
+        - Immunization events are recorded and applied to susceptible agents
+        - Immunized agents are tracked correctly in the model
+        - Validation hooks execute without errors
+
+        FAILURE MEANING:
+        Validation failure indicates errors in immunization logic such as agents not
+        being immunized as expected, state counts not updated, or validation hooks failing.
+        """
+
+        scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population
+        scenario["I"] = 0
+        scenario["R"] = 0
+
+        params = PropertySet({"nticks": 180, "beta": 0.0})
+        model = Model(scenario, params)
+        model.validating = True  # Enable validation
+
+        # Immunization schedule: immunize 10% of susceptibles each tick
+        coverage = dists.constant_float(0.1)
+        dose_timing_dist = dists.normal(loc=60, scale=5)
+        dose_timing_min = 30
+
+        # RoutineImmunizationEx requires dob property
+        model.people.add_scalar_property("dob", np.int32, default=0)
+
+        model.components = [
+            Susceptible(model),
+            Recovered(model),
+            RoutineImmunizationEx(model, coverage, dose_timing_dist, dose_timing_min, validating=True),
+        ]
+
+        initial_sus = model.nodes.S[0].sum()
+        model.run("Routine ImmunizationEx Validation")
+
+        # Verify some susceptibles have been immunized (removed from S)
+        assert model.nodes.S[-1].sum() < initial_sus, "Some susceptibles should have been immunized"
+
+        return
+
+    class TestTransmissionWithDOIValidation(unittest.TestCase):
+        """
+        Test suite for validating TransmissionWithDOI component with validating=True.
+
+        WHAT IS TESTED:
+        - TransmissionWithDOI executes without validation errors
+        - Duration of infection (DOI) is properly assigned and tracked
+        - Infection incidence and DOI assignment are consistent
+
+        FAILURE MEANING:
+        Validation failure indicates errors in DOI assignment, infection transitions,
+        or aggregate/individual state mismatches.
+        """
+
+        def setUp(self):
+            set_seed(SEED)
+            return
+
+        def test_transmission_with_doi(self):
+            scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
+            scenario["S"] = scenario.population - 100
+            scenario["I"] = 100
+
+            beta = 0.2
+            doi_mean = 8.0
+            params = PropertySet({"nticks": NTICKS, "beta": beta})
+            model = Model(scenario, params)
+            model.validating = True
+
+            doidist = dists.normal(loc=doi_mean, scale=2.0)
+
+            model.components = [
+                Susceptible(model),
+                InfectiousIR(model, doidist),
+                TransmissionWithDOI(model, doidist),
+            ]
+
+            assert np.all(model.people.doi == 0), "All agents should start with DOI = 0"
+
+            model.run("TransmissionWithDOI Validation")
+
+            # Verify some agents have recovered (DOI expired)
+            assert np.any(model.people.doi > 0), "Some agents should have a DOI assigned"
+
+            return
+
+    class TestImportationValidation(unittest.TestCase):
+        """
+        Test suite for validating Importation component from age_at_infection with validating=True.
+
+        WHAT IS TESTED:
+        - Importation events occur and are recorded
+        - Imported infections are assigned to correct age groups
+        - State counts and agent-level states are consistent
+
+        FAILURE MEANING:
+        Validation failure indicates errors in importation logic, age assignment,
+        or state transitions for imported cases.
+        """
+
+        def setUp(self):
+            set_seed(SEED)
+            return
+
+        def test_importation_age_at_infection(self):
+            scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
+            scenario["S"] = scenario.population
+            scenario["I"] = 0
+
+            params = PropertySet({"nticks": NTICKS, "beta": 0.0})
+
+            model = Model(scenario, params)
+            model.validating = True
+
+            model.components = [
+                Susceptible(model),
+                InfectiousIR(model, infdurdist := dists.normal(loc=7, scale=1)),
+                Importation(model, period=10, new_infections=[5] * model.nodes.count, infdurdist=infdurdist, validating=True),
+            ]
+
+            initial_infectious = model.nodes.I[0].sum()
+            model.run("Importation AgeAtInfection Validation")
+
+            # Verify importations occurred (I increased)
+            assert model.nodes.I[-1].sum() > initial_infectious, "Imported infections should increase I count"
+
+            return
 
 
 if __name__ == "__main__":

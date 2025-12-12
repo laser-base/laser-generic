@@ -26,7 +26,7 @@ class ValuesMap:
         nticks (int): Number of time steps.
 
     Methods to create ValuesMap from different data sources:
-        - from_scalar(scalar: float, nnodes: int, nticks: int)
+        - from_scalar(scalar: float, nticks: int, nnodes: int)
         - from_timeseries(data: np.ndarray, nnodes: int)
         - from_nodes(data: np.ndarray, nticks: int)
         - from_array(data: np.ndarray, writeable: bool = False)
@@ -39,7 +39,7 @@ class ValuesMap:
         return
 
     @staticmethod
-    def from_scalar(scalar: float, nnodes: int, nticks: int) -> "ValuesMap":
+    def from_scalar(scalar: float, nticks: int, nnodes: int) -> "ValuesMap":
         """
         Create a ValuesMap with the same scalar value for all nodes and time steps.
 

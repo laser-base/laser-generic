@@ -122,7 +122,7 @@ class TestValuesMap(unittest.TestCase):
         the entire (nticks, nnodes) array. This would break scenarios requiring constant
         parameters like baseline transmission rates or uniform seasonality.
         """
-        vm = utils.ValuesMap.from_scalar(2.0, nnodes=3, nticks=4)
+        vm = utils.ValuesMap.from_scalar(2.0, nticks=4, nnodes=3)
         self.assertEqual(vm.shape, (4, 3))
         self.assertTrue(np.all(vm.values == 2.0))
 
