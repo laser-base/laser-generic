@@ -102,9 +102,9 @@ model.
 
 A standard **SIR** model is constructed from four conceptual steps:
 
-- Tracking the number of **susceptible** agents (S) 
-- Modeling **transmission** from susceptible to infectious agents (S -> I) 
-- Modeling **infectiousness and recovery** (I -> R) 
+- Tracking the number of **susceptible** agents (S)
+- Modeling **transmission** from susceptible to infectious agents (S -> I)
+- Modeling **infectiousness and recovery** (I -> R)
 - Tracking the **recovered** population (R)
 
 Correct **ordering matters**: components that record state must wrap
@@ -135,9 +135,9 @@ model.components = [
 This component:
 
 - Initializes agents' infection state to **SUSCEPTIBLE** (state
-code `0`) 
+code `0`)
 - Records the number of susceptible agents per node at each
-timestep 
+timestep
 - **Does not modify state transitions** on its own
 
 No parameters or distributions are required.
@@ -160,9 +160,9 @@ probability:
 
     p = 1 - e^{-\lambda}
 
-- If infection occurs:  
+- If infection occurs:
 - The agent’s state is set to **INFECTIOUS** - An infection
-duration is drawn from `infdurdist` 
+duration is drawn from `infdurdist`
 - The duration is stored in the
 agent’s `itimer` property
 
@@ -183,8 +183,8 @@ This component handles the **I -> R transition**.
 
 It:
 
-- Decrements each infectious agent’s `itimer` each timestep 
-- Transitions agents to **RECOVERED** when their timer reaches zero 
+- Decrements each infectious agent’s `itimer` each timestep
+- Transitions agents to **RECOVERED** when their timer reaches zero
 - Updates node-level counts for infectious and recovered populations
 
 This component **must use the same `infdurdist`** as
@@ -195,8 +195,8 @@ transmission.
 
 This component:
 
-- Tracks the number of recovered agents per node 
-- Updates recovered counts over time 
+- Tracks the number of recovered agents per node
+- Updates recovered counts over time
 - Does **not** initiate any transitions or timers
 
 No parameters are required.
@@ -205,15 +205,15 @@ No parameters are required.
 
 The recommended order is:
 
-1. `Susceptible` 
-2. `TransmissionSI` 
-3. `InfectiousIR` 
+1. `Susceptible`
+2. `TransmissionSI`
+3. `InfectiousIR`
 4. `Recovered`
 
 This ensures that:
 
-- Population counts are recorded consistently 
-- State transitions occur before recovery is tallied 
+- Population counts are recorded consistently
+- State transitions occur before recovery is tallied
 - The invariant `S + I + R = N` is preserved at each timestep
 
 ##### Parameterization
