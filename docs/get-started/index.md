@@ -95,25 +95,18 @@ infectious_duration = poisson(params.mean_infectious_period)
 
 ### 6. Attach components
 
-LASER models are built from **modular components**, each responsible
-for a specific part of the disease process. Components are executed
-**once per timestep**, in the **order they are attached** to the
-model.
+LASER models are built from **modular components**, each responsible for a specific part of the disease process. Components are executed **once per timestep**, in the **order they are attached** to the model.
 
 A standard **SIR** model is constructed from four conceptual steps:
 
-- Tracking the number of **susceptible** agents (S)
-- Modeling **transmission** from susceptible to infectious agents (S -> I)
-- Modeling **infectiousness and recovery** (I -> R)
-- Tracking the **recovered** population (R)
+- Tracking the number of susceptible agents (S)
+- Modeling transmission from susceptible to infectious agents (S -> I)
+- Modeling infectiousness and recovery (I -> R)
+- Tracking the recovered population (R)
 
-Correct **ordering matters**: components that record state must wrap
-components that change state, otherwise population counts will be
-inconsistent.
+Correct ordering matters: components that record state must wrap components that change state, otherwise population counts will be inconsistent.
 
-In this example, we attach the components directly from
-`laser.generic.components`, rather than using the `SIR` convenience
-submodule.
+In this example, we attach the components directly from `laser.generic.components`, rather than using the `SIR` convenience submodule.
 
 ```python
 from laser.generic.components import (
@@ -130,20 +123,18 @@ model.components = [
     Recovered(model),
 ]
 ```
+
 #### `Susceptible(model)`
 
 This component:
 
-- Initializes agents' infection state to **SUSCEPTIBLE** (state
-code `0`)
-- Records the number of susceptible agents per node at each
-timestep
+- Initializes agents' infection state to **SUSCEPTIBLE** (state code `0`)
+- Records the number of susceptible agents per node at each timestep
 - **Does not modify state transitions** on its own
 
 No parameters or distributions are required.
 
-This component exists purely to track and record the susceptible
-population.
+This component exists purely to track and record the susceptible population.
 
 #### `TransmissionSI(model, infdurdist=...)`
 
@@ -152,30 +143,26 @@ This component implements the **S -> I transition**.
 For each timestep, it:
 
 - Computes the **force of infection**:
-
+    $$
     \lambda = \beta \cdot \frac{I}{N}
-
-- For each susceptible agent, performs a Bernoulli trial with
-probability:
-
+    $$
+- For each susceptible agent, performs a Bernoulli trial with probability:
+    $$
     p = 1 - e^{-\lambda}
-
+    $$
 - If infection occurs:
-- The agent’s state is set to **INFECTIOUS** - An infection
-duration is drawn from `infdurdist`
-- The duration is stored in the
-agent’s `itimer` property
+  
+    - The agent’s state is set to **INFECTIOUS** - An infection duration is drawn from `infdurdist`
+    - The duration is stored in the agent’s `itimer` property
 
-The `infdurdist` argument must be a **Numba-compatible distribution
-function**, for example:
+The `infdurdist` argument must be a **Numba-compatible distribution function**, for example:
 
 ```python
 from laser.core.distributions import poisson
 infdist = poisson(mean_infectious_period)
 ```
 
-This component is responsible only for new infections; recovery is
-handled separately.
+This component is responsible only for new infections; recovery is handled separately.
 
 #### `InfectiousIR(model, infdurdist=...)`
 
@@ -187,9 +174,7 @@ It:
 - Transitions agents to **RECOVERED** when their timer reaches zero
 - Updates node-level counts for infectious and recovered populations
 
-This component **must use the same `infdurdist`** as
-`TransmissionSI`, because it relies on the infection timers set during
-transmission.
+This component **must use the same `infdurdist`** as `TransmissionSI`, because it relies on the infection timers set during transmission.
 
 #### `Recovered(model)`
 
@@ -201,7 +186,7 @@ This component:
 
 No parameters are required.
 
-#### **Important note on ordering**
+#### Important note on ordering
 
 The recommended order is:
 
