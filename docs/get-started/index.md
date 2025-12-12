@@ -57,7 +57,6 @@ params = PropertySet({
     "initial_infected": 10,
     "seed": 123,
 })
-rng = np.random.default_rng(params.seed)
 ```
 
 ### 3. Define the scenario (single patch)
@@ -96,39 +95,126 @@ infectious_duration = poisson(params.mean_infectious_period)
 
 ### 6. Attach components
 
-LASER models are built from **modular components**, each responsible for a specific part of the disease process. These components are called **once per timestep** in the order provided.
+LASER models are built from **modular components**, each responsible
+for a specific part of the disease process. Components are executed
+**once per timestep**, in the **order they are attached** to the
+model.
 
-The standard **SIR progression** involves:
+A standard **SIR** model is constructed from four conceptual steps:
 
--  Tracking the number of susceptible agents (S)
--  Modeling the transmission (S → I)
--  Modeling infectiousness and recovery** (I → R)
--  Tracking the recovered population (R)
+- Tracking the number of **susceptible** agents (S) 
+- Modeling **transmission** from susceptible to infectious agents (S -> I) 
+- Modeling **infectiousness and recovery** (I -> R) 
+- Tracking the **recovered** population (R)
 
-We attach the components in this exact order to ensure state updates and population counts are handled consistently.
+Correct **ordering matters**: components that record state must wrap
+components that change state, otherwise population counts will be
+inconsistent.
 
-#### `SIR.Susceptible(model)`
+In this example, we attach the components directly from
+`laser.generic.components`, rather than using the `SIR` convenience
+submodule.
+
+```python
+from laser.generic.components import (
+    Susceptible,
+    TransmissionSI,
+    InfectiousIR,
+    Recovered,
+)
+
+model.components = [
+    Susceptible(model),
+    TransmissionSI(model, infdurdist=infdist),
+    InfectiousIR(model, infdurdist=infdist),
+    Recovered(model),
+]
+```
+#### `Susceptible(model)`
 
 This component:
 
-- Initializes agents' state to `SUSCEPTIBLE` (code 0)
-- Records the number of susceptible agents per node at each timestep
-- **Does not modify** state on its own—it simply keeps track
+- Initializes agents' infection state to **SUSCEPTIBLE** (state
+code `0`) 
+- Records the number of susceptible agents per node at each
+timestep 
+- **Does not modify state transitions** on its own
 
 No parameters or distributions are required.
 
+This component exists purely to track and record the susceptible
+population.
 
-#### `SIR.TransmissionSI(model, infdurdist=...)`
+#### `TransmissionSI(model, infdurdist=...)`
 
-This is the **S → I transition** component:
+This component implements the **S -> I transition**.
 
-- Computes **force of infection**:
-  $$
-  \lambda = \beta \cdot \frac{I}{N}
-  $$
-- For each susceptible agent, performs a Bernoulli trial with probability \( p = 1 - e^{-\lambda} \)
-- If infected, agent's state becomes `INFECTIOUS`, and they are assigned an **infection duration** drawn from `infdurdist`
-- The timer is stored in `itimer` (infection timer)
+For each timestep, it:
+
+- Computes the **force of infection**:
+
+    \lambda = \beta \cdot \frac{I}{N}
+
+- For each susceptible agent, performs a Bernoulli trial with
+probability:
+
+    p = 1 - e^{-\lambda}
+
+- If infection occurs:  
+- The agent’s state is set to **INFECTIOUS** - An infection
+duration is drawn from `infdurdist` 
+- The duration is stored in the
+agent’s `itimer` property
+
+The `infdurdist` argument must be a **Numba-compatible distribution
+function**, for example:
+
+```python
+from laser.core.distributions import poisson
+infdist = poisson(mean_infectious_period)
+```
+
+This component is responsible only for new infections; recovery is
+handled separately.
+
+#### `InfectiousIR(model, infdurdist=...)`
+
+This component handles the **I -> R transition**.
+
+It:
+
+- Decrements each infectious agent’s `itimer` each timestep 
+- Transitions agents to **RECOVERED** when their timer reaches zero 
+- Updates node-level counts for infectious and recovered populations
+
+This component **must use the same `infdurdist`** as
+`TransmissionSI`, because it relies on the infection timers set during
+transmission.
+
+#### `Recovered(model)`
+
+This component:
+
+- Tracks the number of recovered agents per node 
+- Updates recovered counts over time 
+- Does **not** initiate any transitions or timers
+
+No parameters are required.
+
+#### **Important note on ordering**
+
+The recommended order is:
+
+1. `Susceptible` 
+2. `TransmissionSI` 
+3. `InfectiousIR` 
+4. `Recovered`
+
+This ensures that:
+
+- Population counts are recorded consistently 
+- State transitions occur before recovery is tallied 
+- The invariant `S + I + R = N` is preserved at each timestep
 
 ##### Parameterization
 
@@ -160,42 +246,6 @@ Alternative distributions available in `laser.core.distributions`:
      You must use a **Numba-compatible function** with signature `(tick: int, node: int) → float/int`
 
 
-
-#### `SIR.InfectiousIR(model, infdurdist=...)`
-
-This is the **I → R transition** component:
-
-- Decrements each agent's `itimer` (infection timer) every timestep
-- When `itimer == 0`, agent moves to `RECOVERED` state (code 3)
-- Records the number of infectious and recovered agents per node at each timestep
-
-This component **must use the same distribution** (`infdurdist`) as `TransmissionSI`, because it expects that `itimer` was set there.
-
-
-
-#### `SIR.Recovered(model)`
-
-This component:
-
-- Tracks the number of recovered agents
-- Propagates `R[t+1] = R[t] + new_recoveries`
-- Does **not** initiate any transitions or timers
-
-No parameters are needed.
-
-
-
-#### Full Component Setup
-
-```python
-model.components = [
-    SIR.Susceptible(model),                         # Track S
-    SIR.TransmissionSI(model, infdurdist=infectious_duration),  # S → I
-    SIR.InfectiousIR(model, infdurdist=infectious_duration),    # I → R
-    SIR.Recovered(model),                           # Track R
-]
-```
-
 !!! note
 
     Order matters: make sure Susceptible and Recovered components wrap the transition steps.
@@ -203,8 +253,8 @@ model.components = [
 
 #### Optional Enhancements
 
-- You can replace `SIR.InfectiousIR` with `SIR.InfectiousIRS` for **waning immunity** (SIRS model).
-- You can use `SIR.TransmissionSE` and `SIR.Exposed` components for SEIR models.
+- You can replace `InfectiousIR` with `InfectiousIRS` for **waning immunity** (SIRS model).
+- You can use `TransmissionSE` and `Exposed` components for SEIR models.
 - Add importation (`Infect_Random_Agents`) or demography (`Births`, `Deaths`) as additional components.
 
 ```python
