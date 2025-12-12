@@ -29,7 +29,6 @@ the automatically generated API reference from AutoAPI.
    source/converted/tutorials/census_tracker_sir
    source/converted/tutorials/sir
    source/converted/whatsnew
-   source/converted/census_tracker_sir
 
 
 
