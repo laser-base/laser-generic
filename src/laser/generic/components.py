@@ -118,7 +118,7 @@ class Susceptible:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.S[tick], self.model.people, State.SUSCEPTIBLE, "Susceptible")
+        _check_flow_vs_census(self.model.nodes.S[tick + 1], self.model.people, State.SUSCEPTIBLE, "Susceptible")
 
         return
 
@@ -244,7 +244,7 @@ class Exposed:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.E[tick], self.model.people, State.EXPOSED, "Exposed")
+        _check_flow_vs_census(self.model.nodes.E[tick + 1], self.model.people, State.EXPOSED, "Exposed")
         _check_timer_active(self.model.people.state, State.EXPOSED.value, self.model.people.etimer, "Exposed", "etimer")
         _check_state_timer_consistency(self.model.people.state, State.EXPOSED.value, self.model.people.etimer, "Exposed", "etimer")
 
@@ -380,7 +380,7 @@ class InfectiousSI:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.I[tick], self.model.people, State.INFECTIOUS, "Infectious")
+        _check_flow_vs_census(self.model.nodes.I[tick + 1], self.model.people, State.INFECTIOUS, "Infectious")
 
         return
 
@@ -510,7 +510,7 @@ class InfectiousIS:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.I[tick], self.model.people, State.INFECTIOUS, "Infectious")
+        _check_flow_vs_census(self.model.nodes.I[tick + 1], self.model.people, State.INFECTIOUS, "Infectious")
         _check_timer_active(self.model.people.state, State.INFECTIOUS.value, self.model.people.itimer, "Infectious", "itimer")
         _check_state_timer_consistency(self.model.people.state, State.INFECTIOUS.value, self.model.people.itimer, "Infectious", "itimer")
 
@@ -825,7 +825,7 @@ class InfectiousIRS:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.I[tick], self.model.people, State.INFECTIOUS, "Infectious")
+        _check_flow_vs_census(self.model.nodes.I[tick + 1], self.model.people, State.INFECTIOUS, "Infectious")
         _check_timer_active(self.model.people.state, State.INFECTIOUS.value, self.model.people.itimer, "Infectious", "itimer")
         _check_state_timer_consistency(self.model.people.state, State.INFECTIOUS.value, self.model.people.itimer, "Infectious", "itimer")
 
@@ -1243,8 +1243,8 @@ class TransmissionSIx:
         return
 
     def prevalidate_step(self, tick: int) -> None:
-        _check_flow_vs_census(self.model.nodes.S[tick], self.model.people, State.SUSCEPTIBLE, "Susceptible")
-        _check_flow_vs_census(self.model.nodes.I[tick], self.model.people, State.INFECTIOUS, "Infectious")
+        _check_flow_vs_census(self.model.nodes.S[tick + 1], self.model.people, State.SUSCEPTIBLE, "Susceptible")
+        _check_flow_vs_census(self.model.nodes.I[tick + 1], self.model.people, State.INFECTIOUS, "Infectious")
 
         return
 

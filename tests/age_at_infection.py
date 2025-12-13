@@ -40,12 +40,12 @@ State = SEIR.State
 
 
 class TransmissionWithDOI(SEIR.Transmission):
-    def __init__(self, model, expdurdist, expdurmin=1):
-        super().__init__(model, expdurdist, expdurmin)
+    def __init__(self, model, expdurdist, expdurmin=1, validating: bool = False):
+        super().__init__(model, expdurdist, expdurmin, validating=validating)
         # Add 'doi' property to people (default 0, dtype=int32)
-        self.model.people.add_scalar_property("doi", dtype=np.int32)
-        # Optionally initialize to -1 to indicate never infected
-        self.model.people.doi[:] = -1
+        self.model.people.add_scalar_property("doi", dtype=np.int32, default=-1)
+
+        return
 
     def prevalidate_step(self, tick: int) -> None:
         self.prv_state = self.model.people.state.copy()
@@ -129,12 +129,16 @@ class TransmissionWithDOI(SEIR.Transmission):
 
 
 class Importation:
-    def __init__(self, model, period, new_infections, infdurdist, infdurmin=1):
+    def __init__(self, model, period, new_infections, infdurdist, infdurmin=1, validating: bool = False):
         self.model = model
         self.period = period  # e.g., 30 (days/ticks)
         self.new_infections = np.array(new_infections, dtype=np.int32)
         self.infdurdist = infdurdist
         self.infdurmin = infdurmin
+
+        self.validating = validating
+
+        return
 
     def prevalidate_step(self, tick: int) -> None:
         self.prv_state = self.model.people.state.copy()

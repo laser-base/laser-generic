@@ -442,8 +442,8 @@ class RoutineImmunizationEx:
         )
         newly_immunized = np.sum(newly_immunized, axis=0)
 
-        self.model.nodes.S[tick] -= newly_immunized
-        self.model.nodes.R[tick] += newly_immunized
+        self.model.nodes.S[tick + 1] -= newly_immunized
+        self.model.nodes.R[tick + 1] += newly_immunized
         self.model.nodes.ri_immunized[tick] = newly_immunized
 
         new_doses = np.sum(new_doses, axis=0)

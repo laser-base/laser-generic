@@ -14,6 +14,7 @@ include tox.ini
 
 include AUTHORS.md
 include CHANGELOG.md
+include CODE_OF_CONDUCT.md
 include CONTRIBUTING.md
 include LICENSE
 include README.md

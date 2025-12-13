@@ -560,100 +560,110 @@ class TestVitalDynamicsValidation(unittest.TestCase):
         ]
 
         initial_sus = model.nodes.S[0].sum()
-        model.run("Routine ImmunizationEx Validation")
+        model.run("RoutineImmunizationEx Validation")
 
         # Verify some susceptibles have been immunized (removed from S)
         assert model.nodes.S[-1].sum() < initial_sus, "Some susceptibles should have been immunized"
 
         return
 
-    class TestTransmissionWithDOIValidation(unittest.TestCase):
-        """
-        Test suite for validating TransmissionWithDOI component with validating=True.
 
-        WHAT IS TESTED:
-        - TransmissionWithDOI executes without validation errors
-        - Duration of infection (DOI) is properly assigned and tracked
-        - Infection incidence and DOI assignment are consistent
+class TestTransmissionWithDOIValidation(unittest.TestCase):
+    """
+    Test suite for validating TransmissionWithDOI component with validating=True.
 
-        FAILURE MEANING:
-        Validation failure indicates errors in DOI assignment, infection transitions,
-        or aggregate/individual state mismatches.
-        """
+    WHAT IS TESTED:
+    - TransmissionWithDOI executes without validation errors
+    - Duration of infection (DOI) is properly assigned and tracked
+    - Infection incidence and DOI assignment are consistent
 
-        def setUp(self):
-            set_seed(SEED)
-            return
+    FAILURE MEANING:
+    Validation failure indicates errors in DOI assignment, infection transitions,
+    or aggregate/individual state mismatches.
+    """
 
-        def test_transmission_with_doi(self):
-            scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
-            scenario["S"] = scenario.population - 100
-            scenario["I"] = 100
+    def setUp(self):
+        set_seed(SEED)
+        return
 
-            beta = 0.2
-            doi_mean = 8.0
-            params = PropertySet({"nticks": NTICKS, "beta": beta})
-            model = Model(scenario, params)
-            model.validating = True
+    def test_transmission_with_doi(self):
+        scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population - 100
+        scenario["E"] = 0
+        scenario["I"] = 100
+        scenario["R"] = 0
 
-            doidist = dists.normal(loc=doi_mean, scale=2.0)
+        beta = 0.2
+        doi_mean = 8.0
+        params = PropertySet({"nticks": NTICKS, "beta": beta})
+        model = Model(scenario, params)
+        model.validating = True
 
-            model.components = [
-                Susceptible(model),
-                InfectiousIR(model, doidist),
-                TransmissionWithDOI(model, doidist),
-            ]
+        expdurdist = dists.normal(loc=5.0, scale=1.0)
+        infdurdist = dists.normal(loc=7.0, scale=2.0)
 
-            assert np.all(model.people.doi == 0), "All agents should start with DOI = 0"
+        doidist = dists.normal(loc=doi_mean, scale=2.0)
 
-            model.run("TransmissionWithDOI Validation")
+        model.components = [
+            Susceptible(model),
+            Exposed(model, expdurdist, infdurdist),
+            InfectiousIR(model, infdurdist),
+            Recovered(model),
+            TransmissionWithDOI(model, doidist),
+        ]
 
-            # Verify some agents have recovered (DOI expired)
-            assert np.any(model.people.doi > 0), "Some agents should have a DOI assigned"
+        assert np.all(model.people.doi == -1), "All agents should start with DOI = 0"
 
-            return
+        model.run("TransmissionWithDOI Validation")
 
-    class TestImportationValidation(unittest.TestCase):
-        """
-        Test suite for validating Importation component from age_at_infection with validating=True.
+        # Verify some agents have recovered (DOI expired)
+        assert np.any(model.people.doi >= 0), "Some agents should have a DOI assigned"
 
-        WHAT IS TESTED:
-        - Importation events occur and are recorded
-        - Imported infections are assigned to correct age groups
-        - State counts and agent-level states are consistent
+        return
 
-        FAILURE MEANING:
-        Validation failure indicates errors in importation logic, age assignment,
-        or state transitions for imported cases.
-        """
 
-        def setUp(self):
-            set_seed(SEED)
-            return
+class TestImportationValidation(unittest.TestCase):
+    """
+    Test suite for validating Importation component from age_at_infection with validating=True.
 
-        def test_importation_age_at_infection(self):
-            scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
-            scenario["S"] = scenario.population
-            scenario["I"] = 0
+    WHAT IS TESTED:
+    - Importation events occur and are recorded
+    - Imported infections are assigned to correct age groups
+    - State counts and agent-level states are consistent
 
-            params = PropertySet({"nticks": NTICKS, "beta": 0.0})
+    FAILURE MEANING:
+    Validation failure indicates errors in importation logic, age assignment,
+    or state transitions for imported cases.
+    """
 
-            model = Model(scenario, params)
-            model.validating = True
+    def setUp(self):
+        set_seed(SEED)
+        return
 
-            model.components = [
-                Susceptible(model),
-                InfectiousIR(model, infdurdist := dists.normal(loc=7, scale=1)),
-                Importation(model, period=10, new_infections=[5] * model.nodes.count, infdurdist=infdurdist, validating=True),
-            ]
+    def test_importation_age_at_infection(self):
+        scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: POPULATION)
+        scenario["S"] = scenario.population
+        scenario["I"] = 0
+        scenario["R"] = 0
 
-            initial_infectious = model.nodes.I[0].sum()
-            model.run("Importation AgeAtInfection Validation")
+        params = PropertySet({"nticks": NTICKS, "beta": 0.0})
 
-            # Verify importations occurred (I increased)
-            assert model.nodes.I[-1].sum() > initial_infectious, "Imported infections should increase I count"
+        model = Model(scenario, params)
+        model.validating = True
 
-            return
+        model.components = [
+            Susceptible(model),
+            InfectiousIR(model, infdurdist := dists.normal(loc=7, scale=1)),
+            Recovered(model),
+            Importation(model, period=10, new_infections=[5] * model.nodes.count, infdurdist=infdurdist, validating=True),
+        ]
+
+        model.run("Importation AgeAtInfection Validation")
+
+        # Verify importations occurred (I increased)
+        assert np.any(model.nodes.I > 0), "There should be infectious individuals after importation"
+
+        return
 
 
 if __name__ == "__main__":
