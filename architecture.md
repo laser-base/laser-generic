@@ -284,13 +284,13 @@ classDiagram
 
     %% Relationships
     Model --> LaserFrame : uses
-    Model "1" o-- "*" Susceptible : has
-    Model "1" o-- "*" Exposed : has
-    Model "1" o-- "*" Infectious : has
-    Model "1" o-- "*" Recovered : has
-    Model "1" o-- "*" Transmission : has
-    Model "1" o-- "*" Births : has
-    Model "1" o-- "*" Mortality : has
+    Model "1" o-- "1" Susceptible : has
+    Model "1" o-- "1" Exposed : has
+    Model "1" o-- "1" Infectious : has
+    Model "1" o-- "1" Recovered : has
+    Model "1" o-- "1" Transmission : has
+    Model "1" o-- "1" Births : has
+    Model "1" o-- "1" Mortality : has
 
     Exposed --> LaserFrame : reads/writes
     Infectious --> LaserFrame : reads/writes
@@ -304,36 +304,43 @@ classDiagram
 
 * **Susceptible**
 
+  * Adds: `nodeid` and `state` properties to `model.people`, `S` property to `model.nodes`
   * Reads: none
   * Writes: none
 
 * **Exposed**
 
+  * Adds: `etimer` property to `model.people`, `E` and `newly_infectious` properties to `model.nodes`
   * Reads: `state`, `etimer`
   * Writes: `state` (E → I)
 
 * **Infectious**
 
+  * Adds: `itimer` property to `model.people`, `I` and `newly_recovered` properties to `model.nodes`
   * Reads: `state`, `itimer`
   * Writes: `state` (I → R)
 
 * **Recovered**
 
+  * Adds: `R` property to `model.nodes`
   * Reads: `state`
   * Writes: nothing unless waning immunity exists (in SEIRS)
 
 * **Transmission**
 
+  * Adds: `forces` and `newly_infected` properties to `model.nodes`
   * Reads: `state`
   * Writes: `state` (S → E), sets incubation durations
 
 * **Births**
 
+  * Adds: `births` to `model.nodes` and optionally `dob` to `model.people`
   * Reads: nothing
-  * Writes: adds agents, triggers `on_birth()` on relevant components
+  * Writes: optionally `dob`, adds agents, triggers `on_birth()` on relevant components
 
 * **Mortality**
 
+  * Adds: `deaths` to `model.nodes`
   * Reads: possibly `dob` (date of birth), survival-related properties
   * Writes: `dod` (date of death), `state`
 
