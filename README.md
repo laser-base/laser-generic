@@ -15,6 +15,10 @@ LASER (Lightweight Agent Spatial modeling for ERadication) is a framework for bu
 
 * Free software: MIT license
 
+## Documentation
+
+https://laser-base.github.io/laser-generic/
+
 ## New model components
 
 `laser-generic` adds additional modeling components to those developed for `laser-core`. They include:
@@ -70,10 +74,6 @@ To install the latest in-development version:
 ```
 pip install https://github.com/InstituteforDiseaseModeling/laser-generic/archive/main.zip
 ```
-
-## Documentation
-
-https://laser-base.github.io/laser-generic/
 
 ## Development
 
