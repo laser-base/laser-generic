@@ -34,6 +34,7 @@ nav: # Navigation structure for the documentation
   - Home: index.md
   - Software overview:
     - software-overview/index.md
+    - software-overview/architecture.md
     - software-overview/scenario.md
     - Demographics:
       - software-overview/demographics/index.md
