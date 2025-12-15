@@ -3,6 +3,7 @@
 Contributions are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given where it's due.
 
 A few things to note before you begin:
+
 - The LASER team is committed to maintaining a welcoming community. We ask that all contributors adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
 - Code contributions should follow the Google Python [Style Guide](https://google.github.io/styleguide/pyguide.html).
 - When [reporting a bug](https://github.com/laser-base/laser-core/issues) please include details, such as your operating system and the exact steps to reproduce the issue.
