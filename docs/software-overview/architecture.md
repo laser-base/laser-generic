@@ -49,8 +49,6 @@ The architecture is designed so that:
 * **`laser-core` knows nothing about disease modeling**, and
 * **`laser-generic` relies heavily on the memory layout & speed** provided by `laser-core`.
 
-In other words: one focuses on *what* to model, the other on *how* to cram the data into the CPU cache like a pro.
-
 ----
 
 # **3. `laser-core` Architecture**
@@ -138,7 +136,7 @@ for tick in range(nticks):
             component.post_step(model)
 ```
 
-This consistent execution order ensures deterministic progression, assuming your random number draws are deterministic too.
+This consistent execution order ensures deterministic progression, assuming your random number draws are deterministic as well. The `laser.generic.random` module provides PRNG seeding across NumPy, Numba, and SciPy to help with deterministic random number draws. Note, though, that while Numba generally _does_ provide repeatable random number sequences, it does not guarantee this behavior.
 
 ----
 
@@ -221,12 +219,12 @@ Below is a detailed wiring diagram for a **generic SEIR model** using `laser-gen
 * `Susceptible` component
 * `Exposed` component (E → I)
 * `Infectious` component (I → R)
-* `Recovered` component (terminal state or may loop back via waning in SEIRS)
+* `Recovered` component (terminal state or may loop back via waning in SIRS or SEIRS)
 * `Transmission` component
 * `Births` component (optional)
 * `Mortality` component (optional)
 
-(You may have bells, whistles, or mutations, but this is the canonical SEIR spine.)
+(You may have bells, whistles, or mutations, but this is the canonical SEIR template.)
 
 ## **Component Wiring Diagram**
 
@@ -324,7 +322,7 @@ classDiagram
 
   * Adds: `R` property to `model.nodes`
   * Reads: `state`
-  * Writes: nothing unless waning immunity exists (in SEIRS)
+  * Writes: nothing unless waning immunity exists (in SIRS or SEIRS)
 
 * **Transmission**
 

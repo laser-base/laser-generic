@@ -4,13 +4,13 @@ Contributions are welcome, and they are greatly appreciated! Every little bit he
 
 A few things to note before you begin:
 
-- The LASER team is committed to maintaining a welcoming community. We ask that all contributors adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
+- The LASER team is committed to maintaining a welcoming community. We ask that all contributors adhere to our [Code of Conduct](https://github.com/laser-base/laser-generic/blob/main/CODE_OF_CONDUCT.md).
 - Code contributions should follow the Google Python [Style Guide](https://google.github.io/styleguide/pyguide.html).
-- When [reporting a bug](https://github.com/laser-base/laser-core/issues) please include details, such as your operating system and the exact steps to reproduce the issue.
+- When [reporting a bug](https://github.com/laser-base/laser-generic/issues/new/choose) please include details, such as your operating system and the exact steps to reproduce the issue.
 - LASER could always use more documentation, whether as part of the official LASER docs, in docstrings, or even on the web in blog posts, articles, and such.
-- The best way to send feedback on LASER is to [file an issue](https://github.com/laser-base/laser-core/issues).
+- The best way to send feedback on LASER is to [file an issue](https://github.com/laser-base/laser-generic/issues/new/choose).
 
-If you have any questions, please reach out to the LASER moderators, [Christopher Lorton](chrisotpher.lorton@gatesfoundation.org) and [Paul Saxman](paul.saxman@gatesfoundation.org).
+If you have any questions, please reach out to the LASER moderators, [Christopher Lorton](mailto:christopher.lorton@gatesfoundation.org) and [Paul Saxman](mailto:paul.saxman@gatesfoundation.org).
 
 ## Contributing Code
 
