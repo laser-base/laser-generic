@@ -60,7 +60,7 @@ params = PropertySet({
 
 All other input data is optional, and includes additional SI/SIR/SEIR components, agent-level property definitions, spatial and network data, and more.
 
-To get started with a simple model, see [Create and run a simulation](../get-started/index.md#build_a_model).
+To get started with a simple model, see [Create and run a simulation](../get-started/index.md#Create_and_run_a_simulation).
 
 ### Software components
 
