@@ -71,6 +71,7 @@ nav: # Navigation structure for the documentation
       - Explore routine immunization: tutorials/notebooks/ri_exploration.ipynb
       - Seasonality in transmission: tutorials/notebooks/seasonality.ipynb
   - API reference: reference/
+  - Code of conduct: code_of_conduct.md
   - Contribution guide: contribute.md
   - What's new: whatsnew.md
 
