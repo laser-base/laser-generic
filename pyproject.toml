@@ -48,6 +48,7 @@ dependencies = [
   "scipy",
   "scikit-learn",
   "mplcursors>=0.7",
+  "PyWavelets",
 ]
 
 [project.optional-dependencies]
