@@ -224,6 +224,8 @@ Below is a detailed wiring diagram for a **generic SEIR model** using `laser-gen
 * `Births` component (optional)
 * `Mortality` component (optional)
 
+(You may have bells, whistles, or mutations, but this is the canonical SEIR template.)
+
 ## **Component Wiring Diagram**
 
 ```mermaid

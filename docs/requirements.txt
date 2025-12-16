@@ -11,6 +11,8 @@ mkdocs-jupyter # jupyter notebooks
 mkdocstrings # generate API reference from docstrings
 mkdocstrings-python # python handler for mkdocstrings
 mkdocs-table-reader-plugin
+mkdocs-mermaid2-plugin
+mkdocs-exclude
 
 # include all packages needed for running Jupyter notebooks
 pandas
