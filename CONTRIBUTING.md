@@ -10,7 +10,7 @@ A few things to note before you begin:
 - LASER could always use more documentation, whether as part of the official LASER docs, in docstrings, or even on the web in blog posts, articles, and such.
 - The best way to send feedback on LASER is to [file an issue](https://github.com/laser-base/laser-core/issues).
 
-If you have any questions, please reach out to the LASER moderators, [Christopher Lorton](chrisotpher.lorton@gatesfoundation.org) and [Paul Saxman](paul.saxman@gatesfoundation.org).
+If you have any questions, please reach out to the LASER moderators, [Christopher Lorton](mailto:christopher.lorton@gatesfoundation.org) and [Paul Saxman](mailto:paul.saxman@gatesfoundation.org).
 
 ## Contributing Code
 
