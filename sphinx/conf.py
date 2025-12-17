@@ -60,10 +60,15 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.intersphinx",
     "sphinx_autodoc_typehints",  # Include type hints
-    "myst_parser",  # Markdown support
     "sphinx_rtd_theme",
     "autoapi.extension",
+    # Use myst_nb instead of myst_parser so MyST Markdown is handled via the
+    # notebook-aware parser, which also adds support for Jupyter notebooks.
+    "myst_nb",
 ]
+nb_execution_mode = "off"
+nb_render_doc = True  # Include markdown/docstrings in notebooks
+nb_render_text_lexer = "ipython3"  # Syntax highlighting
 
 autoapi_type = "python"
 # autoapi_dirs = ["../src/laser/generic"]

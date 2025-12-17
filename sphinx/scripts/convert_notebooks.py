@@ -1,31 +1,17 @@
 # sphinx/scripts/convert_notebooks.py
 
 import pathlib
-import subprocess
+import shutil
 
 here = pathlib.Path(__file__).resolve().parent
 root = here.parent.parent  # → /docs
 
-nb_root = root / "docs" / "notebooks"
-rst_root = here.parent / "source" / "converted" / "notebooks"
+nb_root = root / "docs" / "tutorials" / "notebooks"
+target_dir = here.parent / "source" / "converted" / "tutorials"
 
-rst_root.mkdir(parents=True, exist_ok=True)
+target_dir.mkdir(parents=True, exist_ok=True)
 
 for nb in nb_root.glob("*.ipynb"):
-    out = rst_root / nb.with_suffix(".rst").name
-    print(f"Converting {nb} → {out}")
-    subprocess.run(
-        [
-            "jupyter",
-            "nbconvert",
-            "--to",
-            "rst",
-            # "--execute",  # Uncomment to run notebooks before converting
-            "--output",
-            out.name,
-            "--output-dir",
-            str(rst_root),
-            str(nb),
-        ],
-        check=True,
-    )
+    target = target_dir / nb.name
+    print(f"Copying {nb} → {target}")
+    shutil.copy2(nb, target)

@@ -1,43 +1,46 @@
-graft docs
-graft src
-graft ci
-graft tests
-
-include .bumpversion.cfg
-include .cookiecutterrc
-include .coveragerc
-include .editorconfig
-include .github/workflows/github-actions.yml
-include .pre-commit-config.yaml
-include pytest.ini
-include tox.ini
-
+# Include essential top-level files
 include AUTHORS.md
 include CHANGELOG.md
 include CODE_OF_CONDUCT.md
 include CONTRIBUTING.md
 include LICENSE
 include README.md
+include .bumpversion.cfg
+include .cookiecutterrc
+include .coveragerc
+include .editorconfig
+include pytest.ini
+include tox.ini
+include .github/workflows/github-actions.yml
 
-recursive-exclude docs/notebooks *.ipynb
-recursive-exclude docs/notebooks/media *.svg
-recursive-exclude docs/notebooks/media *.png
-recursive-include sphinx *.py
-recursive-include sphinx *.rst
+# Project source, CI, and tests
+graft src
+graft ci
+graft tests
 
-global-exclude *.py[cod] __pycache__/* *.so *.dylib
+# Docs (excluding sphinx/)
+graft docs
+prune docs/notebooks/media
+recursive-exclude docs/notebooks *.ipynb *.svg *.png
 
+# If you really want to exclude the whole sphinx/ folder from install:
+prune sphinx
+
+# Exclude compiled files and build artifacts
+global-exclude *.py[cod] __pycache__/*
+global-exclude *.so *.dylib *.gz
+
+# Exclude temporary or special-case files
 exclude CLAUDE.md
 exclude convert_clean.sh
-prune data
-
 exclude mkdocs.yml
-recursive-exclude docs *
-exclude tox.ini
-exclude .pre-commit-config.yaml
-exclude tests/*.gz
-exclude sphinx/scripts/convert_docs.py
+exclude mkdocs_jenner.yml
 exclude laserdocs_sphinx/*
 exclude tests/harvest_test_docstrings.py
-exclude mkdocs_jenner.yml
 exclude sphinx/Makefile
+include .pre-commit-config.yaml
+
+# Re-include required data files
+recursive-include data *.md
+recursive-include data *.npy
+recursive-include data *.py

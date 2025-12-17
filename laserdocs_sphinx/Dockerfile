@@ -5,22 +5,17 @@ FROM sphinxdoc/sphinx-latexpdf:latest
 RUN apt-get update && apt-get install -y pandoc && rm -rf /var/lib/apt/lists/*
 
 # Install extra Sphinx extensions you use
+# Pin myst-parser<4.0 because myst-parser 4.x introduced breaking changes in configuration and linkify behavior that this docs build is not yet compatible with.
 RUN pip install --no-cache-dir \
-      myst-parser[linkify] \
+      "myst-parser[linkify]<4.0" \
       sphinx-autodoc-typehints \
       sphinx-rtd-theme \
       sphinx-autoapi \
       jupyter \
-      nbconvert
+      nbconvert \
+      myst-nb
 
-#ENTRYPOINT ["make"]
-#ENTRYPOINT ["sh", "-c", "python3 scripts/convert_docs.py && make $@"]
-
-ENTRYPOINT sh -c "python3 scripts/convert_docs.py && python3 scripts/convert_notebooks.py && make \"$@\""
-
-# Default workdir inside the container
 WORKDIR /docs/sphinx
 
-# Default command (may be overridden)
-#CMD ["make", "html"]
-CMD ["html"]
+ENTRYPOINT ["scripts/entrypoint.sh"]
+CMD ["latexpdf"]
