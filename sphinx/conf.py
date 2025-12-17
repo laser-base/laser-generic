@@ -42,7 +42,7 @@ for p in list(sys.path):
 project = "LASER-GENERIC"
 author = "Institute for Disease Modeling"
 copyright = f"{datetime.now(timezone.utc).year}, {author}"
-release = "0.4.1"
+release = "1.0.0"
 
 # -----------------------------------------------------------------------------
 # Optional: disable epub output to avoid loading the epub3 builder
