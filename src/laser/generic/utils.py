@@ -371,7 +371,7 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     """
 
     # Seed initial infections in random locations at the start of the simulation
-    pop = model.people
+    pop = model.population
     params = model.params
 
     myinds = np.flatnonzero(pop.state == State.SUSCEPTIBLE.value)
@@ -396,9 +396,9 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
 
     Args:
         model: The simulation model containing the population and parameters. It must expose:
-               - model.people.state (integer infection state),
-               - model.people.itimer (infection timers),
-               - model.people.nodeid (patch index),
+               - model.population.state (integer infection state),
+               - model.population.itimer (infection timers),
+               - model.population.nodeid (patch index),
                - model.params.inf_mean (mean infectious period).
         ipatch (int): The identifier of the patch where infections should be seeded.
         ninfections (int, optional): The number of initial infections to seed. Defaults to 1.
@@ -406,7 +406,7 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
     Returns:
         None
     """
-    pop = model.people
+    pop = model.population
 
     # Candidates: susceptible individuals in the target patch
     susceptible_in_patch = np.where((pop.state == State.SUSCEPTIBLE.value) & (pop.nodeid == ipatch))[0]

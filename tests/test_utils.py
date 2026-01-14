@@ -84,7 +84,7 @@ class DummyModel:
 
     def __init__(self, count=10):
         self.population = DummyModel.Population(count)
-        self.people = self.population  # got tired of picking one
+        # self.people = self.population  # got tired of picking one
         self.params = DummyModel.Params()
         self.prng = DummyModel.PRNG()
         self.model = self
@@ -556,8 +556,8 @@ class TestSeedingFunctions(unittest.TestCase):
         """
         nodeids = utils.seed_infections_randomly(self.model, ninfections=5)
         self.assertEqual(len(nodeids), 5)
-        self.assertEqual(np.sum(self.model.people.state == State.INFECTIOUS.value), 5)
-        self.assertTrue(np.all(self.model.people.itimer[nodeids] == self.model.params.inf_mean))
+        self.assertEqual(np.sum(self.model.population.state == State.INFECTIOUS.value), 5)
+        self.assertTrue(np.all(self.model.population.itimer[nodeids] == self.model.params.inf_mean))
 
     def test_seed_infections_in_patch(self):
         """
@@ -582,16 +582,16 @@ class TestSeedingFunctions(unittest.TestCase):
         - Or their timers are not initialized to the expected value.
         """
         # Arrange: 5 nodes, 2 agents per node
-        self.model.people.nodeid = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
+        self.model.population.nodeid = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
 
         # Act: seed infections only in patch 2
         utils.seed_infections_in_patch(self.model, ipatch=2, ninfections=2)
 
         # Agents in node 2 that are INFECTIOUS
-        infected_in_patch = (self.model.people.nodeid == 2) & (self.model.people.state == State.INFECTIOUS.value)
+        infected_in_patch = (self.model.population.nodeid == 2) & (self.model.population.state == State.INFECTIOUS.value)
 
         # Agents in other nodes that are INFECTIOUS (should be none)
-        infected_elsewhere = (self.model.people.nodeid != 2) & (self.model.people.state == State.INFECTIOUS.value)
+        infected_elsewhere = (self.model.population.nodeid != 2) & (self.model.population.state == State.INFECTIOUS.value)
 
         # Assert: exactly two infectious in node 2
         self.assertEqual(np.sum(infected_in_patch), 2)
@@ -600,7 +600,7 @@ class TestSeedingFunctions(unittest.TestCase):
         self.assertEqual(np.sum(infected_elsewhere), 0)
 
         # Assert: their timers are set to inf_mean
-        self.assertTrue(np.all(self.model.people.itimer[infected_in_patch] == self.model.params.inf_mean))
+        self.assertTrue(np.all(self.model.population.itimer[infected_in_patch] == self.model.params.inf_mean))
 
 
 if __name__ == "__main__":
