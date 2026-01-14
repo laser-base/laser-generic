@@ -374,7 +374,7 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     pop = model.people
     params = model.params
 
-    myinds = np.flatnonzero(pop.state == 0)
+    myinds = np.flatnonzero(pop.state == State.SUSCEPTIBLE.value)
     if len(myinds) > ninfections:
         myinds = np.random.permutation(myinds)[:ninfections]
 
