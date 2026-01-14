@@ -16,18 +16,17 @@ the automatically generated API reference from AutoAPI.
    source/converted/index
    source/converted/software-overview/demographics/index
    source/converted/software-overview/index
+   source/converted/census_tracker_sir
    source/converted/code_of_conduct
    source/converted/contribute
    source/converted/get-started/calibration
    source/converted/get-started/optimization
    source/converted/includes/glossary
-   source/converted/software-overview/architecture
    source/converted/software-overview/database
    source/converted/software-overview/migration
    source/converted/software-overview/scenario
    source/converted/software-overview/transmission
    source/converted/whatsnew
-
 
 
 
