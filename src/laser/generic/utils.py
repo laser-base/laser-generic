@@ -354,15 +354,15 @@ def get_centroids(gdf: gpd.GeoDataFrame) -> np.ndarray:
 # Want to think about the ways to seed infections.  Not all infections have a timer!
 def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     """
-    Randomly seed initial infections across the entire population.
+    Randomly seed initial infections across the entire people.
 
     This function selects up to `ninfections` susceptible individuals at random
-    from the full population. It marks them as infected by:
+    from the full people. It marks them as infected by:
     - Setting their infection timer (`itimer`) to the model's mean infectious duration (`inf_mean`),
     - Setting their susceptibility to zero.
 
     Args:
-        model: The simulation model, which must contain a `population` with
+        model: The simulation model, which must contain a `people` with
                `susceptibility`, `itimer`, and `nodeid` arrays, and a `params` object with `inf_mean`.
         ninfections (int, optional): The number of individuals to infect. Defaults to 100.
 
@@ -371,7 +371,7 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
     """
 
     # Seed initial infections in random locations at the start of the simulation
-    pop = model.population
+    pop = model.people
     params = model.params
 
     myinds = np.flatnonzero(pop.state == State.SUSCEPTIBLE.value)
@@ -387,7 +387,7 @@ def seed_infections_randomly(model: Any, ninfections: int = 100) -> np.ndarray:
 
 def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> None:
     """
-    Seed initial infections in a specific patch of the population at the start of the simulation.
+    Seed initial infections in a specific patch of the people at the start of the simulation.
 
     This function randomly selects up to `ninfections` individuals from the specified patch
     who are currently susceptible (state == State.SUSCEPTIBLE) and marks them as infected by:
@@ -395,10 +395,10 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
       - Setting their infection `state` to State.INFECTIOUS.
 
     Args:
-        model: The simulation model containing the population and parameters. It must expose:
-               - model.population.state (integer infection state),
-               - model.population.itimer (infection timers),
-               - model.population.nodeid (patch index),
+        model: The simulation model containing the people and parameters. It must expose:
+               - model.people.state (integer infection state),
+               - model.people.itimer (infection timers),
+               - model.people.nodeid (patch index),
                - model.params.inf_mean (mean infectious period).
         ipatch (int): The identifier of the patch where infections should be seeded.
         ninfections (int, optional): The number of initial infections to seed. Defaults to 1.
@@ -406,7 +406,7 @@ def seed_infections_in_patch(model: Any, ipatch: int, ninfections: int = 1) -> N
     Returns:
         None
     """
-    pop = model.population
+    pop = model.people
 
     # Candidates: susceptible individuals in the target patch
     susceptible_in_patch = np.where((pop.state == State.SUSCEPTIBLE.value) & (pop.nodeid == ipatch))[0]
@@ -435,7 +435,7 @@ def get_default_parameters() -> PropertySet:
         nticks (int, default=730): Number of simulation ticks (days). Default is 2 years (365*2), which is a typical duration for seasonal epidemic simulations.
         beta (float, default=0.15): Transmission rate per contact. Chosen as a moderate value for SIR-type models to reflect realistic disease spread.
         biweekly_beta_scalar (list of float, default=[1.0]*biweekly_steps): Scalar for beta for each biweekly period. Default is 1.0 for all periods, meaning no seasonal variation unless specified.
-        cbr (float, default=0.03): Constant birth rate. Set to 0.03 to represent a typical annual birth rate in population models.
+        cbr (float, default=0.03): Constant birth rate. Set to 0.03 to represent a typical annual birth rate in people models.
         exp_shape (float, default=2.0): Shape parameter for the exposed period distribution. Default chosen for moderate dispersion.
         exp_scale (float, default=2.0): Scale parameter for the exposed period distribution. Default chosen for moderate mean duration.
         inf_mean (float, default=4.0): Mean infectious period (days). Set to 4.0 to reflect typical infectious durations for diseases like measles.

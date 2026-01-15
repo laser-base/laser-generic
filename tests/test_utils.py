@@ -12,25 +12,25 @@ class DummyModel:
 
     WHAT IT PROVIDES:
     - Lightweight test double that mimics the structure of a real Model
-    - Provides population, params, and prng attributes needed by utility functions
+    - Provides people, params, and prng attributes needed by utility functions
     - Allows testing seeding functions, validation decorators, and other utilities in isolation
 
     STRUCTURE:
-    - DummyModel.Population: Mock population with susceptibility, itimer, nodeid arrays (not used)
+    - DummyModel.people: Mock people with susceptibility, itimer, nodeid arrays (not used)
     - DummyModel.Params: Mock parameters (inf_mean)
     - DummyModel.PRNG: Mock random number generator with fixed seed (42) for reproducibility
 
     USAGE:
-    Initialize with a population count (default 10), then pass to utility functions
+    Initialize with a people count (default 10), then pass to utility functions
     that expect a model object. Useful for unit testing without running full simulations.
     """
 
-    class Population:
+    class people:
         """
-        Mock population container for testing utility functions.
+        Mock people container for testing utility functions.
 
         ATTRIBUTES:
-        - count: Number of individuals in population
+        - count: Number of individuals in people
         - susceptibility: Array of susceptibility values (1.0 = susceptible, 0.0 = immune/infected)
         - itimer: Array of infection timers (time remaining in infectious period)
         - nodeid: Array of node assignments (which spatial node each individual belongs to)
@@ -83,8 +83,7 @@ class DummyModel:
             return self.rng.choice(a, size, replace=replace)
 
     def __init__(self, count=10):
-        self.population = DummyModel.Population(count)
-        # self.people = self.population  # got tired of picking one
+        self.people = DummyModel.people(count)
         self.params = DummyModel.Params()
         self.prng = DummyModel.PRNG()
         self.model = self
@@ -543,10 +542,10 @@ class TestSeedingFunctions(unittest.TestCase):
     def test_seed_infections_randomly(self):
         """
         Test that seed_infections_randomly() correctly infects a specified number of agents
-        across the entire population.
+        across the entire people.
 
         Test design:
-        - Start with a population of 10 fully susceptible agents.
+        - Start with a people of 10 fully susceptible agents.
         - Request 5 random infections.
         - Validate that exactly 5 agents transition to INFECTIOUS.
         - Confirm that their itimers are initialized to the model's inf_mean.
@@ -556,8 +555,8 @@ class TestSeedingFunctions(unittest.TestCase):
         """
         nodeids = utils.seed_infections_randomly(self.model, ninfections=5)
         self.assertEqual(len(nodeids), 5)
-        self.assertEqual(np.sum(self.model.population.state == State.INFECTIOUS.value), 5)
-        self.assertTrue(np.all(self.model.population.itimer[nodeids] == self.model.params.inf_mean))
+        self.assertEqual(np.sum(self.model.people.state == State.INFECTIOUS.value), 5)
+        self.assertTrue(np.all(self.model.people.itimer[nodeids] == self.model.params.inf_mean))
 
     def test_seed_infections_in_patch(self):
         """
@@ -565,7 +564,7 @@ class TestSeedingFunctions(unittest.TestCase):
         within a single node (patch), using the state array rather than susceptibility.
 
         Test design:
-        - Use a population of 10 agents assigned to 5 nodes (2 agents per node).
+        - Use a people of 10 agents assigned to 5 nodes (2 agents per node).
         - Request 2 infections in node 2 (ipatch=2).
         - Validate that exactly 2 individuals with nodeid==2 transition to
           INFECTIOUS state (state == State.INFECTIOUS.value).
@@ -582,16 +581,16 @@ class TestSeedingFunctions(unittest.TestCase):
         - Or their timers are not initialized to the expected value.
         """
         # Arrange: 5 nodes, 2 agents per node
-        self.model.population.nodeid = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
+        self.model.people.nodeid = np.array([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
 
         # Act: seed infections only in patch 2
         utils.seed_infections_in_patch(self.model, ipatch=2, ninfections=2)
 
         # Agents in node 2 that are INFECTIOUS
-        infected_in_patch = (self.model.population.nodeid == 2) & (self.model.population.state == State.INFECTIOUS.value)
+        infected_in_patch = (self.model.people.nodeid == 2) & (self.model.people.state == State.INFECTIOUS.value)
 
         # Agents in other nodes that are INFECTIOUS (should be none)
-        infected_elsewhere = (self.model.population.nodeid != 2) & (self.model.population.state == State.INFECTIOUS.value)
+        infected_elsewhere = (self.model.people.nodeid != 2) & (self.model.people.state == State.INFECTIOUS.value)
 
         # Assert: exactly two infectious in node 2
         self.assertEqual(np.sum(infected_in_patch), 2)
@@ -600,7 +599,7 @@ class TestSeedingFunctions(unittest.TestCase):
         self.assertEqual(np.sum(infected_elsewhere), 0)
 
         # Assert: their timers are set to inf_mean
-        self.assertTrue(np.all(self.model.population.itimer[infected_in_patch] == self.model.params.inf_mean))
+        self.assertTrue(np.all(self.model.people.itimer[infected_in_patch] == self.model.params.inf_mean))
 
 
 if __name__ == "__main__":
