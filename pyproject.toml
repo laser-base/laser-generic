@@ -84,7 +84,12 @@ where = ["src"]
 include = ["laser*"]
 
 [tool.pytest.ini_options]
-filterwarnings = ["error"]
+filterwarnings = [
+    # This is for a Python 3.9 / matplotlib / pyparsing specific problem.
+    # When we drop support for Python 3.9, we can remove this section.
+    # Silence pyparsing deprecation from matplotlib on py39
+    "ignore:'oneOf' deprecated - use 'one_of':pyparsing.warnings.PyparsingDeprecationWarning",
+]
 markers = ["modeltest"]
 
 [tool.ruff]
@@ -167,7 +172,7 @@ search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
 [[tool.bumpversion.files]]
- filename = "README.md"
+filename = "README.md"
 search = "/v{current_version}.svg"
 replace = "/v{new_version}.svg"
 
