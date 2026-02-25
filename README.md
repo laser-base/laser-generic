@@ -71,7 +71,7 @@ uv tool install tox --with tox-uv
 cd laser-generic
 ```
 
-5. create a virtual environment for development with 
+5. create a virtual environment for development with
 
 ```bash
 uv venv .venv
