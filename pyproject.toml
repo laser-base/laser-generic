@@ -41,7 +41,7 @@ maintainers = [
 
 dependencies = [
   "click",
-  "laser-core~=1.0.0",
+  "laser-core~=1.0",
   "tqdm",
   "geopandas",
   "pandas",
