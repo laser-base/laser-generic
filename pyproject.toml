@@ -41,24 +41,34 @@ maintainers = [
 
 dependencies = [
   "click",
-  "laser-core@git+https://github.com/laser-base/laser-core@cl/add-314-support",
+  "laser-core~=1.0.0",
   "tqdm",
   "geopandas",
   "pandas",
+  # "llvmlite", # required by and installed by laser-core
+  # "numba",    # required by and installed by laser-core
   "numpy",
   "scipy",
   "scikit-learn",
   "mplcursors>=0.7",
   "PyWavelets",
-  "uv",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pre-commit",
-    "pytest",
-    "tox",
-    "tox-uv"
+  "pre-commit",
+  "pytest",
+  "tox>=4.30.3",
+  "tox-uv>=1.28.1",
+  "uv>=0.10.6",
+]
+
+# uv uses this in addition (?) to [project.optional-dependencies] above
+[dependency-groups]
+dev = [
+    "tox>=4.30.3",
+    "tox-uv>=1.28.1",
+    "uv>=0.10.6",
 ]
 
 basemaps = [
@@ -85,10 +95,11 @@ include = ["laser*"]
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    # This is for a Python 3.9 / matplotlib / pyparsing specific problem.
-    # When we drop support for Python 3.9, we can remove this section.
-    # Silence pyparsing deprecation from matplotlib on py39
-    "ignore:'oneOf' deprecated - use 'one_of':pyparsing.warnings.PyparsingDeprecationWarning",
+  "error",
+  # This is for a Python 3.9 / matplotlib / pyparsing specific problem.
+  # When we drop support for Python 3.9, we can remove this section.
+  # Silence pyparsing deprecation from matplotlib on py39
+  "ignore:'oneOf' deprecated - use 'one_of':pyparsing.warnings.PyparsingDeprecationWarning",
 ]
 markers = ["modeltest"]
 
@@ -185,12 +196,3 @@ replace = "/v{new_version}...main"
 filename = "src/laser/generic/__init__.py"
 search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
-
-[tool.uv.sources]
-laser-core = { git = "https://github.com/laser-base/laser-core", rev = "cl/add-314-support" }
-
-[dependency-groups]
-dev = [
-    "tox>=4.30.3",
-    "tox-uv>=1.28.1",
-]
