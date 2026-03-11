@@ -1265,7 +1265,9 @@ class TransmissionSIx:
 
         N = _get_total_population(self, tick)
 
-        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
+        # If N is zero, then I is zero, so using 1 in the denominator is fine and will yield zero force of infection as expected
+        # and prevent a divide by zero error
+        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / np.maximum(N, 1)
         transfer = ft[:, None] * self.model.network
         ft += transfer.sum(axis=0)
         ft -= transfer.sum(axis=1)
@@ -1425,7 +1427,9 @@ class TransmissionSI:
 
         N = _get_total_population(self, tick)
 
-        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
+        # If N is zero, then I is zero, so using 1 in the denominator is fine and will yield zero force of infection as expected
+        # and prevent a divide by zero error
+        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / np.maximum(N, 1)
         transfer = ft[:, None] * self.model.network
         ft += transfer.sum(axis=0)
         ft -= transfer.sum(axis=1)
@@ -1591,7 +1595,9 @@ class TransmissionSE:
 
         N = _get_total_population(self, tick)
 
-        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
+        # If N is zero, then I is zero, so using 1 in the denominator is fine and will yield zero force of infection as expected
+        # and prevent a divide by zero error
+        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / np.maximum(N, 1)
         transfer = ft[:, None] * self.model.network
         ft += transfer.sum(axis=0)
         ft -= transfer.sum(axis=1)
