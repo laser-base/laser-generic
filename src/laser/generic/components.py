@@ -1265,9 +1265,7 @@ class TransmissionSIx:
 
         N = _get_total_population(self, tick)
 
-        # If N is zero, then I is zero, so using 1 in the denominator is fine and will yield zero force of infection as expected
-        # and prevent a divide by zero error
-        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / np.maximum(N, 1)
+        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
         transfer = ft[:, None] * self.model.network
         ft += transfer.sum(axis=0)
         ft -= transfer.sum(axis=1)
@@ -1427,9 +1425,7 @@ class TransmissionSI:
 
         N = _get_total_population(self, tick)
 
-        # If N is zero, then I is zero, so using 1 in the denominator is fine and will yield zero force of infection as expected
-        # and prevent a divide by zero error
-        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / np.maximum(N, 1)
+        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
         transfer = ft[:, None] * self.model.network
         ft += transfer.sum(axis=0)
         ft -= transfer.sum(axis=1)
@@ -1595,9 +1591,7 @@ class TransmissionSE:
 
         N = _get_total_population(self, tick)
 
-        # If N is zero, then I is zero, so using 1 in the denominator is fine and will yield zero force of infection as expected
-        # and prevent a divide by zero error
-        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / np.maximum(N, 1)
+        ft[:] = self.model.params.beta * self.seasonality[tick] * self.model.nodes.I[tick] / N
         transfer = ft[:, None] * self.model.network
         ft += transfer.sum(axis=0)
         ft -= transfer.sum(axis=1)
@@ -1636,7 +1630,7 @@ class TransmissionSE:
         return
 
 
-def _get_total_population(component, tick):
+def _get_total_population(component, tick, clamp: bool = True):
     """
     Helper to compute total population N at a given tick across all states.
 
@@ -1646,9 +1640,14 @@ def _get_total_population(component, tick):
     Checks to see if the component has a 'states' attribute; if not, it uses the model's states.
     Requires the component to have a model property with nodes LaserFrame that contain current state counts.
 
+    `clamp` causes the minimum N value to be 1 which avoids divide by zero warnings
+    when normalizing by node population. Since the actual S/E/I/R values must all be zero,
+    this will generally be safe and effective.
+
     Args:
         component: The model component containing the model and states.
         tick: The current time tick.
+        clamp: set minimum N to 1 to avoid divide-by-zero errors
 
     Returns:
         np.ndarray: Total population, shape = (#nodes,) array at the given tick.
@@ -1664,6 +1663,9 @@ def _get_total_population(component, tick):
         # Test for state, e.g., might not have 'E' or 'R' states
         if (prop := getattr(component.model.nodes, state, None)) is not None:
             N += prop[tick]
+
+    if clamp:
+        np.maximum(N, 1, out=N)
 
     return N
 
