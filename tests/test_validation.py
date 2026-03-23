@@ -13,6 +13,7 @@ Components tested:
 """
 
 import unittest
+from pathlib import Path
 
 import laser.core.distributions as dists
 import numpy as np
@@ -45,16 +46,15 @@ from laser.generic.vitaldynamics import (
 from laser.core.demographics import KaplanMeierEstimator
 from laser.generic.shared import AliasedDistribution
 
-
-try:
-    from tests.utils import stdgrid
-except ImportError:
-    from utils import stdgrid
-
 try:
     from tests.age_at_infection import Importation, TransmissionWithDOI
+    from tests.utils import stdgrid
 except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
     from age_at_infection import Importation, TransmissionWithDOI
+    from utils import stdgrid
+
 
 # Test parameters
 NTICKS = 100

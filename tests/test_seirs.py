@@ -17,7 +17,13 @@ from laser.generic import SEIRS
 from laser.generic import Model
 from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
-from tests.utils import stdgrid
+
+try:
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import stdgrid
 
 PLOTTING = False
 VERBOSE = False
@@ -41,12 +47,12 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
     optionally adding demographic processes (births and deaths).
     """
     scenario = stdgrid(M=m, N=n, population_fn=pop_fn)
-    scenario["S"] = scenario["population"]
+    scenario["S"] = scenario.population
     scenario["E"] = 0
-    scenario["S"] -= init_infected
-    scenario["I"] = init_infected
-    scenario["S"] -= init_recovered
-    scenario["R"] = init_recovered
+    scenario["I"] = np.minimum(init_infected, scenario.S)
+    scenario["S"] -= scenario.I
+    scenario["R"] = np.minimum(init_recovered, scenario.S)
+    scenario["S"] -= scenario.R
 
     if not beta:
         beta = R0 / INFECTIOUS_DURATION_MEAN
@@ -455,6 +461,51 @@ class Default(unittest.TestCase):
             assert np.all(I_series >= 0)
             assert np.all(R_series >= 0)
 
+    def test_grid_with_zero_pop_node(self):
+        with ts.start("test_grid"):
+            cbr = np.random.uniform(5, 35, EM * EN)
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
+            pyramid = AliasedDistribution(np.full(89, 1_000))
+            survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
+
+            model = build_model(
+                EM,
+                EN,
+                lambda x, y: int(np.random.uniform(10_000, 1_000_000)) if (x+y) > 0 else 0,
+                init_infected=10,
+                birthrates=birthrate_map.values,
+                pyramid=pyramid,
+                survival=survival,
+            )
+            model.run("SEIRS Grid")
+
+            I_series = model.nodes.I.sum(axis=1)
+            E_series = model.nodes.E.sum(axis=1)
+            R_series = model.nodes.R.sum(axis=1)
+            N_series = (model.nodes.S + model.nodes.E + model.nodes.I + model.nodes.R).sum(axis=1)
+            pop_change = (N_series[-1] - N_series[0]) / N_series[0]
+            mean_prev = (model.nodes.I / (model.nodes.S + model.nodes.E + model.nodes.I + model.nodes.R + 1e-9)).mean()
+
+            assert np.all(model.nodes.S >= 0)
+            assert np.all(model.nodes.E >= 0)
+            assert np.all(model.nodes.I >= 0)
+            assert np.all(model.nodes.R >= 0)
+            assert abs(pop_change) < 0.1, f"Population drift {pop_change * 100:.2f}% >10%"
+            assert mean_prev <= 0.5, f"Mean prevalence {mean_prev:.3f} >0.5"
+            # assert np.argmax(E_series) < np.argmax(I_series), "E before I"
+            # assert np.argmax(I_series) < np.argmax(R_series), "I before R"
+
+            # Latent period must exist: E must rise early
+            assert E_series[5] > E_series[0], "E did not rise early (SEIR/SEIRS latency broken)."
+
+            # Infectiousness rises after exposure
+            assert I_series[10] > I_series[0], "I did not rise after early E growth."
+
+            # Recovered must accumulate beyond infectious at some point (even in waning systems)
+            assert R_series.max() >= I_series.max(), "Recovered never exceeded infectious — unusual for SEIRS dynamics."
+
+        return
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -469,6 +520,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--grid", action="store_true", help="Run spatial grid test")
     parser.add_argument("-l", "--linear", action="store_true", help="Run spatial linear test")
     parser.add_argument("-s", "--single", action="store_true", help="Run single node (non-spatial) test")
+    parser.add_argument("-z", "--zero", action="store_true", help="Run grid with zero pop node test")
     parser.add_argument("unittest", nargs="*")
 
     args = parser.parse_args()
@@ -482,14 +534,17 @@ if __name__ == "__main__":
     print(f"Using arguments {args=}")
 
     tc = Default()
-    run_all = not (args.grid or args.linear or args.single)
+    run_all = not (args.grid or args.linear or args.single or args.zero)
 
     if args.single or run_all:
         tc.test_single()
     if args.grid or run_all:
         tc.test_grid()
     if args.linear or run_all:
-        tc.test_linear()
+        tc.test_seirs_linear_no_demography()
+        tc.test_seirs_linear_with_demography()
+    if args.zero or run_all:
+        tc.test_grid_with_zero_pop_node()
 
     ts.freeze()
     print("\nTiming Summary:")

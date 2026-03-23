@@ -22,6 +22,8 @@ On the given day(s), the component should look at the current number of suscepti
 Like the Transmission component, the step() function of this Importation component will have some NumPy code to calculate the per node probability of infection for susceptible agents and a Numba compiled function to process all the agents in parallel.
 """
 
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
@@ -34,7 +36,13 @@ from laser.generic.utils import ValuesMap
 from laser.generic.utils import validate
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByEstimator
-from utils import stdgrid
+
+try:
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import stdgrid
 
 State = SEIR.State
 

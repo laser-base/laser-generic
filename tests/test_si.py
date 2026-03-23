@@ -14,8 +14,16 @@ from laser.generic import Model
 from laser.generic.utils import ValuesMap
 from laser.core.utils import grid
 from laser.generic.vitaldynamics import ConstantPopVitalDynamics
-from tests.utils import base_maps
-from tests.utils import stdgrid
+
+try:
+    from tests.utils import base_maps
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import base_maps
+    from utils import stdgrid
+
 
 PLOTTING = False
 VERBOSE = False
@@ -303,6 +311,42 @@ class Default(unittest.TestCase):
 
         return
 
+    def test_grid_with_empty_nodes(self):
+        """
+        Setup like test_grid(), but set two nodes to zero population.
+        """
+        with ts.start("test_grid_with_empty_nodes"):
+            scenario = stdgrid(M=EM, N=EN)
+            scenario["S"] = scenario.population - 10
+            scenario["I"] = 10
+            # Set row 0 and last row to zero population, both S and I
+            idx = 0
+            scenario.loc[idx, "population"] = scenario.loc[idx, "S"] = scenario.loc[idx, "I"] = 0
+            idx = len(scenario) - 1
+            scenario.loc[idx, "population"] = scenario.loc[idx, "S"] = scenario.loc[idx, "I"] = 0
+
+            cbr = np.random.uniform(5, 35, len(scenario))  # CBR = per 1,000 per year
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
+
+            params = PropertySet({"nticks": NTICKS, "beta": 1.0 / 32})
+
+            with ts.start("Model Initialization"):
+                model = Model(scenario, params, birthrate_map)
+                model.validating = VALIDATING
+
+                s = SI.Susceptible(model)
+                i = SI.Infectious(model)
+                tx = SI.Transmission(model)
+                # births = BirthsByCBR(model, birthrate_map, pyramid)
+                # mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, tx]  # , births, mortality]
+
+            model.run(f"SI Grid ({model.people.count:,}/{model.nodes.count:,})")
+
+            initial_I = model.nodes.I[0].sum()
+            final_I = model.nodes.I[-1].sum()
+            assert final_I != pytest.approx(initial_I), "Infection count should evolve over time."
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -316,6 +360,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--grid", action="store_true", help="Run grid test")
     parser.add_argument("-l", "--linear", action="store_true", help="Run linear test")
     parser.add_argument("-c", "--constant", action="store_true", help="Run constant population test")
+    parser.add_argument("-z", "--zero", action="store_true", help="Run zero population nodes test")
     parser.add_argument("unittest", nargs="*")
 
     args = parser.parse_args()
@@ -332,7 +377,7 @@ if __name__ == "__main__":
     tc = Default()
 
     # If no test flags were given, run all by default
-    run_all = not (args.grid or args.linear or args.constant)
+    run_all = not (args.grid or args.linear or args.constant or args.zero)
 
     if args.grid or run_all:
         print("\nRunning grid configuration...")
@@ -345,6 +390,10 @@ if __name__ == "__main__":
     if args.constant:
         print("\nRunning constant population configuration...")
         tc.test_constant_pop()
+
+    if args.zero:
+        print("\nRunning zero population nodes test...")
+        tc.test_grid_with_empty_nodes()
 
     ts.freeze()
     print("\nTiming Summary:")

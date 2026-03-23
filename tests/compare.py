@@ -21,7 +21,13 @@ from laser.generic import SIRS
 from laser.generic import SEIR
 from laser.generic import SEIRS
 from laser.generic import Model
-from utils import stdgrid
+
+try:
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import stdgrid
 
 EM = 10
 EN = 10

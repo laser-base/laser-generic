@@ -6,6 +6,7 @@ adding a MaternalAntibodies component that gives newborns temporary immunity via
 """
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 import laser.core.distributions as dists
 import numba as nb
@@ -21,8 +22,17 @@ from laser.generic import Model
 from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByEstimator
-from age_at_infection import TransmissionWithDOI
-from utils import stdgrid
+
+
+try:
+    from tests.age_at_infection import TransmissionWithDOI
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from age_at_infection import TransmissionWithDOI
+    from utils import stdgrid
+
 
 State = SEIR.State
 

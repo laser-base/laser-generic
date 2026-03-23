@@ -15,8 +15,16 @@ from laser.generic.utils import TimingStats as ts
 from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR
 from laser.generic.vitaldynamics import MortalityByEstimator
-from tests.utils import base_maps
-from tests.utils import stdgrid
+
+try:
+    from tests.utils import base_maps
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import base_maps
+    from utils import stdgrid
+
 
 PLOTTING = False
 VERBOSE = False
@@ -199,6 +207,72 @@ class Default(unittest.TestCase):
             model.basemap_provider = base_maps[ibm]
             print(f"Using basemap: {model.basemap_provider.name}")
             model.plot()
+
+    def test_grid_with_zero_pop_nodes(self):
+        with ts.start("test_grid"):
+            grd = stdgrid(
+                M=EM,
+                N=EN,
+                node_size_degs=0.08983,
+                population_fn=lambda x, y: int(np.random.uniform(10_000, 1_000_000)),
+                origin_x=-119.204167,
+                origin_y=40.786944,
+            )
+            scenario = grd
+            scenario["S"] = scenario["population"] - 10
+            scenario["I"] = 10
+
+            for idx in [0, len(scenario) - 1]:
+                scenario.loc[idx, "population"] = scenario.loc[idx, "S"] = scenario.loc[idx, "I"] = 0
+
+            # --- Basic population sanity ---
+            assert np.all(scenario["S"] >= 0)
+            assert np.all(scenario["I"] >= 0)
+            np.testing.assert_array_equal(scenario["S"] + scenario["I"], scenario["population"])
+
+            # Birthrates and parameters
+            cbr = np.random.uniform(5, 35, len(scenario))  # per 1,000 per year
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
+
+            R0 = 1.2
+            infectious_duration_mean = 7.0
+            beta = R0 / infectious_duration_mean
+            params = PropertySet({"nticks": NTICKS, "beta": beta})
+
+            with ts.start("Model Initialization"):
+                model = Model(scenario, params, birthrates=birthrate_map)
+
+                infdist = dists.normal(loc=infectious_duration_mean, scale=2)
+                pyramid = AliasedDistribution(np.full(89, 1_000))
+                survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
+
+                s = SIS.Susceptible(model)
+                i = SIS.Infectious(model, infdist)
+                tx = SIS.Transmission(model, infdist)
+                births = BirthsByCBR(model, birthrate_map, pyramid)
+                mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, tx, births, mortality]
+
+                model.validating = VALIDATING
+
+            # Run model
+            model.run(f"SIS Grid ({model.people.count:,}/{model.nodes.count:,})")
+
+        # --- Post-simulation checks ---
+        I_series = model.nodes.I.sum(axis=1)
+        assert I_series.max() > I_series[0], "Infections did not increase from initial count during simulation."
+
+        if VERBOSE:
+            print(model.people.describe("People"))
+            print(model.nodes.describe("Nodes"))
+
+        if PLOTTING:
+            ibm = np.random.choice(len(base_maps))
+            model.basemap_provider = base_maps[ibm]
+            print(f"Using basemap: {model.basemap_provider.name}")
+            model.plot()
+
+        return
 
 
 if __name__ == "__main__":

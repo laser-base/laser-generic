@@ -15,7 +15,14 @@ from laser.generic import SIRS
 from laser.generic import Model
 from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
-from tests.utils import stdgrid
+
+try:
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import stdgrid
+
 
 PLOTTING = False
 VERBOSE = False
@@ -34,11 +41,11 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
     Helper: Construct an SIRS model with optional demography and waning immunity.
     """
     scenario = stdgrid(M=m, N=n, population_fn=pop_fn)
-    scenario["S"] = scenario["population"]
-    scenario["S"] -= init_infected
-    scenario["I"] = init_infected
-    scenario["S"] -= init_recovered
-    scenario["R"] = init_recovered
+    scenario["S"] = scenario.population
+    scenario["I"] = np.minimum(init_infected, scenario.S)
+    scenario["S"] -= scenario.I
+    scenario["R"] = np.minimum(init_recovered, scenario.S)
+    scenario["S"] -= scenario.R
 
     beta = R0 / INFECTIOUS_DURATION_MEAN
     params = PropertySet({"nticks": NTICKS, "beta": beta})
@@ -367,6 +374,29 @@ class Default(unittest.TestCase):
             # 5. waning immunity should still reduce R at some point
             assert R_series.max() > R_series[-1], "Waning immunity not visible (R never declines)."
 
+    def test_grid_with_zero_pop_nodes(self):
+        with ts.start("test_grid"):
+            cbr = np.random.uniform(5, 35, EM * EN)
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
+            pyramid = AliasedDistribution(np.full(89, 1_000))
+            survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
+
+            model = build_model(
+                EM,
+                EN,
+                # Set one corner to zero population
+                lambda x, y: int(np.random.uniform(10_000, 1_000_000)) if (x+y) > 0 else 0,
+                init_infected=10,
+                birthrates=birthrate_map.values,
+                pyramid=pyramid,
+                survival=survival,
+            )
+            model.run("SIRS Grid")
+
+            I_series = model.nodes.I.sum(axis=1)
+            assert I_series.max() > I_series[0], "Infections did not increase from initial count during simulation."
+
+        return
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -385,8 +415,9 @@ if __name__ == "__main__":
         help="Basic reproduction number (R0) [1.151 for 25%% attack fraction, 1.386=50%%, and 1.848=75%%]",
     )
     parser.add_argument("-g", "--grid", action="store_true", help="Run grid test")
-    parser.add_argument("-l", "--linear", action="store_true", help="Run linear test")
+    parser.add_argument("-l", "--linear", action="store_true", help="Run linear tests")
     parser.add_argument("-s", "--single", action="store_true", help="Run single node test")
+    parser.add_argument("-z", "--zero", action="store_true", help="Run zero population node test")
     parser.add_argument("-i", "--infdur", type=float, default=7.0, help="Mean infectious duration in days")
     parser.add_argument("-w", "--wandur", type=float, default=30.0, help="Mean waning duration in days")
     parser.add_argument("unittest", nargs="*")
@@ -402,14 +433,17 @@ if __name__ == "__main__":
     print(f"Using arguments {args=}")
 
     tc = Default()
-    run_all = not (args.grid or args.linear or args.single)
+    run_all = not (args.grid or args.linear or args.single or args.zero)
 
     if args.single or run_all:
         tc.test_single()
     if args.grid or run_all:
         tc.test_grid()
     if args.linear or run_all:
-        tc.test_linear()
+        tc.test_sirs_linear_no_demography()
+        tc.test_sirs_linear_with_demography()
+    if args.zero or run_all:
+        tc.test_grid_with_zero_pop_nodes()
 
     ts.freeze()
     print("\nTiming Summary:")

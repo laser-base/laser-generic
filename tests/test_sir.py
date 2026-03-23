@@ -16,7 +16,14 @@ from laser.generic import SIR
 from laser.generic import Model
 from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
-from tests.utils import stdgrid
+
+try:
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import stdgrid
+
 
 PLOTTING = False
 VERBOSE = False
@@ -435,6 +442,58 @@ class Default(unittest.TestCase):
                 f"Kermack-McKendrick test failed {failed}/{NITERS} for R0={beta * inf_mean:.3f} (expected AF={expected_af:.3f})"
             )
 
+        return
+
+    def test_grid_with_zero_pop_nodes(self):
+
+        with ts.start("test_grid"):
+            scenario = stdgrid(M=EM, N=EN)
+            scenario["S"] = scenario["population"] - 10
+            scenario["I"] = 10
+            scenario["R"] = 0
+
+            idx = 0
+            scenario.loc[idx, "population"] = scenario.loc[idx, "S"] = scenario.loc[idx, "I"] = 0
+            idx = len(scenario) - 1
+            scenario.loc[idx, "population"] = scenario.loc[idx, "S"] = scenario.loc[idx, "I"] = 0
+
+            cbr = np.random.uniform(5, 35, len(scenario))
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
+            infectious_duration_mean = 7.0
+            beta = R0 / infectious_duration_mean
+            params = PropertySet({"nticks": NTICKS, "beta": beta})
+
+            with ts.start("Model Initialization"):
+                model = Model(scenario, params, birthrates=birthrate_map)
+                infdist = dists.normal(loc=infectious_duration_mean, scale=2)
+                pyramid = AliasedDistribution(np.full(89, 1_000))
+                survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
+                s = SIR.Susceptible(model)
+                i = SIR.Infectious(model, infdist)
+                r = SIR.Recovered(model)
+                tx = SIR.Transmission(model, infdist)
+                births = BirthsByCBR(model, birthrates=birthrate_map, pyramid=pyramid)
+                mortality = MortalityByEstimator(model, survival)
+                model.components = [s, i, r, tx, births, mortality]
+                model.validating = VALIDATING
+
+            model.run("SIR Grid")
+
+            # --- Quantitative Checks ---
+            I_series = model.nodes.I.sum(axis=1)
+            N_series = (model.nodes.S + model.nodes.I + model.nodes.R).sum(axis=1)
+            pop_change = (N_series[-1] - N_series[0]) / N_series[0]
+            mean_prev = (model.nodes.I / (model.nodes.S + model.nodes.I + model.nodes.R + 1e-9)).mean()
+
+            assert np.all(model.nodes.S >= 0)
+            assert np.all(model.nodes.I >= 0)
+            assert np.all(model.nodes.R >= 0)
+            assert abs(pop_change) < 0.1, f"Population drift {pop_change * 100:.2f}% exceeds ±10%."
+            assert 0 <= mean_prev <= 0.5, f"Mean prevalence unrealistic: {mean_prev:.3f}"
+            assert I_series.max() > I_series[0] * 1.5, "Epidemic growth not observed."
+
+        return
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -447,8 +506,9 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--r0", type=float, default=1.386, help="R0")
     parser.add_argument("-t", "--ticks", type=int, default=365, help="Number of days to simulate (nticks)")
     parser.add_argument("-g", "--grid", action="store_true", help="Run spatial grid test")
-    parser.add_argument("-l", "--linear", action="store_true", help="Run spatial linear test")
+    parser.add_argument("-l", "--linear", action="store_true", help="Run spatial linear tests")
     parser.add_argument("-s", "--single", action="store_true", help="Run single node (non-spatial) test")
+    parser.add_argument("-z", "--zero", action="store_true", help="Run grid test with zero pop nodes")
     parser.add_argument("-k", "--km", action="store_true", help="Run Kermack-McKendrick validation")
     parser.add_argument("unittest", nargs="*")
 
@@ -463,14 +523,17 @@ if __name__ == "__main__":
     print(f"Using arguments {args=}")
 
     tc = Default()
-    run_all = not (args.grid or args.linear or args.single or args.km)
+    run_all = not (args.grid or args.linear or args.single or args.km or args.zero)
 
     if args.single or run_all:
         tc.test_single()
     if args.grid or run_all:
         tc.test_grid()
     if args.linear or run_all:
-        tc.test_linear()
+        tc.test_sir_linear_no_demography()
+        tc.test_sir_linear_with_demography()
+    if args.zero or run_all:
+        tc.test_grid_with_zero_pop_nodes()
     if args.km or run_all:
         tc.test_kermack_mckendrick()
 

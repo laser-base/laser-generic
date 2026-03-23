@@ -17,7 +17,13 @@ from laser.generic import SEIR
 from laser.generic import Model
 from laser.generic.utils import ValuesMap
 from laser.generic.vitaldynamics import BirthsByCBR, MortalityByEstimator
-from tests.utils import stdgrid
+
+try:
+    from tests.utils import stdgrid
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import stdgrid
 
 PLOTTING = False
 VERBOSE = False
@@ -39,12 +45,12 @@ def build_model(m, n, pop_fn, init_infected=0, init_recovered=0, birthrates=None
     optional birth and mortality processes.
     """
     scenario = stdgrid(M=m, N=n, population_fn=pop_fn)
-    scenario["S"] = scenario["population"]
+    scenario["S"] = scenario.population
     scenario["E"] = 0
-    scenario["S"] -= init_infected
-    scenario["I"] = init_infected
-    scenario["S"] -= init_recovered
-    scenario["R"] = init_recovered
+    scenario["I"] = np.minimum(init_infected, scenario.S)
+    scenario["S"] -= scenario.I
+    scenario["R"] = np.minimum(init_recovered, scenario.S)
+    scenario["S"] -= scenario.R
 
     if not beta:
         beta = R0 / INFECTIOUS_DURATION_MEAN
@@ -429,6 +435,30 @@ class Default(unittest.TestCase):
             assert np.all(I_series >= 0)
             assert np.all(R >= 0)
 
+    def test_grid_with_zero_pop_nodes(self):
+        with ts.start("test_grid"):
+            cbr = np.random.uniform(5, 35, EM * EN)
+            birthrate_map = ValuesMap.from_nodes(cbr, nticks=NTICKS)
+            pyramid = AliasedDistribution(np.full(89, 1_000))
+            survival = KaplanMeierEstimator(np.full(89, 1_000).cumsum())
+
+            model = build_model(
+                EM,
+                EN,
+                # Set one corner to 0 population
+                lambda x, y: int(np.random.uniform(10_000, 1_000_000)) if (x+y) > 0 else 0,
+                init_infected=10,
+                birthrates=birthrate_map.values,
+                pyramid=pyramid,
+                survival=survival,
+            )
+            model.run("SEIR Grid")
+
+            I_series = model.nodes.I.sum(axis=1)
+            assert I_series.max() > I_series[0], "Infections did not increase from initial count during simulation."
+
+        return
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -441,8 +471,9 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--ticks", type=int, default=365, help="Number of days to simulate (nticks)")
     parser.add_argument("-r", "--r0", type=float, default=1.386, help="R0")
     parser.add_argument("-g", "--grid", action="store_true", help="Run grid spatial test")
-    parser.add_argument("-l", "--linear", action="store_true", help="Run linear spatial test")
+    parser.add_argument("-l", "--linear", action="store_true", help="Run linear spatial tests")
     parser.add_argument("-s", "--single", action="store_true", help="Run single node test (not spatial)")
+    parser.add_argument("-z", "--zero", action="store_true", help="Run grid with zero pop node test")
     parser.add_argument("unittest", nargs="*")
 
     args = parser.parse_args()
@@ -456,7 +487,7 @@ if __name__ == "__main__":
     print(f"Using arguments {args=}")
 
     tc = Default()
-    run_all = not (args.grid or args.linear or args.single)
+    run_all = not (args.grid or args.linear or args.single or args.zero)
 
     if args.single or run_all:
         tc.test_single()
@@ -465,6 +496,8 @@ if __name__ == "__main__":
     if args.linear or run_all:
         tc.test_seir_linear_no_demography()
         tc.test_seir_linear_with_demography()
+    if args.zero or run_all:
+        tc.test_grid_with_zero_pop_nodes()
 
     ts.freeze()
     print("\nTiming Summary:")
