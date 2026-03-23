@@ -22,6 +22,7 @@ try:
     from tests.utils import stdgrid
 except ImportError:
     import sys
+
     sys.path.insert(0, str(Path(__file__).parent))
     from utils import stdgrid
 
@@ -446,7 +447,7 @@ class Default(unittest.TestCase):
                 EM,
                 EN,
                 # Set one corner to 0 population
-                lambda x, y: int(np.random.uniform(10_000, 1_000_000)) if (x+y) > 0 else 0,
+                lambda x, y: int(np.random.uniform(10_000, 1_000_000)) if (x + y) > 0 else 0,
                 init_infected=10,
                 birthrates=birthrate_map.values,
                 pyramid=pyramid,

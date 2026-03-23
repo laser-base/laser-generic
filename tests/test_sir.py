@@ -21,6 +21,7 @@ try:
     from tests.utils import stdgrid
 except ImportError:
     import sys
+
     sys.path.insert(0, str(Path(__file__).parent))
     from utils import stdgrid
 
@@ -445,7 +446,6 @@ class Default(unittest.TestCase):
         return
 
     def test_grid_with_zero_pop_nodes(self):
-
         with ts.start("test_grid"):
             scenario = stdgrid(M=EM, N=EN)
             scenario["S"] = scenario["population"] - 10

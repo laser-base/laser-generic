@@ -41,6 +41,7 @@ try:
     from tests.utils import stdgrid
 except ImportError:
     import sys
+
     sys.path.insert(0, str(Path(__file__).parent))
     from utils import stdgrid
 
