@@ -1,0 +1,51 @@
+name: Build Combined Doc
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install mkdocs mkdocs-material
+          pip install -r docs/requirements.txt
+          pip install jupyter nbconvert beautifulsoup4 markdownify
+      - name: Execute documentation notebooks
+        # Execute every notebook under docs/ and preserve its docs/-relative path
+        # under dist/executed_nbs/, so concat_mkdocs.py can resolve nav entries
+        # like "tutorials/notebooks/01_SI...ipynb" to "dist/executed_nbs/tutorials/notebooks/01_SI...ipynb".
+        run: |
+          mkdir -p dist/executed_nbs
+          find docs -name '*.ipynb' -not -path '*/.ipynb_checkpoints/*' -print0 \
+          | while IFS= read -r -d '' nb; do
+              rel="${nb#docs/}"
+              reldir="$(dirname "$rel")"
+              base="$(basename "$nb" .ipynb)"
+              outdir="dist/executed_nbs/$reldir"
+              mkdir -p "$outdir"
+              python -m jupyter nbconvert \
+                --to notebook \
+                --execute \
+                --allow-errors \
+                --ExecutePreprocessor.timeout=600 \
+                --output-dir "$outdir" \
+                --output "$base" \
+                "$nb"
+            done
+      - name: Build MkDocs site
+        run: mkdocs build
+      - name: Generate combined_mkdocs.md
+        run: python docs/concat_mkdocs.py site dist/executed_nbs dist/combined_mkdocs.md
+      - name: Upload combined_mkdocs.md
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined_mkdocs
+          path: dist/combined_mkdocs.md
+          retention-days: 90
