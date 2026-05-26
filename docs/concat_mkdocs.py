@@ -35,6 +35,25 @@ MIN_SECTION_CHARS = 150  # drop near-empty placeholder/index pages
 EXPECTED_MIN_MAIN_PAGES = 8  # fail loud if the site walk looks broken
 
 
+class _NavLoader(yaml.SafeLoader):
+    """SafeLoader that tolerates mkdocs.yml ``!!python/name:`` tags.
+
+    mkdocs.yml references Python callables (emoji generators, mermaid fence
+    handlers, etc.) via ``!!python/name:`` tags. yaml.unsafe_load() resolves
+    those — and would happily import arbitrary modules from an untrusted
+    mkdocs.yml. We only walk ``nav:`` for string paths here, so the actual
+    Python object is irrelevant; this loader replaces each such tag with an
+    opaque sentinel string and lets the rest of the file parse safely.
+    """
+
+
+def _python_name_placeholder(loader, suffix, node):
+    return f"<python/name:{suffix}>"
+
+
+_NavLoader.add_multi_constructor("tag:yaml.org,2002:python/name:", _python_name_placeholder)
+
+
 def extract_markdown(html_path: Path) -> str:
     """Pull the main article from a MkDocs HTML page and convert it back to markdown."""
     text = html_path.read_text(encoding="utf-8", errors="replace")
@@ -70,11 +89,13 @@ def extract_markdown(html_path: Path) -> str:
         else:
             table.decompose()
 
+    # Preserve <a> tags so content cross-links and external URLs survive in
+    # the combined markdown. Unwanted decorative anchors (headerlinks, nav
+    # links, sidebar links) have already been decomposed above.
     md = markdownify.markdownify(
         str(content),
         heading_style=markdownify.ATX,
         code_language="python",
-        strip=["a"],
     )
     md = re.sub(r"\n{3,}", "\n\n", md)
     return md.strip()
@@ -168,9 +189,7 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
         raise RuntimeError(f"mkdocs.yml not found at {mkdocs_yml.resolve()} (run from repo root).")
 
     with mkdocs_yml.open(encoding="utf-8") as f:
-        # mkdocs.yml uses !!python/name tags; safe_load rejects those, so use unsafe_load.
-        # We control this file in the repo, so this is acceptable.
-        config = yaml.unsafe_load(f)
+        config = yaml.load(f, Loader=_NavLoader)
 
     nav_entries = list(iter_nav_pages(config.get("nav", [])))
     parts = [f"# laser-generic documentation\n\n**laser-generic version: {_LASER_GENERIC_VERSION}**"]
