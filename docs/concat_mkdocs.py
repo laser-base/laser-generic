@@ -34,6 +34,13 @@ except Exception:
 MIN_SECTION_CHARS = 150  # drop near-empty placeholder/index pages
 EXPECTED_MIN_MAIN_PAGES = 8  # fail loud if the site walk looks broken
 
+# laser-generic notebooks call tqdm with a description like
+# "1,000,000 agents in 1 node(s)", which produces many "<n> agents in <m>
+# node(s):  37%|...| ..." progress snapshots in cell outputs. They add no
+# semantic value and hurt RAG/retrieval quality, so we drop matching lines
+# at output-build time. Pattern matches the description + percent token.
+_TQDM_PROGRESS_RE = re.compile(r"agents in \d+ node\(s\):\s*\d+%")
+
 
 class _NavLoader(yaml.SafeLoader):
     """SafeLoader that tolerates mkdocs.yml ``!!python/name:`` tags.
@@ -101,6 +108,35 @@ def extract_markdown(html_path: Path) -> str:
     return md.strip()
 
 
+def _collapse_progress_runs(blocks):
+    """Collapse runs of consecutive ``progress`` blocks into one summarized block.
+
+    A run of length N>=3 becomes a single block "<first>\\n...\\n<last>";
+    a run of length 2 is joined as-is (no middle to ellide); a run of length
+    1 is passed through unchanged. ``other`` blocks are emitted untouched.
+    """
+    result = []
+    i = 0
+    while i < len(blocks):
+        if blocks[i][0] != "progress":
+            result.append(blocks[i])
+            i += 1
+            continue
+        j = i + 1
+        while j < len(blocks) and blocks[j][0] == "progress":
+            j += 1
+        run = [b[1] for b in blocks[i:j]]
+        if len(run) == 1:
+            combined = run[0]
+        elif len(run) == 2:
+            combined = f"{run[0]}\n{run[1]}"
+        else:
+            combined = f"{run[0]}\n...\n{run[-1]}"
+        result.append(("progress", combined))
+        i = j
+    return result
+
+
 def notebook_to_markdown(nb_path: Path) -> str:
     """Convert an executed Jupyter notebook to plain markdown.
 
@@ -126,6 +162,11 @@ def notebook_to_markdown(nb_path: Path) -> str:
             continue
         parts.append(f"```python\n{src}\n```")
 
+        # Classify each output as "progress" (purely tqdm progress lines) or
+        # "other". A run of consecutive progress outputs is then collapsed to
+        # "first \n ... \n last" so the reader keeps the start/end context
+        # without the dozens of intermediate snapshots that dominate output.
+        cell_blocks = []  # list of (kind, text) tuples
         for output in cell.get("outputs", []):
             otype = output.get("output_type", "")
             if otype not in ("stream", "execute_result", "display_data"):
@@ -135,9 +176,21 @@ def notebook_to_markdown(nb_path: Path) -> str:
                 text = "".join(text)
             if not text or not text.strip():
                 continue
-            cleaned = re.sub(r"<[^>]+>", "", text).strip()
-            if cleaned:
-                parts.append(f"```\n{cleaned}\n```")
+
+            cleaned = re.sub(r"<[^>]+>", "", text)
+            non_empty_lines = [ln for ln in cleaned.splitlines() if ln.strip()]
+            if not non_empty_lines:
+                continue
+
+            if all(_TQDM_PROGRESS_RE.search(ln) for ln in non_empty_lines):
+                cell_blocks.append(("progress", "\n".join(non_empty_lines).strip()))
+            else:
+                kept = "\n".join(ln for ln in cleaned.splitlines() if not _TQDM_PROGRESS_RE.search(ln)).strip()
+                if kept:
+                    cell_blocks.append(("other", kept))
+
+        for _, body in _collapse_progress_runs(cell_blocks):
+            parts.append(f"```\n{body}\n```")
 
     md = "\n\n".join(parts)
     return re.sub(r"\n{3,}", "\n\n", md).strip()
