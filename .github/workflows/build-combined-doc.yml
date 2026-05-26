@@ -2,6 +2,11 @@ name: Build Combined Doc
 
 on:
   workflow_dispatch:
+    inputs:
+      allow_notebook_errors:
+        description: 'Publish the combined doc even if notebooks have execution errors (artifact may contain tracebacks).'
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -21,6 +26,10 @@ jobs:
         # Execute every notebook under docs/ and preserve its docs/-relative path
         # under dist/executed_nbs/, so concat_mkdocs.py can resolve nav entries
         # like "tutorials/notebooks/01_SI...ipynb" to "dist/executed_nbs/tutorials/notebooks/01_SI...ipynb".
+        # --allow-errors is intentional: it lets nbconvert produce an output
+        # notebook even when cells raise, so the next step can inspect every
+        # failure rather than aborting on the first one. The error-gate step
+        # below decides whether to fail the workflow.
         run: |
           mkdir -p dist/executed_nbs
           find docs -name '*.ipynb' -not -path '*/.ipynb_checkpoints/*' -print0 \
@@ -39,6 +48,39 @@ jobs:
                 --output "$base" \
                 "$nb"
             done
+      - name: Check executed notebooks for errors
+        env:
+          ALLOW_NOTEBOOK_ERRORS: ${{ inputs.allow_notebook_errors }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          allow = os.environ.get("ALLOW_NOTEBOOK_ERRORS", "false").lower() == "true"
+          executed = sorted(Path("dist/executed_nbs").rglob("*.ipynb"))
+          failed = []
+          for nb_path in executed:
+              with nb_path.open(encoding="utf-8") as f:
+                  nb = json.load(f)
+              for cell in nb.get("cells", []):
+                  if cell.get("cell_type") != "code":
+                      continue
+                  if any(out.get("output_type") == "error" for out in cell.get("outputs", [])):
+                      failed.append(nb_path)
+                      break
+
+          print(f"Checked {len(executed)} executed notebook(s); {len(failed)} had errors.")
+          if failed:
+              print(f"::error::{len(failed)} notebook(s) contain execution errors:")
+              for p in failed:
+                  print(f"  - {p}")
+              if not allow:
+                  print("Fail-fast: rerun with allow_notebook_errors=true to publish anyway.")
+                  sys.exit(1)
+              print("::warning::Proceeding because allow_notebook_errors=true")
+          PY
       - name: Build MkDocs site
         run: mkdocs build
       - name: Generate combined_mkdocs.md
