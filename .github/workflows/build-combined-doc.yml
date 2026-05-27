@@ -19,9 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .
-          pip install mkdocs mkdocs-material
           pip install -r docs/requirements.txt
-          pip install jupyter nbconvert beautifulsoup4 markdownify
       - name: Execute documentation notebooks
         # Execute every notebook under docs/ and preserve its docs/-relative path
         # under dist/executed_nbs/, so concat_mkdocs.py can resolve nav entries
