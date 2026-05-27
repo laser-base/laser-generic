@@ -41,10 +41,7 @@ Maintenance release with expanded Python version support, dependency relaxation,
 
 - Added automatic installation of docs/requirements during documentation builds.
 - Disabled automatic execution of Jupyter notebooks during doc builds to improve build times.
-- Fixed vertical spacing of equations in notebooks.
-- Fixed images and formatting in distribution and architecture notebooks.
-- Updated documentation link for laser-generic.
-- Updated copyright year in LICENSE file.
+- Fixed formatting for images and equations in notebooks.
 - Updated README with corrected GitHub Actions badge and other improvements.
 
 ## [1.0.0] - 2025-12-17
@@ -119,25 +116,10 @@ Initial public release of laser-generic v0.1.0, introducing a full suite of modu
 - Migrated documentation from Sphinx to MkDocs with Material theme.
 - Added combined documentation build covering both laser-core and laser-generic.
 - Added automated API reference generation using gen-files and literate-nav MkDocs plugins.
-- Added mermaid.js diagram support to MkDocs configuration.
-- Added Jupyter notebook execution support in MkDocs documentation build.
 - Added architecture document describing system design and component model.
-- Added Code of Conduct adapted from the Contributor Covenant.
-- Added CONTRIBUTING.md with roles, guidelines, and improved formatting.
-- Added Google Tag Manager analytics to documentation site.
+- Added guidelines for contributing and a code of conduct.
 - Added comprehensive docstrings to all epidemiological component classes covering responsibilities, inputs, outputs, validation, step behavior, and usage examples.
-- Added seasonality notebook with extended prose explanations.
-- Added vital dynamics component docstrings.
-- Added ConstantPopVitalDynamics demonstration notebook.
-- Added RoutineImmunizationEx demonstration notebook.
-- Added MortalityByCDR and MortalityByEstimator demonstration notebooks.
-- Added placeholder pages for upcoming tutorials in documentation.
-- Added Sphinx-based portable Docker documentation build system.
-- Updated installation instructions in README to recommend uv and clarify in-development install.
-- Updated authors list with roles.
-- Added back core principles section to documentation.
-- Fixed notebook outputs to match current codebase.
-- Updated notebooks to correctly skip long-running analysis when simulation data is unavailable, preventing ~12-hour documentation build delays.
+- Added tutorial notebooks for seasonality, vital dynamics, routine immunization, and mortality.
 
 ### Testing
 
@@ -151,7 +133,7 @@ Initial public release of laser-generic v0.1.0, introducing a full suite of modu
 - Added BirthByCBR test verifying dobs tracking when track=True.
 - Switched mortality test statistical method from KS to chi-squared.
 - Loosened mortality test bounds from 1% to 3% to reduce flakiness.
-- Added Python 3.13 to tox.ini test matrix.
+- Added Python 3.14 to tox.ini test matrix.
 - Updated macOS runner in GitHub Actions to use an x86-equipped machine.
 - Marked known-failing model tests with xfail decorators.
 
