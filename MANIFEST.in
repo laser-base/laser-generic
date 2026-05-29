@@ -5,6 +5,7 @@ include CODE_OF_CONDUCT.md
 include CONTRIBUTING.md
 include LICENSE
 include README.md
+include Makefile
 include .bumpversion.cfg
 include .cookiecutterrc
 include .coveragerc
