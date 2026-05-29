@@ -17,72 +17,10 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: |
-          pip install -e .
-          pip install -r docs/requirements.txt
-      - name: Execute documentation notebooks
-        # Execute every notebook under docs/ and preserve its docs/-relative path
-        # under dist/executed_nbs/, so concat_mkdocs.py can resolve nav entries
-        # like "tutorials/notebooks/01_SI...ipynb" to "dist/executed_nbs/tutorials/notebooks/01_SI...ipynb".
-        # --allow-errors is intentional: it lets nbconvert produce an output
-        # notebook even when cells raise, so the next step can inspect every
-        # failure rather than aborting on the first one. The error-gate step
-        # below decides whether to fail the workflow.
-        run: |
-          mkdir -p dist/executed_nbs
-          find docs -name '*.ipynb' -not -path '*/.ipynb_checkpoints/*' -print0 \
-          | while IFS= read -r -d '' nb; do
-              rel="${nb#docs/}"
-              reldir="$(dirname "$rel")"
-              base="$(basename "$nb" .ipynb)"
-              outdir="dist/executed_nbs/$reldir"
-              mkdir -p "$outdir"
-              python -m jupyter nbconvert \
-                --to notebook \
-                --execute \
-                --allow-errors \
-                --ExecutePreprocessor.timeout=600 \
-                --output-dir "$outdir" \
-                --output "$base" \
-                "$nb"
-            done
-      - name: Check executed notebooks for errors
-        env:
-          ALLOW_NOTEBOOK_ERRORS: ${{ inputs.allow_notebook_errors }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import sys
-          from pathlib import Path
-
-          allow = os.environ.get("ALLOW_NOTEBOOK_ERRORS", "false").lower() == "true"
-          executed = sorted(Path("dist/executed_nbs").rglob("*.ipynb"))
-          failed = []
-          for nb_path in executed:
-              with nb_path.open(encoding="utf-8") as f:
-                  nb = json.load(f)
-              for cell in nb.get("cells", []):
-                  if cell.get("cell_type") != "code":
-                      continue
-                  if any(out.get("output_type") == "error" for out in cell.get("outputs", [])):
-                      failed.append(nb_path)
-                      break
-
-          print(f"Checked {len(executed)} executed notebook(s); {len(failed)} had errors.")
-          if failed:
-              print(f"::error::{len(failed)} notebook(s) contain execution errors:")
-              for p in failed:
-                  print(f"  - {p}")
-              if not allow:
-                  print("Fail-fast: rerun with allow_notebook_errors=true to publish anyway.")
-                  sys.exit(1)
-              print("::warning::Proceeding because allow_notebook_errors=true")
-          PY
-      - name: Build MkDocs site
-        run: mkdocs build
-      - name: Generate combined_mkdocs.md
-        run: python docs/concat_mkdocs.py site dist/executed_nbs dist/combined_mkdocs.md
+        run: make docs-install
+      - name: Build combined doc
+        # Translate the workflow_dispatch boolean into the 0/1 the Makefile uses.
+        run: make docs-jenner ALLOW_NB_ERRORS=${{ inputs.allow_notebook_errors && '1' || '0' }}
       - name: Upload combined_mkdocs.md
         uses: actions/upload-artifact@v4
         with:
