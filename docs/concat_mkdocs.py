@@ -66,20 +66,13 @@ def extract_markdown(html_path: Path) -> str:
     text = html_path.read_text(encoding="utf-8", errors="replace")
     soup = BeautifulSoup(text, "html.parser")
 
-    content = (
-        soup.find("article")
-        or soup.find("div", role="main")
-        or soup.find("div", {"class": "md-content"})
-        or soup.find("body")
-    )
+    content = soup.find("article") or soup.find("div", role="main") or soup.find("div", {"class": "md-content"}) or soup.find("body")
     if content is None:
         return ""
 
     for tag in content.find_all(["nav", "footer", "script", "style"]):
         tag.decompose()
-    for tag in content.find_all(
-        class_=["md-nav", "md-sidebar", "md-search", "md-header", "md-footer", "headerlink", "md-breadcrumb"]
-    ):
+    for tag in content.find_all(class_=["md-nav", "md-sidebar", "md-search", "md-header", "md-footer", "headerlink", "md-breadcrumb"]):
         tag.decompose()
 
     # MkDocs Material renders syntax-highlighted code blocks as a two-column
