@@ -55,12 +55,18 @@ docs-executed-nbs:
 	$(PYTHON) docs/execute_notebooks.py $(EXEC_DIR) --timeout $(NB_TIMEOUT)
 
 # ── Notebook error gate ───────────────────────────────────────────────────────
-docs-check-nbs:
+# Depends on docs-executed-nbs so that `make -j` (or `make docs-check-nbs` on
+# its own) cannot scan an empty $(EXEC_DIR) and pass spuriously — the two are
+# serialized through the prereq graph regardless of parallelism.
+docs-check-nbs: docs-executed-nbs
 	@$(PYTHON) docs/check_executed_nbs.py $(EXEC_DIR) \
 	  $(if $(filter 1 true yes,$(ALLOW_NB_ERRORS)),--allow-errors,)
 
 # ── Full combined markdown pipeline ───────────────────────────────────────────
-docs-jenner: docs-executed-nbs docs-check-nbs docs-build
+# docs-executed-nbs is reached transitively via docs-check-nbs. docs-build is
+# independent of notebook execution (mkdocs-jupyter has execute:false and
+# reads the source .ipynb files directly), so it's safe to keep in parallel.
+docs-jenner: docs-check-nbs docs-build
 	$(PYTHON) -c "from pathlib import Path; Path('$(COMBINED)').parent.mkdir(parents=True, exist_ok=True)"
 	$(PYTHON) docs/concat_mkdocs.py $(SITE_DIR) $(EXEC_DIR) $(COMBINED)
 
