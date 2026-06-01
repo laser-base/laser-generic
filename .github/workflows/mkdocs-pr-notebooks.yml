@@ -1,0 +1,59 @@
+name: MkDocs Build with Notebook Execution on PR
+
+# Path-gated: only runs when something that could plausibly break notebook
+# execution changes (the notebooks themselves, the CI mkdocs config that
+# enables execution, the docs deps, or the laser-generic package). PRs that
+# touch only unrelated code (tests, sphinx, CI for other workflows, etc.)
+# skip this and pay zero notebook-execution cost.
+#
+# Companion to mkdocs-ghp.yml (which deploys docs but does NOT execute
+# notebooks) and release-publish.yml's docs-deploy job (which executes
+# notebooks via the same mkdocs.ci.yml, but only on a manual release).
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'docs/tutorials/notebooks/**'
+      - 'mkdocs.ci.yml'
+      - 'mkdocs.yml'                       # ci config inherits from this
+      - 'docs/requirements.txt'
+      - 'pyproject.toml'
+      - 'src/**'
+      - '.github/workflows/mkdocs-pr-notebooks.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # 19 notebooks at varying lengths; current slowest (nb 06) is ~8 min.
+    # 30 min is comfortable headroom — bump if/when more long sims land.
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache mkdocs-material
+        run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        with:
+          key: mkdocs-material-${{ env.cache_id }}
+          path: .cache
+          restore-keys: |
+            mkdocs-material-
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install mkdocs mkdocs-material
+          pip install -r docs/requirements.txt
+
+      - name: Build MkDocs site with notebook execution
+        # mkdocs.ci.yml inherits from mkdocs.yml but flips mkdocs-jupyter to
+        # execute: true, allow_errors: false. A cell that raises will fail
+        # the build.
+        run: mkdocs build --config-file mkdocs.ci.yml
