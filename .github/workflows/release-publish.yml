@@ -39,7 +39,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: build
+    needs: [build, docs-deploy]
     runs-on: ubuntu-latest
 
     steps:
@@ -73,7 +73,7 @@ jobs:
 
   publish:
     name: Publish to PyPI
-    needs: build
+    needs: [build, docs-deploy]
     runs-on: ubuntu-latest
     environment:
       name: restricted
@@ -109,3 +109,32 @@ jobs:
           packages-dir: final_dist
           verbose: true
           print-hash: true
+
+  docs-deploy:
+    name: Execute notebooks and deploy docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        with:
+          key: mkdocs-material-${{ env.cache_id }}
+          path: .cache
+          restore-keys: |
+            mkdocs-material-
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install mkdocs mkdocs-material
+          pip install -r docs/requirements.txt
+      - name: Build and deploy docs (executes notebooks)
+        run: mkdocs gh-deploy --force --config-file mkdocs.ci.yml

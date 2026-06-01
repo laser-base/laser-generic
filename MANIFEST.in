@@ -34,6 +34,7 @@ global-exclude *.so *.dylib *.gz
 exclude CLAUDE.md
 exclude convert_clean.sh
 exclude mkdocs.yml
+exclude mkdocs.ci.yml
 exclude mkdocs_jenner.yml
 exclude laserdocs_sphinx/*
 exclude tests/harvest_test_docstrings.py
