@@ -20,3 +20,10 @@ matplotlib
 scipy
 numpy
 laser.core
+
+# needed by the build-combined-doc workflow to execute notebooks and
+# convert the rendered HTML site back to markdown for the combined doc
+jupyter
+nbconvert
+beautifulsoup4
+markdownify

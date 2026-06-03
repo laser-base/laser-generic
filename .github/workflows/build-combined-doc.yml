@@ -1,0 +1,29 @@
+name: Build Combined Doc
+
+on:
+  workflow_dispatch:
+    inputs:
+      allow_notebook_errors:
+        description: 'Publish the combined doc even if notebooks have execution errors (artifact may contain tracebacks).'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: make docs-install
+      - name: Build combined doc
+        # Translate the workflow_dispatch boolean into the 0/1 the Makefile uses.
+        run: make docs-jenner ALLOW_NB_ERRORS=${{ inputs.allow_notebook_errors && '1' || '0' }}
+      - name: Upload combined_mkdocs.md
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined_mkdocs
+          path: dist/combined_mkdocs.md
+          retention-days: 90
