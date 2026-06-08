@@ -59,7 +59,7 @@ def main() -> int:
     notebooks = []
     skipped = []
     for nb in all_notebooks:
-        rel_str = str(nb.relative_to(docs))
+        rel_str = nb.relative_to(docs).as_posix()
         if any(pat in rel_str for pat in excludes):
             skipped.append(nb)
         else:
