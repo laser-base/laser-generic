@@ -11,7 +11,7 @@ each input even when cells raise — the error-gate (``docs/check_executed_nbs.p
 is what decides whether to fail the pipeline.
 
 Usage:
-    python docs/execute_notebooks.py <exec_dir> [--timeout SECONDS]
+    python docs/execute_notebooks.py <exec_dir> [--timeout SECONDS] [--exclude SUBSTR[,SUBSTR...]]
 
 Exit codes:
     0 — every notebook was processed by nbconvert (cell errors are tolerated)
@@ -33,16 +33,42 @@ def main() -> int:
         default=600,
         help="per-cell execution timeout in seconds (default: 600)",
     )
+    parser.add_argument(
+        "--exclude",
+        default="",
+        help=(
+            "comma-separated substrings; any notebook whose docs/-relative path "
+            "contains one of these is skipped (intended for research-only "
+            "notebooks that are maintained for manual exploration but aren't "
+            "suitable for automated execution)."
+        ),
+    )
     args = parser.parse_args()
 
     docs = Path("docs")
     exec_dir = Path(args.exec_dir)
     exec_dir.mkdir(parents=True, exist_ok=True)
 
-    notebooks = sorted(p for p in docs.rglob("*.ipynb") if ".ipynb_checkpoints" not in p.parts)
-    if not notebooks:
+    excludes = [p.strip() for p in args.exclude.split(",") if p.strip()]
+
+    all_notebooks = sorted(p for p in docs.rglob("*.ipynb") if ".ipynb_checkpoints" not in p.parts)
+    if not all_notebooks:
         print(f"No notebooks found under {docs}/", file=sys.stderr)
         return 0
+
+    notebooks = []
+    skipped = []
+    for nb in all_notebooks:
+        rel_str = str(nb.relative_to(docs))
+        if any(pat in rel_str for pat in excludes):
+            skipped.append(nb)
+        else:
+            notebooks.append(nb)
+
+    if skipped:
+        print(f"Skipping {len(skipped)} excluded notebook(s) (matched: {excludes}):")
+        for nb in skipped:
+            print(f"  - {nb}")
 
     print(f"Executing {len(notebooks)} notebook(s) -> {exec_dir}/ ...")
     for nb in notebooks:
