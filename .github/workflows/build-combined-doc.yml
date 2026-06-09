@@ -27,3 +27,32 @@ jobs:
           name: combined_mkdocs
           path: dist/combined_mkdocs.md
           retention-days: 90
+
+      - name: Checkout laser-mcp
+        uses: actions/checkout@v4
+        with:
+          repository: InstituteforDiseaseModeling/laser-mcp
+          token: ${{ secrets.LASER_MCP_TOKEN }}
+          path: laser-mcp
+
+      - name: Copy combined doc into laser-mcp
+        env:
+          DEST_PATH: laser-generic.md   # root of laser-mcp
+        run: |
+          mkdir -p "laser-mcp/$(dirname "$DEST_PATH")"
+          cp dist/combined_mkdocs.md "laser-mcp/$DEST_PATH"
+
+      - name: Create / update PR in laser-mcp
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.LASER_MCP_TOKEN }}
+          path: laser-mcp
+          base: main                       # laser-mcp's default branch
+          branch: auto/sync-laser-generic-doc
+          delete-branch: true
+          commit-message: "docs: sync laser-generic.md from laser-generic"
+          title: "docs: sync laser-generic.md from laser-generic"
+          body: |
+            Automated sync of the combined doc built by laser-generic.
+
+            Source: laser-base/laser-generic@${{ github.sha }}
