@@ -170,15 +170,19 @@ def notebook_to_markdown(nb_path: Path) -> str:
             if not text or not text.strip():
                 continue
 
-            cleaned = re.sub(r"<[^>]+>", "", text)
-            non_empty_lines = [ln for ln in cleaned.splitlines() if ln.strip()]
+            # Note: deliberately no HTML-tag stripping here. Output is wrapped
+            # in a triple-backtick fence, so any literal "<...>" content (e.g.
+            # "<function foo at 0x...>", "<class 'Foo'>", "<lambda>") renders
+            # as plain text — and stripping it would silently delete legitimate
+            # Python reprs that carry information for the RAG corpus.
+            non_empty_lines = [ln for ln in text.splitlines() if ln.strip()]
             if not non_empty_lines:
                 continue
 
             if all(_TQDM_PROGRESS_RE.search(ln) for ln in non_empty_lines):
                 cell_blocks.append(("progress", "\n".join(non_empty_lines).strip()))
             else:
-                kept = "\n".join(ln for ln in cleaned.splitlines() if not _TQDM_PROGRESS_RE.search(ln)).strip()
+                kept = "\n".join(ln for ln in text.splitlines() if not _TQDM_PROGRESS_RE.search(ln)).strip()
                 if kept:
                     cell_blocks.append(("other", kept))
 
@@ -226,6 +230,18 @@ def append_section(parts: list, label, md: str) -> bool:
     return False
 
 
+def _is_reference_entry(entry: str) -> bool:
+    """True if a mkdocs.yml nav entry points anywhere under the ``reference/`` tree.
+
+    Catches all of the common shapes — ``reference/``, ``reference/SUMMARY.md``
+    (literate-nav idiom), ``reference/index.md``, ``reference/<anything>`` —
+    so the API reference expansion isn't accidentally treated as a single .md
+    page by the .md branch of the nav walk.
+    """
+    parts = Path(entry).parts
+    return bool(parts) and parts[0] == "reference"
+
+
 def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
     site_dir = Path(mkdocs_dir)
     nb_dir = Path(notebooks_dir)
@@ -246,8 +262,29 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
     print(f"laser-generic version: {_LASER_GENERIC_VERSION}")
     print(f"=== Walking {len(nav_entries)} nav entries from mkdocs.yml ===")
 
+    ref_expanded = False  # reference/ pages are expanded once, in nav position
     for entry in nav_entries:
-        if entry.endswith(".md"):
+        # Reference check goes first so reference/SUMMARY.md or reference/index.md
+        # don't get swallowed by the .md branch — any entry under reference/
+        # triggers the full mkdocstrings expansion regardless of its file shape.
+        if _is_reference_entry(entry):
+            if ref_expanded:
+                # Multiple nav entries under reference/ all collapse into a single
+                # expansion (the first one we hit) — no point re-emitting pages.
+                continue
+            ref_expanded = True
+            ref_pages = get_reference_pages(site_dir)
+            print(f"  -- expanding reference/ (triggered by nav entry '{entry}'): {len(ref_pages)} pages")
+            for path in ref_pages:
+                rel = path.relative_to(site_dir)
+                md = extract_markdown(path)
+                if append_section(parts, rel, md):
+                    print(f"    ok (reference): {rel}")
+                    ref_included += 1
+                else:
+                    skipped += 1
+
+        elif entry.endswith(".md"):
             page = docs_path_to_site_path(entry, site_dir)
             label = page.relative_to(site_dir) if page.exists() else entry
             if not page.exists():
@@ -283,19 +320,6 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
             else:
                 print(f"  skip (empty/too short): {label}")
                 skipped += 1
-
-        elif entry.rstrip("/") == "reference":
-            # mkdocstrings + literate-nav drop generated API pages here.
-            ref_pages = get_reference_pages(site_dir)
-            print(f"  -- expanding reference/: {len(ref_pages)} pages")
-            for path in ref_pages:
-                rel = path.relative_to(site_dir)
-                md = extract_markdown(path)
-                if append_section(parts, rel, md):
-                    print(f"    ok (reference): {rel}")
-                    ref_included += 1
-                else:
-                    skipped += 1
 
         else:
             # Unknown shape (some other literate-nav dir, etc.) — leave for future work.
