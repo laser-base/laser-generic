@@ -55,4 +55,4 @@ jobs:
           body: |
             Automated sync of the combined doc built by laser-generic.
 
-            Source: laser-base/laser-generic@${{ github.sha }}
+            Source: ${{ github.repository }}@${{ github.sha }}
