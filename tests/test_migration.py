@@ -67,7 +67,7 @@ def _two_node_scenario():
 
 
 def _make_model(scenario, network):
-    params = PropertySet({"nticks": 1, "beta": BETA})
+    params = PropertySet({"nticks": 1, "beta": BETA, "prng_seed": SEED})
     model = Model(scenario, params)
     # Replace the gravity-derived network with our strictly directional one.
     model.network = network
