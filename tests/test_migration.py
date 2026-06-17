@@ -100,8 +100,7 @@ class _MigrationDirectionMixin:
         bare_foi = BETA  # I[0]/N == 1 in node 0 before migration
 
         assert forces[1] > 0.0, (
-            f"Infectivity must flow from node 0 to node 1, but forces[1]={forces[1]}."
-            " This is the failure mode of issue #20."
+            f"Infectivity must flow from node 0 to node 1, but forces[1]={forces[1]}. This is the failure mode of issue #20."
         )
         np.testing.assert_allclose(forces[1], bare_foi * TRANSFER_WEIGHT, rtol=1e-5)
         np.testing.assert_allclose(forces[0], bare_foi * (1.0 - TRANSFER_WEIGHT), rtol=1e-5)
