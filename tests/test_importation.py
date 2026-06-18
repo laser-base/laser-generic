@@ -11,9 +11,9 @@ What the bug does today:
 - ``Infect_Agents_In_Patch.__init__`` falls back to ``np.arange(model.patches.count)``
   when no ``importation_patchlist`` is supplied — raises ``AttributeError``
   immediately.
-- ``Infect_Random_Agents.__call__`` guards on ``hasattr(model.patches, "cases_test")``
-  which silently returns False, so the ``cases_test`` / ``susceptibility_test``
-  accounting branch never runs even when those channels are installed.
+- ``Infect_Random_Agents.__call__`` guards on ``hasattr(model.patches, "cases_test")``.
+  With the current ``Model`` there is no ``model.patches``, so this raises ``AttributeError`` and the
+  ``cases_test`` / ``susceptibility_test`` accounting branch never runs even when those channels are installed.
 """
 
 import unittest
