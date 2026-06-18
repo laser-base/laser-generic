@@ -95,11 +95,12 @@ class TestInfectRandomAgentsCasesTestBranch(unittest.TestCase):
 
     @pytest.mark.xfail(
         reason=(
-            "importation.py:82 guards on hasattr(model.patches, 'cases_test'). "
-            "model.patches doesn't exist, so the branch is silently dead even "
-            "when cases_test/susceptibility_test are installed on model.nodes. "
-            "Filed as the 'stale model.patches.* namespace' bug."
+            "importation.py:82 checks model.patches (deprecated) instead of model.nodes when "
+            "deciding whether to update cases_test/susceptibility_test. With the current Model "
+            "there is no model.patches, so this raises AttributeError. Remove this xfail when "
+            "the stale namespace bug is fixed."
         ),
+        raises=AttributeError,
         strict=True,
     )
     def test_cases_test_channel_updated_on_importation_tick(self):
@@ -110,14 +111,15 @@ class TestInfectRandomAgentsCasesTestBranch(unittest.TestCase):
         before_cases = model.nodes.cases_test.copy()
 
         component = Infect_Random_Agents(model)
-        model.components = [*model.components, component]
-        model.run("Infect_Random_Agents accounting")
+        # Infect_Random_Agents is not a Model component (no .step()); call it directly.
+        for tick in range(NTICKS):
+            component(model, tick)
 
         # Importation fires at ticks 0, 5, 10, 15 with count=3 → 12 total infections.
         delta = model.nodes.cases_test - before_cases
-        assert delta.sum() > 0, (
-            "cases_test accounting branch never ran; importation.py is gated on "
-            "the stale model.patches.* namespace."
+        assert delta.sum() == 12, (
+            "cases_test accounting branch did not record the expected 12 importations; "
+            "importation.py is gated on the stale model.patches.* namespace."
         )
 
 
