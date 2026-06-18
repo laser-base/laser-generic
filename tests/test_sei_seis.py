@@ -12,7 +12,6 @@ import unittest
 from pathlib import Path
 
 import laser.core.distributions as dists
-import numpy as np
 import pytest
 from laser.core import PropertySet
 from laser.core.random import seed as set_seed
@@ -100,21 +99,14 @@ class TestSEIModelTransmits(unittest.TestCase):
         I = model.nodes.I  # noqa: E741
 
         assert E[NTICKS].sum() > 0 or E[:NTICKS].sum() > 0, (
-            "Exposed compartment must have been populated at some point — "
-            "transmission appears blocked (issue #32 symptom)."
+            "Exposed compartment must have been populated at some point — transmission appears blocked (issue #32 symptom)."
         )
-        assert I[NTICKS].sum() > I[0].sum(), (
-            f"Infectious count must grow under SEI: I[0]={I[0].sum()} I[end]={I[NTICKS].sum()}"
-        )
-        assert S[NTICKS].sum() < S[0].sum(), (
-            "Susceptible pool must shrink as agents move S → E → I."
-        )
+        assert I[NTICKS].sum() > I[0].sum(), f"Infectious count must grow under SEI: I[0]={I[0].sum()} I[end]={I[NTICKS].sum()}"
+        assert S[NTICKS].sum() < S[0].sum(), "Susceptible pool must shrink as agents move S → E → I."
 
         # Population conservation (no births, no deaths, no recovery exit)
         total = S[NTICKS].sum() + E[NTICKS].sum() + I[NTICKS].sum()
-        assert total == POPULATION, (
-            f"SEI conserves population: expected {POPULATION}, got {total}"
-        )
+        assert total == POPULATION, f"SEI conserves population: expected {POPULATION}, got {total}"
 
 
 class TestSEISModelTransmits(unittest.TestCase):
@@ -153,19 +145,15 @@ class TestSEISModelTransmits(unittest.TestCase):
         I = model.nodes.I  # noqa: E741
 
         assert E[:NTICKS].sum() > 0, (
-            "Exposed compartment must have been populated at some point — "
-            "transmission appears blocked (issue #32 symptom)."
+            "Exposed compartment must have been populated at some point — transmission appears blocked (issue #32 symptom)."
         )
         assert I[: NTICKS + 1].sum(axis=1).max() > I[0].sum(), (
-            "Infectious counts must grow at some point under SEIS — the I→S "
-            "loop should sustain transmission longer than under SEI."
+            "Infectious counts must grow at some point under SEIS — the I→S loop should sustain transmission longer than under SEI."
         )
 
         # Population conservation
         total = S[NTICKS].sum() + E[NTICKS].sum() + I[NTICKS].sum()
-        assert total == POPULATION, (
-            f"SEIS conserves population: expected {POPULATION}, got {total}"
-        )
+        assert total == POPULATION, f"SEIS conserves population: expected {POPULATION}, got {total}"
 
 
 if __name__ == "__main__":
