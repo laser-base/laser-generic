@@ -3,6 +3,8 @@ from laser.generic.utils import TimingStats as ts  # noqa: I001
 import json
 import unittest
 from argparse import ArgumentParser
+
+import pytest
 from pathlib import Path
 
 import numpy as np
@@ -118,6 +120,7 @@ class Default(unittest.TestCase):
             NT = (model.nodes.S[-1] + model.nodes.I[-1] + model.nodes.R[-1]).sum()
             assert abs(NT - N0) / N0 < 1e-4, "Population not conserved."
 
+    @pytest.mark.slow
     def test_grid(self):
         """
         Feature: Spatial 2-D SIRS model with births and deaths
@@ -375,6 +378,7 @@ class Default(unittest.TestCase):
             # 5. waning immunity should still reduce R at some point
             assert R_series.max() > R_series[-1], "Waning immunity not visible (R never declines)."
 
+    @pytest.mark.slow
     def test_grid_with_zero_pop_nodes(self):
         with ts.start("test_grid"):
             cbr = np.random.uniform(5, 35, EM * EN)

@@ -3,6 +3,8 @@ from laser.generic.utils import TimingStats as ts  # noqa: I001
 import json
 import unittest
 from argparse import ArgumentParser
+
+import pytest
 from pathlib import Path
 
 import laser.core.distributions as dists
@@ -103,6 +105,7 @@ class Default(unittest.TestCase):
             final_af = R_series[-1] / scenario.population.sum()
             assert 0.45 <= final_af <= 0.55, f"Final attack fraction {final_af:.3f} out of expected range."
 
+    @pytest.mark.slow
     def test_grid(self):
         """
         Feature: Spatial 2-D SIR model with births and deaths
@@ -376,6 +379,7 @@ class Default(unittest.TestCase):
                 net = births_total.sum() - deaths_total.sum()
                 assert abs(net) < 0.20 * pop0, f"Birth-death mismatch too large: net={net}"
 
+    @pytest.mark.slow
     def test_kermack_mckendrick(self):
         """
         Feature: Theoretical validation — Kermack-McKendrick final size
@@ -445,6 +449,7 @@ class Default(unittest.TestCase):
 
         return
 
+    @pytest.mark.slow
     def test_grid_with_zero_pop_nodes(self):
         with ts.start("test_grid"):
             scenario = stdgrid(M=EM, N=EN)

@@ -3,6 +3,8 @@ import unittest
 from argparse import ArgumentParser
 from pathlib import Path
 
+import pytest
+
 import laser.core.distributions as dists
 import numpy as np
 from laser.core import PropertySet
@@ -37,6 +39,7 @@ NTICKS = 365
 
 
 class Default(unittest.TestCase):
+    @pytest.mark.slow
     def test_grid(self):
         """
         Feature: Spatial 2-D SIS model with demographic turnover
@@ -209,6 +212,7 @@ class Default(unittest.TestCase):
             print(f"Using basemap: {model.basemap_provider.name}")
             model.plot()
 
+    @pytest.mark.slow
     def test_grid_with_zero_pop_nodes(self):
         with ts.start("test_grid"):
             grd = stdgrid(

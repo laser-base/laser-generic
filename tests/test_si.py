@@ -36,6 +36,7 @@ NTICKS = 365
 
 
 class Default(unittest.TestCase):
+    @pytest.mark.slow
     def test_grid(self):
         """
         Feature: Two-dimensional spatial SI model (grid topology)
@@ -312,6 +313,7 @@ class Default(unittest.TestCase):
 
         return
 
+    @pytest.mark.slow
     def test_grid_with_empty_nodes(self):
         """
         Setup like test_grid(), but set two nodes to zero population.

@@ -3,6 +3,8 @@ from laser.generic.utils import TimingStats as ts  # noqa: I001
 import json
 import unittest
 from argparse import ArgumentParser
+
+import pytest
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -183,6 +185,7 @@ class Default(unittest.TestCase):
             if PLOTTING:
                 plot()
 
+    @pytest.mark.slow
     def test_grid(self):
         """
         Feature: Spatial 2-D SEIRS model with births and deaths
@@ -462,6 +465,7 @@ class Default(unittest.TestCase):
             assert np.all(I_series >= 0)
             assert np.all(R_series >= 0)
 
+    @pytest.mark.slow
     def test_grid_with_zero_pop_node(self):
         with ts.start("test_grid"):
             cbr = np.random.uniform(5, 35, EM * EN)

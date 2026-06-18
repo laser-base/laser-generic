@@ -3,6 +3,8 @@ from laser.generic.utils import TimingStats as ts  # noqa: I001
 import json
 import unittest
 from argparse import ArgumentParser
+
+import pytest
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -137,6 +139,7 @@ class Default(unittest.TestCase):
             final_R_frac = model.nodes.R[-1].sum() / N0
             assert 0.55 <= final_R_frac <= 0.75, f"Final attack fraction {final_R_frac:.3f} out of expected 0.55–0.75 range."
 
+    @pytest.mark.slow
     def test_grid(self):
         """
         Feature: Spatial 2-D SEIR model with births and deaths
@@ -436,6 +439,7 @@ class Default(unittest.TestCase):
             assert np.all(I_series >= 0)
             assert np.all(R >= 0)
 
+    @pytest.mark.slow
     def test_grid_with_zero_pop_nodes(self):
         with ts.start("test_grid"):
             cbr = np.random.uniform(5, 35, EM * EN)

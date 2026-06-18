@@ -1,6 +1,8 @@
 import unittest
 from pathlib import Path
 
+import pytest
+
 import laser.core.distributions as dists
 import numpy as np
 from laser.core import PropertySet
@@ -243,6 +245,7 @@ class TestBirthsByCBR(unittest.TestCase):
 
         return
 
+    @pytest.mark.slow
     def test_equilibrium_seir(self):
         """Test case with equilibrium S/E/I/R populations (1 node)."""
         # Scenario
