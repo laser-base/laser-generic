@@ -52,6 +52,7 @@ def _build_si_model(num_nodes=2, nticks=NTICKS):
             "beta": 0.0,  # disable native transmission so importation is the only source
             "importation_period": 5,
             "importation_count": 3,
+            "inf_mean": 7.0,
             "prng_seed": SEED,
         }
     )
@@ -61,6 +62,11 @@ def _build_si_model(num_nodes=2, nticks=NTICKS):
         SI.Infectious(model),
         TransmissionSIx(model, seasonality=None),
     ]
+
+    # importation utilities expect an itimer field even for SI-style models
+    if not hasattr(model.people, "itimer"):
+        model.people.add_scalar_property("itimer", dtype=np.uint16, default=0)
+
     return model
 
 
