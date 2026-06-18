@@ -156,7 +156,7 @@ class TestSEISModelTransmits(unittest.TestCase):
             "Exposed compartment must have been populated at some point — "
             "transmission appears blocked (issue #32 symptom)."
         )
-        assert I[:NTICKS].sum() > I[0].sum(), (
+        assert I[: NTICKS + 1].sum(axis=1).max() > I[0].sum(), (
             "Infectious counts must grow at some point under SEIS — the I→S "
             "loop should sustain transmission longer than under SEI."
         )
