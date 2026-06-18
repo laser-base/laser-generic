@@ -1,7 +1,7 @@
 __version__ = "1.1.0"
 
-from laser.generic.immunization import ImmunizationCampaign
-from laser.generic.immunization import RoutineImmunization
+from laser.generic.immunization import ImmunizationCampaignEx as ImmunizationCampaign
+from laser.generic.immunization import RoutineImmunizationEx as RoutineImmunization
 from laser.generic.importation import Infect_Random_Agents
 from laser.generic.model import Model
 from laser.generic.shared import State
