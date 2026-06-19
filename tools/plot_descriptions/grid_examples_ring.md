@@ -1,0 +1,5 @@
+### Reading the ring grid plot
+
+The same 7 x 7 patch lattice as the central-city example, plotted in Web Mercator meters (axes 0 to 70,000 m, patches 10 km on a side, red `x` centroids at every grid cell). The `viridis` colorbar now runs from ~50,000 up to 200,000 — the color scheme is inverted in spirit: the outer perimeter ring of patches is bright yellow (200,000), the next ring inward is teal (~100,000), the third ring is dark purple (~65,000), and the single central patch is the darkest at ~50,000.
+
+The four concentric square bands map directly onto `ring_pop`, which sets population to `1_000_000 / (5 * (min(dx_to_edge, dy_to_edge) + 1))`: edge-adjacent cells have the smallest edge distance and so receive the largest population, while the center cell is furthest from any edge and receives the smallest. **The figure demonstrates that swapping the `population_fn` passed to `grid()` reshapes the spatial population profile without changing the underlying patch geometry — here producing a highly populated outer ring with a depleted interior.**

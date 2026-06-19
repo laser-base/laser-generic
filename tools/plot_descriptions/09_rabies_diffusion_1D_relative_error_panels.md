@@ -1,0 +1,9 @@
+### Reading the relative-error sweep plots
+
+The cell emits three scatter plots in sequence, each showing the same y-axis quantity — relative wavespeed error $(c_{measured} - c_{expected}) / c_{expected}$, ranging from about $-0.8$ to $+0.8$ — against the expected wavespeed on a log x-axis from ~$5 \times 10^{-3}$ to ~$6 \times 10^{-1}$ patches/tick. Each panel re-colors the same 100-sample cloud by a different parameter, with filled circles for the right-going wave and "x" markers for the left-going wave.
+
+- **Panel 1 — colored by $\beta = R_0 / \bar{T}_{inf}$ (viridis, ~0.1 to ~1.0).** A clear vertical gradient: dark-purple low-$\beta$ points sit deepest in the negative band ($-0.4$ to $-0.8$) while yellow-green high-$\beta$ points cluster near or above zero at any given expected speed.
+- **Panel 2 — colored by $\log_{10}(D)$ (plasma, ~$-3.5$ to ~$-0.5$).** Dark low-$D$ points populate the left half of the plot and the high-error band; bright yellow high-$D$ points dominate the right half and sit consistently around $-0.4$ to $-0.7$. Diffusion controls where on the x-axis a point lands more than how far it falls below the diagonal.
+- **Panel 3 — colored by $\bar{T}_{inf}$ in days (cividis, ~7 to ~50).** Yellow long-infection points cluster in the lower (more negative) band; dark-blue short-infection points sit higher. At a given expected speed, longer mean infectious durations produce slower observed waves.
+
+Across all three panels the cloud trends downward as expected speed rises — the lattice-spacing-per-tick ceiling biting in. **The figure demonstrates that the simulator's wavespeed shortfall is driven mainly by low $\beta$ and long infectious duration (both starving local outbreak growth at the wavefront), while $D$ shifts where on the speed axis a parameter set lands without strongly modulating the bias — exactly the "attofox"-style stochastic delay pattern predicted in the notebook's lead-in markdown.**

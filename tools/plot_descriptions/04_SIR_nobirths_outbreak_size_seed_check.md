@@ -1,0 +1,5 @@
+### Reading the seed-check plot
+
+A single blue curve on linear axes showing currently-infected $I_t$ versus day (0 to ~730). The trajectory starts at the seed of 3 infections, smoulders along the x-axis through the first ~30 days, then climbs sharply, peaks near $I \approx 29{,}000$ around day 80, and decays back to zero by roughly day 200. The remainder of the 730-day window is a flat line at $I = 0$.
+
+This is the quick-look plot the `while not outbreak` loop emits once it finds a seed that actually produces an epidemic. With $\beta = 0.2$, `inf_mean = 15`, and only three index cases in a population of $10^5$, many seeds fizzle stochastically before $I$ ever grows; the loop bumps `prng_seed` until $R[200] \geq 10$. The shape — slow ignition, single sharp peak, full burnout — is the canonical SIR outbreak silhouette for $R_0 = \beta \cdot \text{inf\_mean} = 3.0$ in a closed population with no births. **This plot demonstrates that the SIR model produces a self-limiting epidemic curve that ignites, peaks, and extinguishes on its own once the susceptible pool is depleted below the herd-immunity threshold.**

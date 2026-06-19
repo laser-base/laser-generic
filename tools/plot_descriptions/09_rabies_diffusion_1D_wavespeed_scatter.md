@@ -1,0 +1,7 @@
+### Reading the wavespeed comparison plot
+
+A log-log scatter of measured versus expected wavespeed in patches per tick, with both axes spanning roughly $3 \times 10^{-3}$ to $1$. Each of the 100 parameter samples contributes two markers: a blue dot for the right-going wave and a red dot for the left-going wave, the two essentially overlaying because the lattice is symmetric. A black dashed $y = x$ identity line cuts diagonally across the panel.
+
+At low expected speeds (below ~$2 \times 10^{-2}$ patches/tick) the cloud straddles the identity line with high scatter — some points overshoot, others fall well below. As the expected speed rises above ~$5 \times 10^{-2}$ patches/tick the cloud consistently sits below the diagonal, settling around $2$–$3 \times 10^{-1}$ measured for expected values approaching $5 \times 10^{-1}$, i.e. roughly a factor-of-two shortfall at the upper end. No point clears the $y = x$ line in that high-speed regime.
+
+The expected speed is the continuum prediction $c = 2\sqrt{D\mu(1/r - 1)}$ reported as $2\sqrt{D/\bar{T}_{inf} \cdot (R_0 - 1)}$ in code; the measured speed comes from a linear fit of peak-infection tick versus patch index in each direction. **The figure demonstrates the expected dual bias from discretizing a traveling-wave PDE: a hard lattice-spacing-per-tick ceiling clips fast waves from above, while stochastic "attofox" delays at the wavefront contribute additional slowdown across all parameter regimes.**

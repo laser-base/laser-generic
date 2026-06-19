@@ -1,0 +1,162 @@
+[
+  {
+    "notebook": "../../docs/tutorials/notebooks/01_SI_nobirths_logistic_growth.ipynb",
+    "inserts": [
+      {"after_cell_containing": "Population minus currently infected", "md_file": "01_SI_nobirths_sanity.md"},
+      {"after_cell_containing": "Logistic growth with known inputs, t0=0", "md_file": "01_SI_nobirths_t0_offset.md"},
+      {"after_cell_containing": "Relative error in fitted beta", "md_file": "01_SI_nobirths_beta_recovery.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/02_SI_wbirths_logistic_growth.ipynb",
+    "inserts": [
+      {"after_cell_containing": "S = N-I:", "md_file": "02_SI_wbirths_logistic_growth_sanity.md"},
+      {"after_cell_containing": "best-fit t0 = {t0_opt:.1f}", "md_file": "02_SI_wbirths_logistic_growth_t0_offset.md"},
+      {"after_cell_containing": "plt.ylim(-0.1, 0.10)", "md_file": "02_SI_wbirths_logistic_growth_beta_cbr_recovery.md"},
+      {"after_cell_containing": "Case Trace and Logistic Fit for Row 0", "md_file": "02_SI_wbirths_logistic_growth_row0_trace.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/03_SIS_nobirths_logistic_growth.ipynb",
+    "inserts": [
+      {"after_cell_containing": "Population minus cumulative infections", "md_file": "03_SIS_nobirths_logistic_growth_sanity.md"},
+      {"after_cell_containing": "best-fit t0 =", "md_file": "03_SIS_nobirths_logistic_growth_t0_offset.md"},
+      {"after_cell_containing": "plt.plot(output[\"gamma\"]", "md_file": "03_SIS_nobirths_logistic_growth_beta_gamma_recovery.md"},
+      {"after_cell_containing": "Error in equilibrium infected fraction", "md_file": "03_SIS_nobirths_logistic_growth_gamma_dt_error.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/04_SIR_nobirths_outbreak_size.ipynb",
+    "inserts": [
+      {"after_cell_containing": "outbreak = np.any(model.nodes.R[200]", "md_file": "04_SIR_nobirths_outbreak_size_seed_check.md"},
+      {"after_cell_containing": "SIR Model with No Births or Deaths", "md_file": "04_SIR_nobirths_outbreak_size_compartments.md"},
+      {"after_cell_containing": "S Expected - Observed v R0", "md_file": "04_SIR_nobirths_outbreak_size_final_size_sweep.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/05_SIR_wbirths_age_distribution.ipynb",
+    "inserts": [
+      {"after_cell_containing": "cut = (model.people.doi >= 365", "md_file": "05_SIR_wbirths_age_distribution_SIR_trajectory_and_age_histogram.md"},
+      {"after_cell_containing": "Age at infection (years)", "md_file": "05_SIR_wbirths_age_distribution_age_at_infection_fit.md"},
+      {"after_cell_containing": "Fraction of individuals susceptible at age", "md_file": "05_SIR_wbirths_age_distribution_fraction_susceptible_by_age.md"},
+      {"after_cell_containing": "Population age distribution (years)", "md_file": "05_SIR_wbirths_age_distribution_population_age_distribution.md"},
+      {"after_cell_containing": "Average_Iage: Expected vs Observed", "md_file": "05_SIR_wbirths_age_distribution_Iage_expected_vs_observed.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/06_SIR_wbirths_natural_periodicity.ipynb",
+    "inserts": [
+      {"after_cell_containing": "T_obs_pf, T_obs_pf2 = ID_freq_peakfinder", "md_file": "06_SIR_wbirths_natural_periodicity_single_run_periodicity.md"},
+      {"after_cell_containing": "for i in range(mycases.shape", "md_file": "06_SIR_wbirths_natural_periodicity_sweep_periodicity.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/07_SIR_CCS.ipynb",
+    "inserts": [
+      {"after_cell_containing": "Infections over time in patches of different population", "md_file": "07_SIR_CCS_patch_heatmap.md"},
+      {"after_cell_containing": "Smallest Nonzero Pop vs log10(alpha)", "md_file": "07_SIR_CCS_vs_R0_and_alpha.md"},
+      {"after_cell_containing": "Best Fit Surface and Real Values", "md_file": "07_SIR_CCS_fit_surface_3d.md"},
+      {"after_cell_containing": "CCS_est vs Alpha (colored by R0) with Fitted Lines", "md_file": "07_SIR_CCS_alpha_loglog_fit.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/08_2patch_SIR_wbirths_correlation.ipynb",
+    "inserts": [
+      {"after_cell_containing": "Fitted curve: y =", "md_file": "08_2patch_SIR_wbirths_correlation_coupling_vs_correlation.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/09_rabies_diffusion_1D.ipynb",
+    "inserts": [
+      {"after_cell_containing": "Infectious (I) over time and space", "md_file": "09_rabies_diffusion_1D_wave_heatmap.md"},
+      {"after_cell_containing": "Comparison of expected and observed wavespeeds", "md_file": "09_rabies_diffusion_1D_wavespeed_scatter.md"},
+      {"after_cell_containing": "Relative error vs. expected speed (colored by beta)", "md_file": "09_rabies_diffusion_1D_relative_error_panels.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/10_England_and_Wales.ipynb",
+    "inserts": [
+      {"after_cell_containing": "beta={beta_best:.2f}, amplitude={amp_best:.2f}", "md_file": "10_England_and_Wales_ccs_grid.md"},
+      {"after_cell_containing": "Phase difference of London wavelet transform", "md_file": "10_England_and_Wales_london_phase_observed.md"},
+      {"after_cell_containing": "Wavelet Phase Similarity", "md_file": "10_England_and_Wales_top10_wavelet_phase.md"},
+      {"after_cell_containing": "Wavelet Phase Plot", "md_file": "10_England_and_Wales_best_combined.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/SEI_and_SEIS_implementations.ipynb",
+    "inserts": [
+      {"after_cell_containing": "SEI Model: Single Node Suite", "md_file": "SEI_and_SEIS_implementations_sei_suite.md"},
+      {"after_cell_containing": "SI Model: Single Node Suite", "md_file": "SEI_and_SEIS_implementations_si_reference.md"},
+      {"after_cell_containing": "Mean S and I: SEI vs SI Models", "md_file": "SEI_and_SEIS_implementations_sei_vs_si_mean.md"},
+      {"after_cell_containing": "SEIS Model: Single Node Suite", "md_file": "SEI_and_SEIS_implementations_seis_suite.md"},
+      {"after_cell_containing": "Mean S, E, and I: SEI vs SEIS Models", "md_file": "SEI_and_SEIS_implementations_sei_vs_seis_mean.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/births.ipynb",
+    "inserts": [
+      {"after_cell_containing": "Please plot the total population", "md_file": "births_constant_cbr.md"},
+      {"after_cell_containing": "Expected Growth (Time-varying CBR)", "md_file": "births_time_varying_cbr.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/constant_pop.ipynb",
+    "inserts": [
+      {"after_cell_containing": "SEIR Model: S, E, I, R, Births, and Deaths Over Time", "md_file": "constant_pop_seir_dynamics.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/distributions.ipynb",
+    "inserts": [
+      {"after_cell_containing": "distributions.beta(a=alpha, b=beta)", "md_file": "distributions_beta.md"},
+      {"after_cell_containing": "distributions.binomial(n=n, p=p)", "md_file": "distributions_binomial.md"},
+      {"after_cell_containing": "distributions.exponential(scale=1/lamda)", "md_file": "distributions_exponential.md"},
+      {"after_cell_containing": "distributions.gamma(shape=alpha, scale=theta)", "md_file": "distributions_gamma.md"},
+      {"after_cell_containing": "distributions.logistic(loc=mu, scale=s)", "md_file": "distributions_logistic.md"},
+      {"after_cell_containing": "distributions.lognormal(mean=mu, sigma=sigma)", "md_file": "distributions_lognormal.md"},
+      {"after_cell_containing": "distributions.normal(loc=mu, scale=np.sqrt(sigmasq))", "md_file": "distributions_normal.md"},
+      {"after_cell_containing": "distributions.poisson(lam=lamda)", "md_file": "distributions_poisson.md"},
+      {"after_cell_containing": "distributions.uniform(low=low, high=high)", "md_file": "distributions_uniform.md"},
+      {"after_cell_containing": "distributions.weibull(a=k, lam=lamda)", "md_file": "distributions_weibull.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/grid_examples.ipynb",
+    "inserts": [
+      {"after_cell_containing": "scenario = grid(M, N, population_fn=central_pop)", "md_file": "grid_examples_central_city.md"},
+      {"after_cell_containing": "scenario = grid(M, N, population_fn=ring_pop)", "md_file": "grid_examples_ring.md"},
+      {"after_cell_containing": "scenario = grid(ROWS, COLUMNS, population_fn=linear_pop)", "md_file": "grid_examples_linear.md"},
+      {"after_cell_containing": "scenario.plot(column=\"population\", cmap=\"viridis\", legend=True, figsize=(12, 9))", "md_file": "grid_examples_hub_spoke.md"},
+      {"after_cell_containing": "axes[-1].set_xlabel(\"Time (days)\")", "md_file": "grid_examples_seir_timeseries.md"},
+      {"after_cell_containing": "ax.set_title(f\"Infectious at tick {tick}\")", "md_file": "grid_examples_infectious_snapshots.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/mortality.ipynb",
+    "inserts": [
+      {"after_cell_containing": "import matplotlib.pyplot as plt", "md_file": "mortality_cdr_single_run.md"},
+      {"after_cell_containing": "Observed CDRs per Run", "md_file": "mortality_cdr_sweep.md"},
+      {"after_cell_containing": "plt.show()\n", "md_file": "mortality_estimator_single_run.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/ri_exploration.ipynb",
+    "inserts": [
+      {"after_cell_containing": "SEIR 2 Node 2 Year No RI", "md_file": "ri_exploration_baseline_seir.md"},
+      {"after_cell_containing": "run_with_ri(coverage_constant)", "md_file": "ri_exploration_with_ri_seir.md"},
+      {"after_cell_containing": "Comparison of Infectious Individuals: Baseline vs With RI", "md_file": "ri_exploration_infectious_comparison.md"},
+      {"after_cell_containing": "Histogram of Non-zero Initial RI Values", "md_file": "ri_exploration_dose_timing_histogram.md"}
+    ]
+  },
+  {
+    "notebook": "../../docs/tutorials/notebooks/seasonality.ipynb",
+    "inserts": [
+      {"after_cell_containing": "plot_model(no_seasonality)", "md_file": "seasonality_baseline_no_forcing.md"},
+      {"after_cell_containing": "plot_model(sinusoidal)", "md_file": "seasonality_sinusoidal_no_importation.md"},
+      {"after_cell_containing": "plot_model(with_importation)", "md_file": "seasonality_with_importation.md"},
+      {"after_cell_containing": "plot_model(two_node_model)", "md_file": "seasonality_two_node_out_of_phase.md"},
+      {"after_cell_containing": "plot_si_model(si_wout_seasonality)", "md_file": "seasonality_si_baseline.md"},
+      {"after_cell_containing": "plot_si_model(si_with_seasonality)", "md_file": "seasonality_si_intervention.md"}
+    ]
+  }
+]

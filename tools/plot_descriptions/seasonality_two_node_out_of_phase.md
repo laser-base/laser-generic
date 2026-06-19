@@ -1,0 +1,7 @@
+### Reading the two-node out-of-phase coupling plot
+
+Same layout extended to two coupled nodes (500,000 agents each, network coupling ~0.02% per tick). 10 years on x; left axis (0 to 500,000) carries S and R; right axis (0 to ~4,500) carries I. Solid lines are Node 0, dashed lines are Node 1.
+
+Two gray sinusoids are visible at the center — the solid (Node 0) and dashed (Node 1) seasonality curves run exactly 183 days out of phase, so when one peaks the other troughs. The solid red I curve shows large annual peaks ~3,500–4,500 spaced ~700 days apart at days ~350, ~1,050, ~1,750, ~2,500, ~3,250, each followed by a smaller secondary peak ~400 days later (~1,200–1,500). The dashed red Node 1 curve stays modest (peaks ~500–1,500), acting as a low-level reservoir whose small chronic transmission seeds the secondary peaks in Node 0. Both nodes' S sit near 25,000–35,000 and R near 470,000.
+
+**The plot demonstrates that spatial coupling between out-of-phase seasonal patches produces richer inter-epidemic dynamics — a quieter "reservoir" node sustains transmission during the primary node's seasonal trough, filling in smaller off-cycle outbreaks and damping the peak amplitudes seen in the single-node case.**
