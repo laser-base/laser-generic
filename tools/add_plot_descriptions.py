@@ -99,7 +99,7 @@ def cell_heading(cell):
     return heading_of(src)
 
 
-def apply_to_notebook(nb_path: Path, inserts, base_dir: Path):
+def apply_to_notebook(nb_path: Path, inserts, base_dir: Path, *, write: bool = True):
     data = json.loads(nb_path.read_text(encoding="utf-8"))
     cells = data["cells"]
     plan = []
@@ -117,7 +117,7 @@ def apply_to_notebook(nb_path: Path, inserts, base_dir: Path):
         cells.insert(idx + 1, md_cell(text))
         changed = True
 
-    if changed:
+    if changed and write:
         nb_path.write_text(
             json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"
         )
@@ -141,7 +141,8 @@ def main():
     any_change = False
     for entry in entries:
         nb_path = (base_dir / entry["notebook"]).resolve()
-        changed = apply_to_notebook(nb_path, entry["inserts"], base_dir)
+        # --check is a dry-run: report what would change without modifying notebooks.
+        changed = apply_to_notebook(nb_path, entry["inserts"], base_dir, write=not args.check)
         print(f"{'CHANGED' if changed else 'ok     '} {nb_path}")
         any_change |= changed
 
