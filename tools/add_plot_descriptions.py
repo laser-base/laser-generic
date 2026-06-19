@@ -67,12 +67,12 @@ def cell_heading(cell):
 
 
 def apply_to_notebook(nb_path: Path, inserts, base_dir: Path):
-    data = json.loads(nb_path.read_text())
+    data = json.loads(nb_path.read_text(encoding="utf-8"))
     cells = data["cells"]
     plan = []
     for ins in inserts:
         idx = find_marker_cell(cells, ins["after_cell_containing"])
-        text = (base_dir / ins["md_file"]).read_text().rstrip() + "\n"
+        text = (base_dir / ins["md_file"]).read_text(encoding="utf-8").rstrip() + "\n"
         plan.append((idx, text))
 
     changed = False
@@ -85,7 +85,9 @@ def apply_to_notebook(nb_path: Path, inserts, base_dir: Path):
         changed = True
 
     if changed:
-        nb_path.write_text(json.dumps(data, indent=1) + "\n")
+        nb_path.write_text(
+            json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
     return changed
 
 
