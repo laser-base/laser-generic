@@ -28,12 +28,14 @@ Usage:
 import argparse
 import json
 import sys
+import uuid
 from pathlib import Path
 
 
 def md_cell(text):
     return {
         "cell_type": "markdown",
+        "id": uuid.uuid4().hex[:8],
         "metadata": {},
         "source": text.splitlines(keepends=True),
     }
