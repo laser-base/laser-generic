@@ -134,9 +134,9 @@
   {
     "notebook": "../../docs/tutorials/notebooks/mortality.ipynb",
     "inserts": [
-      {"after_cell_containing": "import matplotlib.pyplot as plt", "md_file": "mortality_cdr_single_run.md"},
+      {"after_cell_id": "787332f1", "md_file": "mortality_cdr_single_run.md"},
       {"after_cell_containing": "Observed CDRs per Run", "md_file": "mortality_cdr_sweep.md"},
-      {"after_cell_containing": "plt.show()\n", "md_file": "mortality_estimator_single_run.md"}
+      {"after_cell_id": "8f77666c", "md_file": "mortality_estimator_single_run.md"}
     ]
   },
   {
