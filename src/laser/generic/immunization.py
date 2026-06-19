@@ -85,7 +85,7 @@ class RoutineImmunization:
         self.end = int(model.params.nticks if end == -1 else end)
         self.verbose = bool(verbose)
 
-    def __call__(self, model, tick: int) -> None:
+    def step(self, tick: int) -> None:
         """
         Apply routine immunization at the given tick, if eligible.
 
@@ -97,17 +97,35 @@ class RoutineImmunization:
         On each event:
             - Agents with age in [age - period//2, age + period//2) are considered.
             - A Binomial draw with probability `coverage` selects agents to immunize.
-            - Selected agents have `susceptibility` set to 0 (immune).
-            - If present, test arrays on `model.nodes` are updated for validation.
+            - Selected agents have `S` state set to 0 (immune) via nodes.S.
 
         Args:
-            model (object): LASER model (unused; provided for signature parity).
             tick (int): Current simulation tick.
 
         Returns:
             None
         """
         if (tick >= self.start) and ((tick - self.start) % self.period == 0) and (tick < self.end):
+            # Find agents within the age window
+            age_idx = self.model.people.age
+            low = self.age - self.period // 2
+            high = self.age + self.period // 2
+            age_mask = (age_idx >= low) & (age_idx < high)
+            
+            # Binomial selection among eligible agents
+            eligible = np.where(age_mask)[0]
+            if len(eligible) == 0:
+                return
+            n_immunize = np.random.binomial(len(eligible), self.coverage)
+            if n_immunize == 0:
+                return
+            selected = np.random.choice(eligible, size=n_immunize, replace=False)
+            
+            # Modern data model: set S state to 0 (immune)
+            self.model.nodes.S[selected] = 0
+            
+            if self.verbose:
+                print(f"[RI] tick={tick}, immunized {n_immunize} agents aged [{low}, {high})")
             half_window = int(self.period // 2)
             lower = max(0, int(self.age - half_window))
             upper = int(self.age + half_window)
