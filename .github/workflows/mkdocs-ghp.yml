@@ -26,7 +26,5 @@ jobs:
           restore-keys: |
             mkdocs-material-
       - run: |
-          pip install -e .
-          pip install mkdocs mkdocs-material # Or your specific theme and plugins
-          pip install -r docs/requirements.txt  # If you have a requirements.txt file
+          pip install --index-url https://packages.idmod.org/artifactory/api/pypi/pypi-production/simple -e ".[docs]"
       - run: mkdocs gh-deploy --force
