@@ -63,6 +63,30 @@ dev = [
   "uv>=0.10.6",
 ]
 
+docs = [
+  # mkdocs ecosystem
+  "mkdocs-material",
+  "mkdocs-include-markdown-plugin",
+  "mkdocs-autorefs",
+  "mkdocs-gen-files",
+  "mkdocs-literate-nav",
+  "mkdocs-section-index",
+  "mkdocs-jupyter",
+  "mkdocs-table-reader-plugin",
+  "mkdocs-mermaid2-plugin",
+  "mkdocs-exclude",
+  # markdown extensions used by mkdocs.yml
+  "python-markdown-math",
+  "pymdown-extensions",
+  # API reference generation
+  "mkdocstrings",
+  "mkdocstrings-python",
+  # needed for notebook execution during docs build (plots);
+  # runtime deps (numpy, scipy, pandas, laser-core) are already in
+  # the main `dependencies` list and don't need duplicating here.
+  "matplotlib",
+]
+
 # uv uses this in addition (?) to [project.optional-dependencies] above
 [dependency-groups]
 dev = [

@@ -19,9 +19,7 @@ jobs:
 
     - name: Install MkDocs and dependencies
       run: |
-        pip install -e .
-        pip install mkdocs mkdocs-material # Or your specific theme and plugins
-        pip install -r docs/requirements.txt  # If you have a requirements.txt file
+        pip install --index-url https://packages.idmod.org/artifactory/api/pypi/pypi-production/simple -e ".[docs]"
 
     - name: Build MkDocs site
       run: mkdocs build

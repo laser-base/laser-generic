@@ -133,8 +133,6 @@ jobs:
             mkdocs-material-
       - name: Install dependencies
         run: |
-          pip install -e .
-          pip install mkdocs mkdocs-material
-          pip install -r docs/requirements.txt
+          pip install --index-url https://packages.idmod.org/artifactory/api/pypi/pypi-production/simple -e ".[docs]"
       - name: Build and deploy docs (executes notebooks)
         run: mkdocs gh-deploy --force --config-file mkdocs.ci.yml
