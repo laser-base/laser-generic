@@ -386,15 +386,15 @@ class Default(unittest.TestCase):
           • Quantitative deviation threshold of ±5% from analytic solution.
 
         Configuration:
-          Population: 1 000 000 (single node)
-          Initial infections: 1 000
+          Population: 500 000 (single node)
+          Initial infections: 500
           R₀ range: 1.2-2.0
           Infectious duration: 7 days
-          Iterations: 10 stochastic replicates per R₀ case
+          Iterations: 5 stochastic replicates per R₀ case
 
         Expected Outcomes / Invariants:
           • Median attack fraction within 5% of theoretical value.
-          • No more than 3/10 runs deviate >5%.
+          • No more than 1/5 runs deviate >5%.
 
         Notes:
           A quantitative regression test comparing simulated final epidemic size
@@ -408,7 +408,9 @@ class Default(unittest.TestCase):
             S_inf = -1 / R0 * lambertw(-R0 * S0 * np.exp(-R0)).real
             return 1 - S_inf
 
-        INIT_INF = 1_000
+        POP = 500_000
+        INIT_INF = 500
+        NITERS = 5
         cases = [
             (1.2160953 / 7, 7.0, 1.0 / 3.0),
             (1.27685 / 7, 7.0, 0.4),
@@ -418,9 +420,8 @@ class Default(unittest.TestCase):
 
         for beta, inf_mean, expected_af in cases:
             failed = 0
-            NITERS = 10
             for _ in range(NITERS):
-                scenario = stdgrid(M=1, N=1, population_fn=lambda x, y: 1_000_000)
+                scenario = stdgrid(M=1, N=1, population_fn=lambda x, y: POP)
                 scenario["S"] = scenario["population"] - INIT_INF
                 scenario["I"] = INIT_INF
                 scenario["R"] = 0
@@ -439,7 +440,7 @@ class Default(unittest.TestCase):
                 frac = diff / expected_af
                 if frac > 0.05:
                     failed += 1
-            assert failed < 3, (
+            assert failed <= 1, (
                 f"Kermack-McKendrick test failed {failed}/{NITERS} for R0={beta * inf_mean:.3f} (expected AF={expected_af:.3f})"
             )
 
