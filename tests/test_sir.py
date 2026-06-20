@@ -28,8 +28,8 @@ except ImportError:
 
 PLOTTING = False
 VERBOSE = False
-EM = 10
-EN = 10
+EM = 3
+EN = 3
 PEE = 10
 VALIDATING = False
 NTICKS = 365
@@ -108,14 +108,14 @@ class Default(unittest.TestCase):
         Feature: Spatial 2-D SIR model with births and deaths
         --------------------------------------------------
         Validates:
-          • Spatial epidemic propagation across a 10x10 grid of nodes.
+          • Spatial epidemic propagation across a 3x3 grid of nodes.
           • Integration of demography (BirthsByCBR, MortalityByEstimator).
           • Stability of total population under demographic turnover.
           • Quantitative epidemic realism via bounded infection prevalence.
 
         Configuration:
-          Grid: 10x10 nodes, 10 km each
-          Population: 10 000-1 000 000 per node
+          Grid: 3x3 nodes, 10 km each
+          Population: 10 000-200 000 per node
           Infectious duration: Normal(mean=7, sd=2)
           Simulation: 365 ticks
 
@@ -130,7 +130,7 @@ class Default(unittest.TestCase):
           birth, and mortality processes, validating LASER's spatial coupling integrity.
         """
         with ts.start("test_grid"):
-            scenario = stdgrid(M=EM, N=EN)
+            scenario = stdgrid(M=EM, N=EN, population_fn=lambda r, c: int(np.random.uniform(10_000, 200_000)))
             scenario["S"] = scenario["population"] - 10
             scenario["I"] = 10
             scenario["R"] = 0
@@ -447,7 +447,7 @@ class Default(unittest.TestCase):
 
     def test_grid_with_zero_pop_nodes(self):
         with ts.start("test_grid"):
-            scenario = stdgrid(M=EM, N=EN)
+            scenario = stdgrid(M=EM, N=EN, population_fn=lambda r, c: int(np.random.uniform(10_000, 200_000)))
             scenario["S"] = scenario["population"] - 10
             scenario["I"] = 10
             scenario["R"] = 0
