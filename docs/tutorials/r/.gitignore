@@ -1,0 +1,5 @@
+# Knit output — regenerate locally with `rmarkdown::render(..., output_format = "all")`
+*.html
+*.md
+*_files/
+!README.md
