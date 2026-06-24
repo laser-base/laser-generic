@@ -62,13 +62,17 @@ model.components = [Susceptible(model), Infectious(model, infdurdist),
 
 ## Parameters (`PropertySet`)
 
-The model's `PropertySet` must include `beta` (the per-day transmission rate), `nticks`
-(number of ticks to run), and `seed`. The `Transmission` component reads `model.params.beta`
-and raises `AttributeError: 'PropertySet' object has no attribute 'beta'` if it is missing.
+The model's `PropertySet` must include `beta` (the per-day transmission rate) and `nticks`
+(number of ticks to run). The `Transmission` component reads `model.params.beta` and raises
+`AttributeError: 'PropertySet' object has no attribute 'beta'` if it is missing.
+
+The random seed is **optional**: `Model.__init__` looks for `prng_seed`, `prngseed`, or
+`seed` (in that order) and falls back to a fixed default of `20260101` for reproducibility.
+Set one only when you want to control or vary the seed yourself.
 
 ```python
 from laser.generic.utils import PropertySet
-params = PropertySet({"nticks": 180, "seed": 42, "beta": 0.3})
+params = PropertySet({"nticks": 180, "beta": 0.3, "seed": 42})  # seed optional
 ```
 
 Also include `inf_mean` (mean infectious duration, in days) whenever you call
@@ -125,8 +129,10 @@ Passing a degenerate or empty array as the pyramid raises `ValueError: high <= 0
 
 Compartment time series are tracked at the **node level** as arrays on `model.nodes`:
 `model.nodes.S`, `model.nodes.I`, `model.nodes.E`, `model.nodes.R` (plus
-`newly_infectious` / `newly_infected` where relevant), each shaped `[n_ticks, n_nodes]`.
-There is no `StateTracker` or `ResultsWriter` class.
+`newly_infectious` / `newly_infected` where relevant). Each is allocated with length
+`nticks + 1`, so the shape is `[nticks + 1, n_nodes]` — there is one row per tick from `0`
+through `nticks` inclusive. (This means `I[-1]` is the state at tick `nticks`, not
+`nticks - 1`.) There is no `StateTracker` or `ResultsWriter` class.
 
 ```python
 I = model.nodes.I[:, 0]      # single-patch infectious time series
@@ -138,14 +144,15 @@ total_per_tick = model.nodes.I.sum(axis=1)   # across all patches
 Reading `model.nodes.I[:, 0]` **after** `model.run()` is always safe. Do not compute
 compartment counts by testing the per-agent `model.people.state` against a bare integer
 (e.g. `people.state == 1`); if you need per-agent state, compare against the `State` enum
-value (e.g. `SIR.State.INFECTIOUS.value`).
+value (e.g. `State.INFECTIOUS.value`, with `from laser.generic import State`).
 
 When **recording a series from inside a custom component's `step(self, tick)`**, the node
 array for the *current* tick may not be written yet (the disease components write it during
 their own step), so `model.nodes.I[tick, 0]` can read 0. Count agents directly instead:
 
 ```python
-infectious_now = int((self.model.people.state == SIR.State.INFECTIOUS.value).sum())
+from laser.generic import State
+infectious_now = int((self.model.people.state == State.INFECTIOUS.value).sum())
 ```
 
 ## Writing a custom component
@@ -178,17 +185,19 @@ m = gravity(pops, distances, k=1.0, a=1.0, b=1.0, c=2.0)
 m /= m.sum(axis=1, keepdims=True)
 ```
 
-Build the N×N inter-patch distance matrix with `distance(lats, lons)` (from
+Build the N×N inter-patch distance matrix with `distance(lats, lons, lats, lons)` (from
 `laser.generic.model`), where `lats` and `lons` are 1-D arrays of patch latitudes and
-longitudes — passing just those two vectors returns the full great-circle matrix. Do **not**
-pass a single 2-D coordinate array or call `distance(centroids)`.
+longitudes. It takes **two coordinate pairs** (source then destination) — pass the same
+`lats`/`lons` twice to get the full pairwise great-circle matrix. Calling it with just two
+arguments raises a `TypeError`. Do **not** pass a single 2-D coordinate array or call
+`distance(centroids)`.
 
 For a synthetic set of patches, define `lats` / `lons` as plain numpy arrays yourself (or read
 existing scenario columns with `scenario["lat"].to_numpy()`). Only use `get_centroids` when
-you have a real geopandas `GeoDataFrame` of polygons — it returns an N×2 array, not a
-`(lats, lons)` tuple, and calling `get_centroids(scenario)` on an ordinary DataFrame raises
-`ValueError: too many values to unpack` or `y attribute access only provided for Point
-geometries`.
+you have a real geopandas `GeoDataFrame` of polygons — it returns a geopandas `GeoSeries` of
+point centroids (read coordinates via `centroids.x` / `centroids.y`), **not** an N×2 numpy
+array or a `(lats, lons)` tuple. Calling `get_centroids(scenario)` on an ordinary pandas
+DataFrame raises `AttributeError: 'DataFrame' object has no attribute 'to_crs'`.
 
 ## Working with laser-core primitives
 
