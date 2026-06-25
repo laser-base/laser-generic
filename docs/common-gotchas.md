@@ -79,8 +79,10 @@ Also include `inf_mean` (mean infectious duration, in days) whenever you call
 `seed_infections_randomly` / `seed_infections_in_patch` — they read it to set the infection
 timer of seeded agents.
 
-`PropertySet` is **not** a dict: read values by attribute (`model.params.beta`) or
-`getattr(model.params, "name", default)` for optional ones. It has no `.get()` method.
+`PropertySet` supports both attribute access (`model.params.beta`) and dict-style subscript
+access (`model.params["beta"]`), but **attribute access is strongly preferred** — it reads
+more naturally and is the style used throughout the laser-generic codebase. For optional
+parameters, use `getattr(model.params, "name", default)`.
 
 ## Seeding and importation
 
@@ -206,4 +208,6 @@ DataFrame raises `AttributeError: 'DataFrame' object has no attribute 'to_crs'`.
 - **`LaserFrame` properties are modified in place.** Use `frame.S[:] = new_values`; never
   rebind a property (`frame.S = ...` raises `RuntimeError: Cannot reassign property`). Access
   properties by attribute (`frame.state`), not by subscript (`frame['state']`).
-- **`PropertySet` is attribute-accessed**, not dict-accessed (see *Parameters* above).
+- **`PropertySet` prefers attribute access** (`model.params.beta`) over dict-style subscript
+  access (`model.params["beta"]`) — both work, but attribute access is the idiomatic style
+  throughout the codebase (see *Parameters* above).
