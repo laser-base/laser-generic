@@ -85,7 +85,7 @@ class RoutineImmunization:
         self.end = int(model.params.nticks if end == -1 else end)
         self.verbose = bool(verbose)
 
-    def __call__(self, model, tick: int) -> None:
+    def step(self, tick: int) -> None:
         """
         Apply routine immunization at the given tick, if eligible.
 
@@ -97,17 +97,31 @@ class RoutineImmunization:
         On each event:
             - Agents with age in [age - period//2, age + period//2) are considered.
             - A Binomial draw with probability `coverage` selects agents to immunize.
-            - Selected agents have `susceptibility` set to 0 (immune).
-            - If present, test arrays on `model.nodes` are updated for validation.
+            - Selected agents are moved to the R compartment via `self.model.people.state`.
 
         Args:
-            model (object): LASER model (unused; provided for signature parity).
             tick (int): Current simulation tick.
 
         Returns:
             None
         """
         if (tick >= self.start) and ((tick - self.start) % self.period == 0) and (tick < self.end):
+            # Compute age in ticks for all agents
+            age = tick - self.model.people.birth
+            # Build boolean mask for the RI age window
+            half_period = self.period // 2
+            mask = (age >= self.age - half_period) & (age < self.age + half_period)
+            # Determine who gets immunized
+            num_candidates = np.sum(mask)
+            if num_candidates == 0:
+                return
+            # Sample agents with probability coverage
+            immunized_mask = np.random.rand(num_candidates) < self.coverage
+            # Convert to global indices
+            candidate_indices = np.where(mask)[0]
+            immune_indices = candidate_indices[immunized_mask]
+            # Move to recovered/immune state
+            self.model.people.state[immune_indices] = self.model.nodes.S["R"]
             half_window = int(self.period // 2)
             lower = max(0, int(self.age - half_window))
             upper = int(self.age + half_window)
