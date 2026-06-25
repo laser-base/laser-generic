@@ -190,29 +190,25 @@ class MyComponent:
 
 ## Spatial models and migration
 
-Build the migration matrix with `gravity` from `laser.core.migration`. Its signature is
-`gravity(pops, distances, k, a, b, c)` — **one** 1-D population array and a **2-D** distance
-matrix (not two population arrays); then row-normalize:
+Migration model functions (`gravity`, `radiation`, `stouffer`, `competing_destinations`) and
+the distance helper all live in **`laser.core.migration`**, not `laser.generic.model`:
 
 ```python
 from laser.core.migration import gravity, distance
-m = gravity(pops, distances, k=1.0, a=1.0, b=1.0, c=2.0)
-m /= m.sum(axis=1, keepdims=True)
 ```
 
-Build the N×N inter-patch distance matrix with `distance(lats, lons, lats, lons)` (from
-`laser.generic.model`), where `lats` and `lons` are 1-D arrays of patch latitudes and
-longitudes. It takes **two coordinate pairs** (source then destination) — pass the same
-`lats`/`lons` twice to get the full pairwise great-circle matrix. Calling it with just two
-arguments raises a `TypeError`. Do **not** pass a single 2-D coordinate array or call
-`distance(centroids)`.
+`distance(lat1, lon1, lat2=None, lon2=None)` computes great-circle distances in km. Pass
+**two 1-D arrays** (`lats`, `lons`) and it returns the full **N×N pairwise matrix**. Do
+**not** pass a single 2-D coordinate array or call `distance(centroids)`:
 
-For a synthetic set of patches, define `lats` / `lons` as plain numpy arrays yourself (or read
-existing scenario columns with `scenario["lat"].to_numpy()`). Only use `get_centroids` when
-you have a real geopandas `GeoDataFrame` of polygons — it returns a geopandas `GeoSeries` of
-point centroids (read coordinates via `centroids.x` / `centroids.y`), **not** an N×2 numpy
-array or a `(lats, lons)` tuple. Calling `get_centroids(scenario)` on an ordinary pandas
-DataFrame raises `AttributeError: 'DataFrame' object has no attribute 'to_crs'`.
+```python
+dist_matrix = distance(lats, lons)   # shape (N, N)
+```
+
+For synthetic patches, define `lats`/`lons` as plain numpy arrays (or read existing scenario
+columns with `scenario["lat"].to_numpy()`). Only use `get_centroids` when you have a real
+geopandas `GeoDataFrame` of polygons — calling it on an ordinary pandas DataFrame raises
+`AttributeError: 'DataFrame' object has no attribute 'to_crs'`.
 
 ## Working with laser-core primitives
 
