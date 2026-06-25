@@ -63,24 +63,93 @@ totals_df <- function(model, states) {
     totals$compartment <- "N (total)"
     rbind(df, totals)
 }
+
+# Plot S/R/N and E/I in two stacked panels with **fixed** y-axis ranges so
+# the same outbreak heights look identical across every demographic scenario
+# below. Without the anchor points, ggplot's facet_wrap(scales = "free_y")
+# would auto-rescale each plot to its own data and visual comparison between
+# scenarios would be impossible.
+plot_seir_with_zoom <- function(df, title = NULL, subtitle = NULL,
+                                full_y_max = 120000L,
+                                zoom_y_max = 200L) {
+    big   <- "S, R, N (full scale)"
+    small <- "E, I (zoomed)"
+    df$panel <- factor(
+        ifelse(df$compartment %in% c("E", "I"), small, big),
+        levels = c(big, small)
+    )
+
+    # Invisible anchor points: one per panel, at the top of the desired y-range.
+    anchors <- data.frame(
+        tick  = c(0L, 0L),
+        count = c(full_y_max, zoom_y_max),
+        panel = factor(c(big, small), levels = c(big, small))
+    )
+
+    ggplot2::ggplot() +
+        ggplot2::geom_line(
+            data = df,
+            ggplot2::aes(tick, count, color = compartment),
+            linewidth = 0.6
+        ) +
+        ggplot2::geom_blank(data = anchors, ggplot2::aes(tick, count)) +
+        ggplot2::facet_wrap(~ panel, ncol = 1, scales = "free_y") +
+        ggplot2::labs(
+            x = "Day", y = "Agents", color = NULL,
+            title = title, subtitle = subtitle
+        ) +
+        ggplot2::theme_minimal(base_size = 10) +
+        ggplot2::theme(
+            legend.position = "top",
+            strip.text      = ggplot2::element_text(hjust = 0)
+        )
+}
 ```
 
 ## Common SEIR base
 
 We'll keep the disease parameters fixed across every example so the
 contribution of each demographic component is the only thing changing.
-Five-year run so vital dynamics have time to matter.
+Two design choices up front shape what every section below shows:
+
+1. **Endemic-equilibrium initial conditions.** Instead of starting with
+   the whole population susceptible — which produces one large outbreak
+   that consumes almost every susceptible and then leaves nothing for
+   vital dynamics to interact with — we seed the steady-state
+   structure of an endemic disease:
+   `S = N / R0` and `R = N · (1 - 1 / R0)`, with `E = I = 0`. The
+   disease enters the population only via reintroduction.
+2. **Periodic reintroduction throughout.** A small custom component
+   imports 5 random new infections every 60 days. With no vital
+   dynamics, the susceptible pool drains permanently and each
+   importation lands on an increasingly immune population. With vital
+   dynamics, every section below tells a different story about how
+   the `S` and `R` populations evolve and how that drives the
+   subsequent disease dynamics.
+
+With those two choices, the differences between sections come from
+*demography alone* — not from how the simulation was seeded.
 
 ```{r common-params}
-NTICKS    <- 365L * 1L      # one year
+NTICKS    <- 365L * 5L      # five years
 POP       <- 100000L
-INIT_INF  <- 100L
-INIT_EXP  <- 0L
-INIT_REC  <- 0L
-R0        <- 2.5
+R0        <- 5             # high enough that each importation produces a
+                            # readable bump in E and I; small enough that
+                            # the herd-immunity threshold (1 - 1/R0 = 80%)
+                            # leaves room for vital dynamics to perturb it.
 INF_DUR   <- 7
 EXP_DUR   <- 3
 BETA      <- R0 / INF_DUR
+
+# Endemic-equilibrium initial conditions. See the narrative above for why.
+INIT_S    <- as.integer(round(POP / R0))
+INIT_E    <- 0L
+INIT_I    <- 0L
+INIT_R    <- POP - INIT_S - INIT_E - INIT_I
+
+# Periodic importation: 5 cases every 60 days, throughout the run.
+IMP_PERIOD <- 60L
+IMP_COUNT  <- 5L
 
 # The four vital-dynamics components share these rate inputs.
 CBR       <- 30.0   # crude birth rate, per 1000 per year (Nigeria-ish)
@@ -95,11 +164,10 @@ make_seir <- function(birthrates_arg = NULL,
                      nticks = NTICKS,
                      pop    = POP,
                      beta   = BETA,
-                     init_e = INIT_EXP,
-                     init_i = INIT_INF,
-                     init_r = INIT_REC,
-                     init_s = NULL) {
-    if (is.null(init_s)) init_s <- pop - init_e - init_i - init_r
+                     init_s = INIT_S,
+                     init_e = INIT_E,
+                     init_i = INIT_I,
+                     init_r = INIT_R) {
     scenario <- make_scenario(pop = pop)
     scenario["S"] <- init_s
     scenario["E"] <- init_e
@@ -155,184 +223,20 @@ survival_estimator <- .lg_env$laser_demog$KaplanMeierEstimator(
 )
 ```
 
-## Baseline — no vital dynamics
+## The reintroduction component
 
-A closed-population SEIR. The total `N` line is flat because nobody
-enters or leaves the population.
+Every section below adds a small custom component that injects
+`IMP_COUNT` random new infections every `IMP_PERIOD` ticks. Without it,
+an SEIR sim that starts at endemic equilibrium would damp out almost
+immediately (E and I are zero at t = 0) and the demographic comparisons
+would all show flat lines. With it, the trajectory after the first few
+weeks reflects the interplay between reintroduction and whatever the
+vital dynamics are doing to the susceptible and recovered pools.
 
-```{r baseline-seir}
-seed_everything()
-
-model <- make_seir()
-model$components <- seir_components(model)
-model$run()
-
-totals_df(model, c("S", "E", "I", "R")) |>
-    plot_compartments(
-        title    = "SEIR baseline (no vital dynamics)",
-        subtitle = "Closed population; total N is flat"
-    )
-```
-
-## Adding `ConstantPopVitalDynamics`
-
-Recycles deceased agents into newborns at the specified rate (per 1000
-per year), keeping total population exactly constant. Useful when you
-care about birth-cohort flow but want to avoid sizing capacity for
-indefinite growth.
-
-```{r constant-pop}
-seed_everything()
-
-recycle_rates <- ValuesMap()$from_scalar(CDR, as.integer(NTICKS), 1L)
-
-model <- make_seir()
-model$components <- c(
-    seir_components(model),
-    list(.lg_env$laser_vd$ConstantPopVitalDynamics(model, recycle_rates, dobs = TRUE))
-)
-model$run()
-
-totals_df(model, c("S", "E", "I", "R")) |>
-    plot_compartments(
-        title    = sprintf("SEIR + ConstantPopVitalDynamics (rate = %g / 1000 / yr)", CDR),
-        subtitle = "Total N held fixed; recycle on death feeds the susceptible pool"
-    )
-```
-
-## Adding `BirthsByCBR`
-
-Adds Poisson-distributed newborns each tick driven by a crude birth
-rate. With no offsetting mortality, the population grows.
-
-`BirthsByCBR` must come last in the component list so the rest of the
-tick is computed against today's population, not after the newborns
-have joined.
-
-```{r births-by-cbr}
-seed_everything()
-
-birthrates <- ValuesMap()$from_scalar(CBR, as.integer(NTICKS), 1L)
-
-model <- make_seir(birthrates_arg = birthrates)
-model$components <- c(
-    seir_components(model),
-    list(.lg_env$laser_vd$BirthsByCBR(model, birthrates, pyramid, track = TRUE))
-)
-model$run()
-
-totals_df(model, c("S", "E", "I", "R")) |>
-    plot_compartments(
-        title    = sprintf("SEIR + BirthsByCBR (CBR = %g / 1000 / yr)", CBR),
-        subtitle = "Newborns enter the susceptible pool; N grows over time"
-    )
-```
-
-## Adding `MortalityByCDR`
-
-Per-tick mortality risk applied uniformly across the population. Pair
-with `BirthsByCBR` for a realistic demography baseline.
-
-First, mortality alone (no births) — the population shrinks:
-
-```{r mortality-by-cdr-only}
-seed_everything()
-
-mortality_rates <- ValuesMap()$from_scalar(CDR, as.integer(NTICKS), 1L)
-
-model <- make_seir()
-model$components <- c(
-    seir_components(model),
-    list(.lg_env$laser_vd$MortalityByCDR(model, mortality_rates))
-)
-model$run()
-
-totals_df(model, c("S", "E", "I", "R")) |>
-    plot_compartments(
-        title    = sprintf("SEIR + MortalityByCDR (CDR = %g / 1000 / yr, no births)", CDR),
-        subtitle = "Population shrinks; recovery pool drains as immune agents die"
-    )
-```
-
-Now with births balancing deaths:
-
-```{r mortality-by-cdr-with-births}
-seed_everything()
-
-birthrates      <- ValuesMap()$from_scalar(CBR, as.integer(NTICKS), 1L)
-mortality_rates <- ValuesMap()$from_scalar(CDR, as.integer(NTICKS), 1L)
-
-model <- make_seir(birthrates_arg = birthrates)
-model$components <- c(
-    seir_components(model),
-    list(
-        .lg_env$laser_vd$MortalityByCDR(model, mortality_rates),
-        .lg_env$laser_vd$BirthsByCBR(model, birthrates, pyramid, track = TRUE)
-    )
-)
-model$run()
-
-totals_df(model, c("S", "E", "I", "R")) |>
-    plot_compartments(
-        title    = sprintf("SEIR + MortalityByCDR + BirthsByCBR (CBR = %g, CDR = %g)", CBR, CDR),
-        subtitle = "Births offset deaths; N grows because CBR > CDR"
-    )
-```
-
-## Adding `MortalityByEstimator`
-
-Age-specific mortality sampled from a Kaplan-Meier survival curve.
-Unlike `MortalityByCDR` (uniform per-tick risk), this draws each
-agent's date of death from the survival distribution conditional on
-their date of birth — which means `BirthsByCBR` must be present with
-`track = TRUE` so newborns have a recorded `dob`.
-
-```{r mortality-by-estimator}
-seed_everything()
-
-birthrates <- ValuesMap()$from_scalar(CBR, as.integer(NTICKS), 1L)
-
-model <- make_seir(birthrates_arg = birthrates)
-model$components <- c(
-    seir_components(model),
-    list(
-        .lg_env$laser_vd$BirthsByCBR(model, birthrates, pyramid, track = TRUE),
-        .lg_env$laser_vd$MortalityByEstimator(model, survival_estimator)
-    )
-)
-model$run()
-
-totals_df(model, c("S", "E", "I", "R")) |>
-    plot_compartments(
-        title    = "SEIR + BirthsByCBR + MortalityByEstimator",
-        subtitle = "Realistic demography: age-specific mortality from a Nigeria survival curve"
-    )
-```
-
-## Periodic importation — keeping the disease alive
-
-Without external reintroduction, an SEIR outbreak burns through every
-available susceptible and dies out. Real diseases see recurring waves
-because (a) the susceptible pool is replenished by births (and, in
-models with waning, by `R → S` transitions) and (b) the pathogen keeps
-being reintroduced from outside the population.
-
-We'll add a small custom component that imports a few random new
-infections every two months, then re-run the demographic setups above
-side-by-side. The differences make plain *what each vital-dynamics
-component actually buys you* over the long term.
-
-### A bring-your-own component
-
-`laser.generic.importation` already ships `Infect_Random_Agents`, but it
-exposes a `__call__(model, tick)` interface rather than the `step(tick)`
-shape that `Model.run()` expects. Writing a tiny adapter (or in this
-case a from-scratch component) is the canonical way to plug custom
-behavior into a simulation — and the code below doubles as a tutorial on
-*how to write a component at all*.
-
-We define the class in Python via `reticulate::py_run_string()` so the R
-side can simply construct it like any other component:
+The class is defined in Python via `reticulate::py_run_string()` and
+exposed back to R as `PeriodicImportation`. This is also the canonical
+pattern for writing any custom component — it just needs a
+`step(tick)` method.
 
 ```{r importation-class}
 reticulate::py_run_string("
@@ -343,7 +247,7 @@ from laser.generic.shared import State
 class PeriodicImportation:
     '''Inject `count` random new infections every `period` ticks.
 
-    Imported cases skip the Exposed state — they are assumed to have
+    Imported cases skip the Exposed state — they're assumed to have
     incubated elsewhere and arrive already infectious, matching how
     real importation events are typically modeled.
     '''
@@ -391,79 +295,279 @@ class PeriodicImportation:
 PeriodicImportation <- reticulate::py$PeriodicImportation
 ```
 
-### Four scenarios, one comparison
+A small wrapper so the sections below can just call `make_importation(model)`:
 
-For this section we leave the defaults of the earlier sections and reach
-for a setup that actually has the dynamic range to show recurring
-outbreaks. Three things change:
+```{r importation-factory}
+make_importation <- function(model,
+                             period = IMP_PERIOD,
+                             count  = IMP_COUNT,
+                             start  = 0L) {
+    infdurdist <- .lg_env$laser_dist$normal(loc = INF_DUR, scale = 1.5)
+    PeriodicImportation(
+        model      = model,
+        period     = period,
+        count      = count,
+        infdurdist = infdurdist,
+        start      = start
+    )
+}
+```
+
+## Baseline — no vital dynamics
+
+Closed population, periodic reintroduction. Every importation event
+shrinks the susceptible pool and grows the recovered pool, and nothing
+refills `S`. Over five years that drift permanently moves the system
+away from its starting equilibrium: `S` decays, `R` accumulates, and
+the size of subsequent importation-triggered flare-ups decays accordingly
+within stochastic variation.
+Total `N` is flat by construction.
+
+```{r baseline-seir, fig.height = 6}
+seed_everything()
+
+model <- make_seir()
+model$components <- c(
+    seir_components(model),
+    list(make_importation(model))
+)
+invisible(model$run())
+
+totals_df(model, c("S", "E", "I", "R")) |>
+    plot_seir_with_zoom(
+        title    = "SEIR baseline (no vital dynamics)",
+        subtitle = "Closed population + periodic importation; S drifts toward zero"
+    )
+```
+
+## Adding `ConstantPopVitalDynamics`
+
+Recycles deceased agents into newborns at the specified rate (per 1000
+per year), keeping total population exactly constant. Useful when you
+care about birth-cohort flow but want to avoid sizing capacity for
+indefinite growth. Because newborns enter as susceptible while the
+deceased come predominantly from `R` (which holds most of the
+population at equilibrium), this component replenishes `S` from `R` at
+the recycle rate — enough to keep importations producing visible
+activity throughout the five years.
+
+```{r constant-pop, fig.height = 6}
+seed_everything()
+
+recycle_rates <- ValuesMap()$from_scalar(CDR, as.integer(NTICKS), 1L)
+
+model <- make_seir()
+model$components <- c(
+    seir_components(model),
+    list(.lg_env$laser_vd$ConstantPopVitalDynamics(model, recycle_rates, dobs = TRUE)),
+    list(make_importation(model))
+)
+invisible(model$run())
+
+totals_df(model, c("S", "E", "I", "R")) |>
+    plot_seir_with_zoom(
+        title    = sprintf("SEIR + ConstantPopVitalDynamics (rate = %g / 1000 / yr)", CDR),
+        subtitle = "Total N held fixed; recycle-on-death replenishes susceptibles"
+    )
+```
+
+## Adding `BirthsByCBR`
+
+Adds Poisson-distributed newborns each tick driven by a crude birth
+rate. With no offsetting mortality, the population grows. Every newborn
+enters the susceptible compartment, so `S` is replenished at
+`CBR × N / 1000 / 365` per day. Together with periodic reintroduction
+this keeps importation events firing through the full five years and
+the susceptible pool trending up rather than down.
+
+`BirthsByCBR` must come last among the *vital-dynamics* components so
+the rest of the tick is computed against today's population, not after
+the newborns have joined. The importation component then runs after
+that — it writes to `tick + 1`, so its order relative to the rest of
+the tick doesn't matter.
+
+```{r births-by-cbr, fig.height = 6}
+seed_everything()
+
+birthrates <- ValuesMap()$from_scalar(CBR, as.integer(NTICKS), 1L)
+
+model <- make_seir(birthrates_arg = birthrates)
+model$components <- c(
+    seir_components(model),
+    list(.lg_env$laser_vd$BirthsByCBR(model, birthrates, pyramid, track = TRUE)),
+    list(make_importation(model))
+)
+invisible(model$run())
+
+totals_df(model, c("S", "E", "I", "R")) |>
+    plot_seir_with_zoom(
+        title    = sprintf("SEIR + BirthsByCBR (CBR = %g / 1000 / yr)", CBR),
+        subtitle = "Newborns enter the susceptible pool; N grows over time"
+    )
+```
+
+## Adding `MortalityByCDR`
+
+Per-tick mortality risk applied uniformly across the population. With
+no offsetting births, this drains `R` (the largest compartment) faster
+than it drains `S`, so the susceptible *fraction* actually *rises*
+even though the absolute population is shrinking. Periodic importation
+therefore keeps producing flare-ups slightly higher than the baseline, even
+though the total population is falling.
+
+First, mortality alone (no births):
+
+```{r mortality-by-cdr-only, fig.height = 6}
+seed_everything()
+
+mortality_rates <- ValuesMap()$from_scalar(CDR, as.integer(NTICKS), 1L)
+
+model <- make_seir()
+model$components <- c(
+    seir_components(model),
+    list(.lg_env$laser_vd$MortalityByCDR(model, mortality_rates)),
+    list(make_importation(model))
+)
+invisible(model$run())
+
+totals_df(model, c("S", "E", "I", "R")) |>
+    plot_seir_with_zoom(
+        title    = sprintf("SEIR + MortalityByCDR (CDR = %g / 1000 / yr, no births)", CDR),
+        subtitle = "Population shrinks but the susceptible fraction can hold steady"
+    )
+```
+
+Now with births balancing deaths. Both inflows and outflows on every
+compartment; the net effect is roughly proportional to CBR − CDR
+(positive here), and the susceptible inflow from `BirthsByCBR` keeps
+importations producing flare-ups indefinitely.
+
+```{r mortality-by-cdr-with-births, fig.height = 6}
+seed_everything()
+
+birthrates      <- ValuesMap()$from_scalar(CBR, as.integer(NTICKS), 1L)
+mortality_rates <- ValuesMap()$from_scalar(CDR, as.integer(NTICKS), 1L)
+
+model <- make_seir(birthrates_arg = birthrates)
+model$components <- c(
+    seir_components(model),
+    list(
+        .lg_env$laser_vd$MortalityByCDR(model, mortality_rates),
+        .lg_env$laser_vd$BirthsByCBR(model, birthrates, pyramid, track = TRUE)
+    ),
+    list(make_importation(model))
+)
+invisible(model$run())
+
+totals_df(model, c("S", "E", "I", "R")) |>
+    plot_seir_with_zoom(
+        title    = sprintf("SEIR + MortalityByCDR + BirthsByCBR (CBR = %g, CDR = %g)", CBR, CDR),
+        subtitle = "Births offset deaths; N grows because CBR > CDR"
+    )
+```
+
+## Adding `MortalityByEstimator`
+
+Age-specific mortality sampled from a Kaplan-Meier survival curve.
+Unlike `MortalityByCDR` (uniform per-tick risk), this draws each
+agent's date of death from the survival distribution conditional on
+their date of birth — which means `BirthsByCBR` must be present with
+`track = TRUE` so newborns have a recorded `dob`. The mortality bias
+toward older (predominantly recovered) agents drains `R` faster than
+it drains `S`, which combined with the steady birth inflow into `S`
+is the closest of these setups to a real-world demographic baseline.
+
+```{r mortality-by-estimator, fig.height = 6}
+seed_everything()
+
+birthrates <- ValuesMap()$from_scalar(CBR, as.integer(NTICKS), 1L)
+
+model <- make_seir(birthrates_arg = birthrates)
+model$components <- c(
+    seir_components(model),
+    list(
+        .lg_env$laser_vd$BirthsByCBR(model, birthrates, pyramid, track = TRUE),
+        .lg_env$laser_vd$MortalityByEstimator(model, survival_estimator)
+    ),
+    list(make_importation(model))
+)
+invisible(model$run())
+
+totals_df(model, c("S", "E", "I", "R")) |>
+    plot_seir_with_zoom(
+        title    = "SEIR + BirthsByCBR + MortalityByEstimator",
+        subtitle = "Realistic demography: age-specific mortality from a Nigeria survival curve"
+    )
+```
+
+## Scaling up: measles-style biennial dynamics
+
+The earlier sections all ran at `POP = 100,000` and `R0 = 5` so they
+fit comfortably in the introductory budget for a tutorial. At those
+settings the per-tick effects of each vital dynamic are visible but
+subtle. To see the textbook **biennial outbreak pattern** that
+emerged for pre-vaccine measles, we need three changes:
 
 1. **Larger population** (500,000 vs 100,000) — a typical Critical
    Community Size for measles-style dynamics is in the 250-500K range.
-   Below that, stochastic die-out dominates and the recurring-wave
-   signal vanishes into noise.
-2. **Higher R0** (12 vs 2.5) — within the canonical measles range. With
-   a higher transmission threshold, each wave consumes nearly all
-   susceptibles, and the trough-to-peak amplitude is large enough to
-   read off the plot.
-3. **Endemic-equilibrium initial conditions.** Instead of starting with
-   the whole population susceptible and getting a one-time burnout that
-   leaves nothing behind, we seed `S ≈ N / R0` and put the rest in `R`,
-   matching the steady-state structure of an endemic disease. The
-   biennial pattern then shows up from day one rather than emerging
-   only after we wait for the system to settle.
+   Below that, stochastic die-out between outbreaks dominates and the
+   recurring-wave signal vanishes into noise.
+2. **Higher R0** (12 vs 5) — within the canonical measles range.
+   Each wave consumes nearly all available susceptibles, and the
+   trough-to-peak amplitude is large enough to read off the plot.
+3. **Faster, more aggressive reintroduction** — 5 cases every six weeks
+   instead of every two months, and started a few months in to let
+   the equilibrium settle before the dynamics start swinging.
 
-Five cases are imported every six weeks (42 days), starting on day 150
-so the first wave is fully visible before reintroduction kicks in. The
-run extends to **ten years** (`STICKS`) so the recurring structure has
-room to develop.
+We reuse `PeriodicImportation` from above (no need to redefine the
+class) but build the model with the measles-scale parameters and run
+for **ten years** so the recurring structure has room to develop.
+
+### Four scenarios, one comparison
+
+We run four configurations under the same measles-scale setup and
+stack them on one axis so the differences between vital-dynamics
+choices read off at a glance.
 
 ```{r importation-comparison, fig.height = 5}
 seed_everything()
 
-STICKS     <- 365L * 10L  # 10 years — long enough to resolve recurring waves
-IMP_PERIOD <- 42L         # every six weeks
-IMP_COUNT  <- 5L
-IMP_START  <- 150L        # let the first wave finish before importing
+# Measles-scale overrides (local to this chunk; the smaller-scale
+# globals from "Common SEIR base" still apply everywhere else).
+M_STICKS   <- 365L * 10L  # 10 years — long enough to resolve recurring waves
+M_PERIOD   <- 42L         # every six weeks
+M_COUNT    <- 5L
+M_START    <- 150L        # let the equilibrium settle before importing kicks in
 
-# Larger population and higher R0 unlock biennial-style measles dynamics;
-# the global POP / R0 stay at the values the earlier sections use.
-POP_IMP    <- 500000L
-R0_IMP     <- 12
-BETA_IMP   <- R0_IMP / INF_DUR
+M_POP      <- 500000L
+M_R0       <- 12
+M_BETA     <- M_R0 / INF_DUR
 
-# Equilibrium init: S ≈ N / R0, most of the rest already recovered, plus
-# a small endemic prevalence (~0.08%) of infectious to seed the dynamics.
-INIT_S_IMP <- as.integer(round(POP_IMP / R0_IMP))
-INIT_I_IMP <- as.integer(round(POP_IMP * 0.0008))
-INIT_R_IMP <- POP_IMP - INIT_S_IMP - INIT_I_IMP
+# Equilibrium init at measles scale: S ≈ N / R0, most of the rest in R,
+# plus a small (~0.08%) endemic prevalence so I isn't exactly zero on day 0.
+M_INIT_S   <- as.integer(round(M_POP / M_R0))
+M_INIT_I   <- as.integer(round(M_POP * 0.0008))
+M_INIT_R   <- M_POP - M_INIT_S - M_INIT_I
 
-infdurdist     <- .lg_env$laser_dist$normal(loc = INF_DUR, scale = 1.5)
-birthrates     <- ValuesMap()$from_scalar(CBR, as.integer(STICKS), 1L)
-recycle_rates  <- ValuesMap()$from_scalar(CDR, as.integer(STICKS), 1L)
+birthrates     <- ValuesMap()$from_scalar(CBR, as.integer(M_STICKS), 1L)
+recycle_rates  <- ValuesMap()$from_scalar(CDR, as.integer(M_STICKS), 1L)
 
 run_with_importation <- function(extra_components_fn, birthrates_arg = NULL) {
     model <- make_seir(
         birthrates_arg = birthrates_arg,
-        nticks         = STICKS,
-        pop            = POP_IMP,
-        beta           = BETA_IMP,
-        init_s         = INIT_S_IMP,
-        init_i         = INIT_I_IMP,
-        init_r         = INIT_R_IMP
-    )
-    importation <- PeriodicImportation(
-        model      = model,
-        period     = IMP_PERIOD,
-        count      = IMP_COUNT,
-        infdurdist = infdurdist,
-        start      = IMP_START
+        nticks         = M_STICKS,
+        pop            = M_POP,
+        beta           = M_BETA,
+        init_s         = M_INIT_S,
+        init_i         = M_INIT_I,
+        init_r         = M_INIT_R
     )
     model$components <- c(
         seir_components(model),
         extra_components_fn(model),
-        list(importation)
+        list(make_importation(model, period = M_PERIOD, count = M_COUNT, start = M_START))
     )
-    model$run()
+    invisible(model$run())
     compartments_df(model, c("I"))
 }
 
@@ -501,13 +605,13 @@ all_runs <- do.call(rbind, lapply(names(scenarios), function(label) {
 }))
 
 ggplot(all_runs, aes(tick, count, color = scenario)) +
-    geom_vline(xintercept = IMP_START, linetype = "dashed",
+    geom_vline(xintercept = M_START, linetype = "dashed",
                color = "grey50", linewidth = 0.3) +
     geom_line(linewidth = 0.6) +
     labs(
         title    = sprintf(
-            "SEIR + periodic importation (every %d days, %d cases, starting day %d)",
-            IMP_PERIOD, IMP_COUNT, IMP_START
+            "Measles-scale SEIR (POP = %s, R0 = %g): periodic importation every %d days",
+            format(M_POP, big.mark = ","), M_R0, M_PERIOD
         ),
         subtitle = "Recurring waves emerge only when vital dynamics replenish susceptibles",
         x = "Day", y = "Infectious", color = NULL
@@ -539,9 +643,9 @@ What the four lines say:
   system reaches its rhythm. This matches the canonical pre-vaccine
   measles pattern.
 
-The dashed grey line marks `IMP_START` so it's clear which features of
-the trajectory are driven by importation versus by the original
-seeded prevalence.
+The dashed grey line marks `M_START` (day 150) so it's clear which
+features of the trajectory are driven by importation versus by the
+original seeded prevalence.
 
 ## Choosing between the components
 
