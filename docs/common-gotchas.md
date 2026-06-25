@@ -148,14 +148,27 @@ compartment counts by testing the per-agent `model.people.state` against a bare 
 (e.g. `people.state == 1`); if you need per-agent state, compare against the `State` enum
 value (e.g. `State.INFECTIOUS.value`, with `from laser.generic import State`).
 
-When **recording a series from inside a custom component's `step(self, tick)`**, the node
-array for the *current* tick may not be written yet (the disease components write it during
-their own step), so `model.nodes.I[tick, 0]` can read 0. Count agents directly instead:
+When **recording a series from inside a custom component's `step(self, tick)`**, be aware
+that the node array for the *current* tick may not be written yet if your component runs
+before the disease components. The simplest fix is to **place the recording component after
+the disease components** in `model.components` so that `model.nodes.I[tick, 0]` is already
+up to date when your component runs:
 
 ```python
-from laser.generic import State
-infectious_now = int((self.model.people.state == State.INFECTIOUS.value).sum())
+model.components = [
+    Susceptible(model),
+    Infectious(model, infdurdist),
+    Recovered(model),
+    Transmission(model, infdurdist),
+    MyRecorder(model),   # placed AFTER disease components — nodes are up to date here
+]
 ```
+
+If you cannot reorder (e.g. you need counts mid-pipeline), note that iterating over all
+agents to build a boolean mask is a LASER anti-pattern — it allocates a temporary array
+as large as the agent population on every tick. Prefer a Numba kernel that accumulates
+per-node counts directly. Reading `model.nodes.I[:, 0]` *after* `model.run()` completes
+is always safe and has no such overhead.
 
 ## Writing a custom component
 
