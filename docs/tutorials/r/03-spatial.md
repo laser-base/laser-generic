@@ -1,7 +1,7 @@
 Spatial models with laser-generic
 ================
 laser-generic tutorials
-2026-06-23
+2026-06-25
 
 - [Setup](#setup)
 - [Two patches: how coupling controls
@@ -223,7 +223,7 @@ make_4node <- function() {
         pop_per_node = 50000L,
         seed_node    = 0L,
         n_seed       = 50L,
-        nticks       = 200L
+        nticks       = 150L
     )
 }
 
