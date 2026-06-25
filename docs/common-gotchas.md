@@ -177,12 +177,12 @@ class MyComponent:
 
 ## Spatial models and migration
 
-Build the migration matrix with `gravity` from `laser.generic.model`. Its signature is
+Build the migration matrix with `gravity` from `laser.core.migration`. Its signature is
 `gravity(pops, distances, k, a, b, c)` — **one** 1-D population array and a **2-D** distance
 matrix (not two population arrays); then row-normalize:
 
 ```python
-from laser.generic.model import gravity, distance
+from laser.core.migration import gravity, distance
 m = gravity(pops, distances, k=1.0, a=1.0, b=1.0, c=2.0)
 m /= m.sum(axis=1, keepdims=True)
 ```
