@@ -85,7 +85,7 @@ class RoutineImmunization:
         self.end = int(model.params.nticks if end == -1 else end)
         self.verbose = bool(verbose)
 
-    def __call__(self, model, tick: int) -> None:
+    def step(self, tick: int) -> None:
         """
         Apply routine immunization at the given tick, if eligible.
 
@@ -97,17 +97,39 @@ class RoutineImmunization:
         On each event:
             - Agents with age in [age - period//2, age + period//2) are considered.
             - A Binomial draw with probability `coverage` selects agents to immunize.
-            - Selected agents have `susceptibility` set to 0 (immune).
-            - If present, test arrays on `model.nodes` are updated for validation.
+            - Selected agents are moved to state 'IMMUNE' via people.state array.
 
         Args:
-            model (object): LASER model (unused; provided for signature parity).
             tick (int): Current simulation tick.
 
         Returns:
             None
         """
         if (tick >= self.start) and ((tick - self.start) % self.period == 0) and (tick < self.end):
+            
+            people = self.model.people
+            
+            # Compute ages of all agents
+            ages = (tick - people.birth_tick) % self.model.params.nticks
+            
+            # Find agents in the RI age window
+            age_low = self.age - self.period // 2
+            age_high = self.age + self.period // 2
+            in_window = (ages >= age_low) & (ages < age_high)
+            
+            # Select subset to immunize based on coverage
+            n_in_window = np.sum(in_window)
+            if n_in_window > 0:
+                immunize_mask = np.random.rand(n_in_window) < self.coverage
+                eligible_indices = np.where(in_window)[0]
+                target_indices = eligible_indices[immunize_mask]
+                
+                # Move selected agents to immune state
+                if len(target_indices) > 0:
+                    people.state[target_indices] = self.model.nodes.S.code('IMMUNE')
+                    
+            if self.verbose:
+                print(f"[RI] tick={tick}: immunized {np.sum(immunize_mask) if n_in_window > 0 else 0} agents")
             half_window = int(self.period // 2)
             lower = max(0, int(self.age - half_window))
             upper = int(self.age + half_window)
