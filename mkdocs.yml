@@ -43,6 +43,7 @@ nav: # Navigation structure for the documentation
     - software-overview/migration.md
     - software-overview/database.md
     - software-overview/transmission.md
+  - Common gotchas: common-gotchas.md
   - Get started:
     - get-started/index.md
     - get-started/calibration.md
