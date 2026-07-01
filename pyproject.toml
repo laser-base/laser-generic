@@ -63,6 +63,30 @@ dev = [
   "uv>=0.10.6",
 ]
 
+docs = [
+  # mkdocs ecosystem
+  "mkdocs-material",
+  "mkdocs-include-markdown-plugin",
+  "mkdocs-autorefs",
+  "mkdocs-gen-files",
+  "mkdocs-literate-nav",
+  "mkdocs-section-index",
+  "mkdocs-jupyter",
+  "mkdocs-table-reader-plugin",
+  "mkdocs-mermaid2-plugin",
+  "mkdocs-exclude",
+  # markdown extensions used by mkdocs.yml
+  "python-markdown-math",
+  "pymdown-extensions",
+  # API reference generation
+  "mkdocstrings",
+  "mkdocstrings-python",
+  # needed for notebook execution during docs build (plots);
+  # runtime deps (numpy, scipy, pandas, laser-core) are already in
+  # the main `dependencies` list and don't need duplicating here.
+  "matplotlib",
+]
+
 # uv uses this in addition (?) to [project.optional-dependencies] above
 [dependency-groups]
 dev = [
@@ -86,12 +110,62 @@ Changelog = "https://github.com/InstituteforDiseaseModeling/laser-generic/blob/m
 generic = "laser.generic.cli:run"
 
 [build-system]
-requires = ["setuptools>=80.9.0",]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["laser*"]
+[tool.uv.build-backend]
+module-name = "laser.generic"
+module-root = "src"
+namespace = true
+
+# Translated from the former MANIFEST.in. Defaults already include
+# pyproject.toml, the module under module-root, project.readme, and
+# project.license-files, plus they exclude __pycache__/*.pyc/*.pyo.
+source-include = [
+    # Top-level metadata, config, and tooling files
+    "AUTHORS.md",
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "Makefile",
+    ".bumpversion.cfg",
+    ".cookiecutterrc",
+    ".coveragerc",
+    ".editorconfig",
+    ".pre-commit-config.yaml",
+    "pytest.ini",
+    "tox.ini",
+    ".github/workflows/github-actions.yml",
+    # Project trees that aren't part of the installable module
+    "ci/**",
+    "tests/**",
+    "docs/**",
+    # Reference data shipped for development/examples
+    "data/**/*.md",
+    "data/**/*.npy",
+    "data/**/*.py",
+]
+source-exclude = [
+    # Notebook artefacts: rendered notebooks, generated figures, and the
+    # media/ directory referenced from the notebooks. The .csv files under
+    # docs/tutorials/notebooks/data/ stay (they're referenced from tests/).
+    "docs/tutorials/notebooks/**/*.ipynb",
+    "docs/tutorials/notebooks/**/*.npy",
+    "docs/tutorials/notebooks/**/*.png",
+    "docs/tutorials/notebooks/**/*.svg",
+    "docs/tutorials/notebooks/media/**",
+    # One-off / repo-local files that shouldn't ship
+    "CLAUDE.md",
+    "convert_clean.sh",
+    "mkdocs.yml",
+    "mkdocs.ci.yml",
+    "mkdocs_jenner.yml",
+    "tests/harvest_test_docstrings.py",
+    # Native binaries and archives we never want in either dist
+    "*.so",
+    "*.dylib",
+    "*.gz",
+]
 
 [tool.pytest.ini_options]
 filterwarnings = [

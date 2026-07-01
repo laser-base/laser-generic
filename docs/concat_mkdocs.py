@@ -61,6 +61,26 @@ def _python_name_placeholder(loader, suffix, node):
 _NavLoader.add_multi_constructor("tag:yaml.org,2002:python/name:", _python_name_placeholder)
 
 
+def _env_placeholder(loader, node):
+    """Handle mkdocs' ``!ENV [VAR_NAME, default]`` env-var directive.
+
+    PR #220 introduced ``!ENV`` in mkdocs.yml to toggle notebook execution
+    between local and CI builds. That tag is MkDocs-specific; plain PyYAML
+    (which this loader is built on) doesn't know it and aborts the whole
+    parse with a ConstructorError. Return the declared default (last element
+    of the sequence) so the file parses; nothing downstream in
+    concat_mkdocs.py consumes the value — it only walks ``nav:`` for
+    string paths.
+    """
+    if isinstance(node, yaml.SequenceNode):
+        seq = loader.construct_sequence(node)
+        return seq[-1] if len(seq) >= 2 else ""
+    return ""
+
+
+_NavLoader.add_constructor("!ENV", _env_placeholder)
+
+
 def extract_markdown(html_path: Path) -> str:
     """Pull the main article from a MkDocs HTML page and convert it back to markdown."""
     text = html_path.read_text(encoding="utf-8", errors="replace")
