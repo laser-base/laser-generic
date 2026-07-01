@@ -74,7 +74,7 @@ def _env_placeholder(loader, node):
     """
     if isinstance(node, yaml.SequenceNode):
         seq = loader.construct_sequence(node)
-        return seq[-1] if seq else ""
+        return seq[-1] if len(seq) >= 2 else ""
     return ""
 
 
