@@ -3,14 +3,13 @@ Immunization components for LASER models.
 
 These components introduce immunity into the agent population during a simulation.
 
-Notes
------
-- Deployment is currently global (all patches). Future extensions may include:
-  * targeting by patch or lists of patches,
-  * patch-varying coverage,
-  * time-varying routine immunization (RI) coverage.
-- The routine immunization window centers on the target age with width ≈ period,
-  i.e., [age - period/2, age + period/2).
+Notes:
+    - Deployment is currently global (all patches). Future extensions may include:
+        * targeting by patch or lists of patches,
+        * patch-varying coverage,
+        * time-varying routine immunization (RI) coverage.
+    - The routine immunization window centers on the target age with width ≈ period,
+      i.e., [age - period/2, age + period/2).
 
 """
 
