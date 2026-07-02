@@ -2,8 +2,10 @@
 
 Density-normalized histogram of agent ages at the final tick (in years, 0 to 60 on the x-axis, 0 to ~0.09 on the y-axis), overlaid with:
 
-- **Orange solid (thick) — expected exponential** with mean $A = \frac{1}{\mu} \approx 11.60$ years, where $\mu$ is the per-day mortality rate matching the 90-per-1000 crude birth rate.
-- **Black dashed — best-fit exponential**, mean $A = 11.47$ years.
+- **"Expected exponential distribution - A = 11.60 years"** (orange, solid, thick): the analytic prediction with mean $A = \frac{1}{\mu}$, where $\mu$ is the per-day mortality rate matching the 90-per-1000 crude birth rate.
+- **"Best fit age distribution, A = 11.47 years"** (black, dashed): the exponential fit to the simulated age distribution.
+
+The histogram itself is labeled **"Simulation output"** in the legend.
 
 The histogram peaks near density 0.087 in the youngest bin and decays smoothly to the noise floor by ~50 years; the two overlaid curves visually overlay the histogram and each other across the entire range. The analytic and fitted means agree to within ~1%.
 

@@ -2,8 +2,10 @@
 
 A density-normalized histogram (blue) of simulated ages at infection (in years) for infections occurring after day 5000, overlaid with two curves:
 
-- **Orange solid (thick) — expected exponential** with mean $A = \frac{1}{R_0 \mu} \approx 0.98$ years, the analytic prediction once mortality censoring is folded in.
-- **Black dashed — best-fit exponential** to the simulated data, also $A = 0.98$ years.
+- **"Expected exponential distribution - A = 0.98 years"** (orange, solid, thick): the analytic prediction $A = \frac{1}{R_0 \mu}$ once mortality censoring is folded in.
+- **"Best fit age of infection, A = 0.98 years"** (black, dashed): the exponential fit to the simulated ages at infection.
+
+The histogram itself is labeled **"Ages from simulation"** in the legend.
 
 The x-axis spans 0 to 15 years, y-axis 0 to ~1.03. The histogram peaks at density ~1.03 in the 0-0.5-year bin and decays monotonically, reaching the floor by ~6 years. Both fit curves visually overlay the histogram across the entire range, and the analytic and fitted means agree to two decimal places. The KS statistic returned alongside the plot quantifies the goodness of fit.
 
