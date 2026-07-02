@@ -123,10 +123,10 @@ class TestMortalityByCDR(unittest.TestCase):
         # Population should have decreased
         assert pop_finish < pop_start, "Population should decrease due to mortality"
 
-        # Low mortality rates have a small deterministic discretization error in the
-        # daily-rate implementation; CDR=2 is ~3.5% high in this configuration.
+        # Observed CDR should be close to target CDR (within 3% tolerance)
+        # Small CDR apparently needs more tolerance due to numerical accuracy and/or stochastic variation
         percent_diff = abs((observed_cdr - cdr) / cdr * 100)
-        assert percent_diff < 5.0, f"Observed CDR {observed_cdr:.2f} deviated by {percent_diff:.2f}% from target CDR {cdr}"
+        assert percent_diff < 3.0, f"Observed CDR {observed_cdr:.2f} deviated by {percent_diff:.2f}% from target CDR {cdr}"
 
         # Verify deaths were recorded
         total_deaths = model.nodes.deaths.sum()
