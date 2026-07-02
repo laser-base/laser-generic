@@ -3,6 +3,16 @@ name: MkDocs Build on PR
 on:
   pull_request:
     branches: [ master, main ]  # Replace with your desired branches
+    # Only run the docs build (which executes notebooks in CI via
+    # MKDOCS_EXECUTE_NOTEBOOKS=true) when a PR touches something that can
+    # affect the built docs. PRs that only touch tests, other CI, README,
+    # or unrelated files skip the ~15-minute notebook-execution job.
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'pyproject.toml'
+      - 'src/**'
+      - '.github/workflows/mkdocs-pr.yml'
 
 jobs:
   build:
