@@ -12,14 +12,14 @@
     "inserts": [
       {"after_cell_containing": "S = N-I:", "md_file": "02_SI_wbirths_logistic_growth_sanity.md"},
       {"after_cell_containing": "best-fit t0 = {t0_opt:.1f}", "md_file": "02_SI_wbirths_logistic_growth_t0_offset.md"},
-      {"after_cell_containing": "plt.ylim(-0.1, 0.10)", "md_file": "02_SI_wbirths_logistic_growth_beta_cbr_recovery.md"},
+      {"after_cell_containing": "Relative error in fitted CBR", "md_file": "02_SI_wbirths_logistic_growth_beta_cbr_recovery.md"},
       {"after_cell_containing": "Case Trace and Logistic Fit for Row 0", "md_file": "02_SI_wbirths_logistic_growth_row0_trace.md"}
     ]
   },
   {
     "notebook": "../../docs/tutorials/notebooks/03_SIS_nobirths_logistic_growth.ipynb",
     "inserts": [
-      {"after_cell_containing": "Population minus cumulative infections", "md_file": "03_SIS_nobirths_logistic_growth_sanity.md"},
+      {"after_cell_containing": "Currently infected over time", "md_file": "03_SIS_nobirths_logistic_growth_sanity.md"},
       {"after_cell_containing": "best-fit t0 =", "md_file": "03_SIS_nobirths_logistic_growth_t0_offset.md"},
       {"after_cell_containing": "plt.plot(output[\"gamma\"]", "md_file": "03_SIS_nobirths_logistic_growth_beta_gamma_recovery.md"},
       {"after_cell_containing": "Error in equilibrium infected fraction", "md_file": "03_SIS_nobirths_logistic_growth_gamma_dt_error.md"}
