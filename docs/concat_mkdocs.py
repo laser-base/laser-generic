@@ -61,6 +61,26 @@ def _python_name_placeholder(loader, suffix, node):
 _NavLoader.add_multi_constructor("tag:yaml.org,2002:python/name:", _python_name_placeholder)
 
 
+def _env_placeholder(loader, node):
+    """Handle mkdocs' ``!ENV [VAR_NAME, default]`` env-var directive.
+
+    PR #220 introduced ``!ENV`` in mkdocs.yml to toggle notebook execution
+    between local and CI builds. That tag is MkDocs-specific; plain PyYAML
+    (which this loader is built on) doesn't know it and aborts the whole
+    parse with a ConstructorError. Return the declared default (last element
+    of the sequence) so the file parses; nothing downstream in
+    concat_mkdocs.py consumes the value — it only walks ``nav:`` for
+    string paths.
+    """
+    if isinstance(node, yaml.SequenceNode):
+        seq = loader.construct_sequence(node)
+        return seq[-1] if len(seq) >= 2 else ""
+    return ""
+
+
+_NavLoader.add_constructor("!ENV", _env_placeholder)
+
+
 def extract_markdown(html_path: Path) -> str:
     """Pull the main article from a MkDocs HTML page and convert it back to markdown."""
     text = html_path.read_text(encoding="utf-8", errors="replace")
@@ -73,6 +93,15 @@ def extract_markdown(html_path: Path) -> str:
     for tag in content.find_all(["nav", "footer", "script", "style"]):
         tag.decompose()
     for tag in content.find_all(class_=["md-nav", "md-sidebar", "md-search", "md-header", "md-footer", "headerlink", "md-breadcrumb"]):
+        tag.decompose()
+
+    # Notebook pages rendered to HTML (the .ipynb fallback path) carry Jupyter
+    # cell chrome that pollutes the markdown: "In [N]:"/"Out [N]:" prompts, the
+    # "Copied!" copy-button widget, and — worst — a hidden raw-source copy of
+    # every code cell (clipboard-copy-txt) that duplicates the highlighted code
+    # we actually keep. Strip all three so the fallback reads like a clean notebook.
+    _NOTEBOOK_CHROME = ["jp-InputPrompt", "jp-OutputPrompt", "zeroclipboard-container", "clipboard-copy-txt"]
+    for tag in content.find_all(class_=_NOTEBOOK_CHROME):
         tag.decompose()
 
     # MkDocs Material renders syntax-highlighted code blocks as a two-column
@@ -134,7 +163,8 @@ def notebook_to_markdown(nb_path: Path) -> str:
     """Convert an executed Jupyter notebook to plain markdown.
 
     Markdown cells included as-is; code cells as fenced ``python`` blocks;
-    text outputs appended after each code fence; image outputs skipped.
+    text outputs appended after each code fence; image outputs become a
+    visible caption placeholder.
     """
     with nb_path.open(encoding="utf-8") as f:
         nb = json.load(f)
@@ -164,26 +194,48 @@ def notebook_to_markdown(nb_path: Path) -> str:
             otype = output.get("output_type", "")
             if otype not in ("stream", "execute_result", "display_data"):
                 continue
-            text = output.get("text") or output.get("data", {}).get("text/plain", [])
+
+            data = output.get("data", {})
+            # Image outputs (matplotlib figures, etc.) can't live in a text
+            # corpus, but silently dropping them erases the fact that the cell
+            # renders a plot at this point in the narrative. Emit a visible
+            # caption instead. Angle brackets are stripped from the figure's
+            # text/plain repr so it isn't mistaken for an HTML tag and hidden.
+            if any(key.startswith("image/") for key in data):
+                repr_txt = "".join(data.get("text/plain", [])).strip()
+                caption = repr_txt.replace("<", "").replace(">", "") or "image"
+                cell_blocks.append(("figure", f"_[Figure output omitted: {caption}]_"))
+                continue
+
+            text = output.get("text") or data.get("text/plain", [])
             if isinstance(text, list):
                 text = "".join(text)
             if not text or not text.strip():
                 continue
 
-            cleaned = re.sub(r"<[^>]+>", "", text)
-            non_empty_lines = [ln for ln in cleaned.splitlines() if ln.strip()]
+            # Note: deliberately no HTML-tag stripping here. Output is wrapped
+            # in a triple-backtick fence, so any literal "<...>" content (e.g.
+            # "<function foo at 0x...>", "<class 'Foo'>", "<lambda>") renders
+            # as plain text — and stripping it would silently delete legitimate
+            # Python reprs that carry information for the RAG corpus.
+            non_empty_lines = [ln for ln in text.splitlines() if ln.strip()]
             if not non_empty_lines:
                 continue
 
             if all(_TQDM_PROGRESS_RE.search(ln) for ln in non_empty_lines):
                 cell_blocks.append(("progress", "\n".join(non_empty_lines).strip()))
             else:
-                kept = "\n".join(ln for ln in cleaned.splitlines() if not _TQDM_PROGRESS_RE.search(ln)).strip()
+                kept = "\n".join(ln for ln in text.splitlines() if not _TQDM_PROGRESS_RE.search(ln)).strip()
                 if kept:
                     cell_blocks.append(("other", kept))
 
-        for _, body in _collapse_progress_runs(cell_blocks):
-            parts.append(f"```\n{body}\n```")
+        # Figure captions are plain markdown lines; text/progress outputs go in
+        # fenced blocks. Keep them distinct so captions stay readable prose.
+        for kind, body in _collapse_progress_runs(cell_blocks):
+            if kind == "figure":
+                parts.append(body)
+            else:
+                parts.append(f"```\n{body}\n```")
 
     md = "\n\n".join(parts)
     return re.sub(r"\n{3,}", "\n\n", md).strip()
@@ -210,6 +262,21 @@ def docs_path_to_site_path(rel: str, site_dir: Path) -> Path:
     return site_dir / stem / "index.html"
 
 
+def published_url(site_rel: Path, site_url: str) -> str:
+    """Map a site-relative ``.../index.html`` path back to its public URL.
+
+    MkDocs serves ``foo/bar/index.html`` at ``<site_url>/foo/bar/``, so we drop
+    the trailing ``index.html`` and keep the directory with a trailing slash.
+    Returns "" when mkdocs.yml has no site_url (no link can be built).
+    """
+    if not site_url:
+        return ""
+    parts = site_rel.parts
+    dir_parts = parts[:-1] if parts and parts[-1] == "index.html" else parts
+    path = "/".join(dir_parts)
+    return f"{site_url}/{path}/" if path else f"{site_url}/"
+
+
 def get_reference_pages(site_dir: Path):
     """All reference/ pages from the rendered site, sorted for stable ordering."""
     ref_dir = site_dir / "reference"
@@ -218,12 +285,34 @@ def get_reference_pages(site_dir: Path):
     return sorted(ref_dir.rglob("index.html"))
 
 
-def append_section(parts: list, label, md: str) -> bool:
-    """Append an extracted section if it has enough content. Returns True if appended."""
-    if md and len(md) >= MIN_SECTION_CHARS:
-        parts.append(f"\n\n---\n<!-- {label} -->\n\n{md}")
-        return True
-    return False
+def append_section(parts: list, source, md: str, url: str = "") -> bool:
+    """Append an extracted section if it has enough content. Returns True if appended.
+
+    Provenance is emitted as visible markdown (a ``**Source:**`` line plus an
+    optional link to the published page) rather than an HTML comment, because
+    many RAG/markdown loaders strip HTML comments before chunking — which would
+    otherwise discard the one breadcrumb tying each chunk back to its origin.
+    """
+    if not md or len(md) < MIN_SECTION_CHARS:
+        return False
+    source_path = source.as_posix() if isinstance(source, Path) else str(source)
+    provenance = f"**Source:** `{source_path}`"
+    if url:
+        provenance += f" · [View page online]({url})"
+    parts.append(f"\n\n---\n\n{provenance}\n\n{md}")
+    return True
+
+
+def _is_reference_entry(entry: str) -> bool:
+    """True if a mkdocs.yml nav entry points anywhere under the ``reference/`` tree.
+
+    Catches all of the common shapes — ``reference/``, ``reference/SUMMARY.md``
+    (literate-nav idiom), ``reference/index.md``, ``reference/<anything>`` —
+    so the API reference expansion isn't accidentally treated as a single .md
+    page by the .md branch of the nav walk.
+    """
+    parts = Path(entry).parts
+    return bool(parts) and parts[0] == "reference"
 
 
 def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
@@ -238,6 +327,7 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
         config = yaml.load(f, Loader=_NavLoader)
 
     nav_entries = list(iter_nav_pages(config.get("nav", [])))
+    site_url = (config.get("site_url") or "").rstrip("/")  # base for per-section "View page" links
     parts = [f"# laser-generic documentation\n\n**laser-generic version: {_LASER_GENERIC_VERSION}**"]
 
     main_included = nb_included = ref_included = 0
@@ -246,16 +336,37 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
     print(f"laser-generic version: {_LASER_GENERIC_VERSION}")
     print(f"=== Walking {len(nav_entries)} nav entries from mkdocs.yml ===")
 
+    ref_expanded = False  # reference/ pages are expanded once, in nav position
     for entry in nav_entries:
-        if entry.endswith(".md"):
+        # Reference check goes first so reference/SUMMARY.md or reference/index.md
+        # don't get swallowed by the .md branch — any entry under reference/
+        # triggers the full mkdocstrings expansion regardless of its file shape.
+        if _is_reference_entry(entry):
+            if ref_expanded:
+                # Multiple nav entries under reference/ all collapse into a single
+                # expansion (the first one we hit) — no point re-emitting pages.
+                continue
+            ref_expanded = True
+            ref_pages = get_reference_pages(site_dir)
+            print(f"  -- expanding reference/ (triggered by nav entry '{entry}'): {len(ref_pages)} pages")
+            for path in ref_pages:
+                rel = path.relative_to(site_dir)
+                md = extract_markdown(path)
+                if append_section(parts, rel, md, published_url(rel, site_url)):
+                    print(f"    ok (reference): {rel}")
+                    ref_included += 1
+                else:
+                    skipped += 1
+
+        elif entry.endswith(".md"):
             page = docs_path_to_site_path(entry, site_dir)
-            label = page.relative_to(site_dir) if page.exists() else entry
             if not page.exists():
                 print(f"  skip (not built): {entry}")
                 skipped += 1
                 continue
+            label = page.relative_to(site_dir)
             md = extract_markdown(page)
-            if append_section(parts, label, md):
+            if append_section(parts, label, md, published_url(label, site_url)):
                 print(f"  ok (main): {label}")
                 main_included += 1
             else:
@@ -265,6 +376,7 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
         elif entry.endswith(".ipynb"):
             nb_path = nb_dir / entry  # preserve docs/-relative layout under executed dir
             label = f"{entry} (executed)"
+            url = published_url(docs_path_to_site_path(entry, site_dir).relative_to(site_dir), site_url)
             if nb_path.exists():
                 md = notebook_to_markdown(nb_path)
             else:
@@ -275,27 +387,16 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
                     skipped += 1
                     continue
                 md = extract_markdown(fallback)
-                label = f"{fallback.relative_to(site_dir)} (html fallback)"
+                fb_rel = fallback.relative_to(site_dir)
+                label = f"{fb_rel.as_posix()} (html fallback)"
+                url = published_url(fb_rel, site_url)
 
-            if append_section(parts, label, md):
+            if append_section(parts, label, md, url):
                 print(f"  ok (notebook): {label}")
                 nb_included += 1
             else:
                 print(f"  skip (empty/too short): {label}")
                 skipped += 1
-
-        elif entry.rstrip("/") == "reference":
-            # mkdocstrings + literate-nav drop generated API pages here.
-            ref_pages = get_reference_pages(site_dir)
-            print(f"  -- expanding reference/: {len(ref_pages)} pages")
-            for path in ref_pages:
-                rel = path.relative_to(site_dir)
-                md = extract_markdown(path)
-                if append_section(parts, rel, md):
-                    print(f"    ok (reference): {rel}")
-                    ref_included += 1
-                else:
-                    skipped += 1
 
         else:
             # Unknown shape (some other literate-nav dir, etc.) — leave for future work.

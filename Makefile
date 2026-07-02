@@ -17,6 +17,11 @@ EXEC_DIR         ?= dist/executed_nbs
 COMBINED         ?= dist/combined_mkdocs.md
 NB_TIMEOUT       ?= 600
 ALLOW_NB_ERRORS  ?= 0
+# Comma-separated substrings of docs/-relative paths that should NOT be executed
+# by the doc-build pipeline. EW_analysis is a research-only notebook maintained
+# for manual exploration — its dependencies and runtime aren't suitable for the
+# automated execute-and-check flow, so it's left out by default.
+NB_EXCLUDE       ?= EW_analysis
 
 help:
 	@echo "laser-generic documentation targets"
@@ -37,6 +42,7 @@ help:
 	@echo "  COMBINED=$(COMBINED)"
 	@echo "  NB_TIMEOUT=$(NB_TIMEOUT)        per-cell execution timeout (seconds)"
 	@echo "  ALLOW_NB_ERRORS=$(ALLOW_NB_ERRORS)   set to 1 to publish combined doc even if notebooks errored"
+	@echo "  NB_EXCLUDE=$(NB_EXCLUDE)   comma-separated substrings of paths to skip during execution"
 
 # ── Install ───────────────────────────────────────────────────────────────────
 # `uv venv` creates minimal venvs without pip; bootstrap it from the stdlib's
@@ -52,7 +58,7 @@ docs-build:
 
 # ── Notebook execution ────────────────────────────────────────────────────────
 docs-executed-nbs:
-	$(PYTHON) docs/execute_notebooks.py $(EXEC_DIR) --timeout $(NB_TIMEOUT)
+	$(PYTHON) docs/execute_notebooks.py $(EXEC_DIR) --timeout $(NB_TIMEOUT) --exclude "$(NB_EXCLUDE)"
 
 # ── Notebook error gate ───────────────────────────────────────────────────────
 # Depends on docs-executed-nbs so that `make -j` (or `make docs-check-nbs` on
