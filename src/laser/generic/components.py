@@ -55,18 +55,19 @@ class Susceptible:
     disease progression models that include a "susceptible" state.
 
     Responsibilities:
-    - Initializes agent-level properties:
-        • `nodeid`: Patch ID of each agent (uint16)
-        • `state`: Infection state (int8), defaulting to `State.SUSCEPTIBLE`
-    - Initializes node-level property:
-        • `S[t, i]`: Susceptible count in node `i` at time `t`
-    - At each timestep, propagates the susceptible count forward (`S[t+1] = S[t]`),
-      unless modified by other components (e.g., exposure, births).
-    - Validates consistency between patch-level susceptible counts and agent-level state.
+        - Initializes agent-level properties:
+            - `nodeid`: Patch ID of each agent (uint16)
+            - `state`: Infection state (int8), defaulting to `State.SUSCEPTIBLE`
+        - Initializes node-level property:
+            - `S[t, i]`: Susceptible count in node `i` at time `t`
+        - At each timestep, propagates the susceptible count forward (`S[t+1] = S[t]`),
+          unless modified by other components (e.g., exposure, births).
+        - Validates consistency between patch-level susceptible counts and agent-level state.
 
     Usage:
-    Add this component early in the component list for any model with SUSCEPTIBLE agents,
-    typically before transmission or exposure components. Compatible with:
+        Add this component early in the component list for any model with SUSCEPTIBLE agents,
+        typically before transmission or exposure components. Compatible with:
+
         - `SIR.Transmission`
         - `SIR.Exposure`
         - `SIR.Infectious`
@@ -74,18 +75,18 @@ class Susceptible:
         - Custom SEIRS extensions
 
     Requires:
-    - `model.people`: A LaserFrame for all agents
-    - `model.nodes`: Patch-level state
-    - `model.scenario`: Input DataFrame with `population` and optionally `S` columns
-    - `model.params.nticks`: Number of simulation ticks
+        - `model.people`: A LaserFrame for all agents
+        - `model.nodes`: Patch-level state
+        - `model.scenario`: Input DataFrame with `population` and optionally `S` columns
+        - `model.params.nticks`: Number of simulation ticks
 
     Validation:
-    - Ensures consistency of susceptible counts before and after each step
-    - Prevents unintentional state drift by validating against agent `state` values
+        - Ensures consistency of susceptible counts before and after each step
+        - Prevents unintentional state drift by validating against agent `state` values
 
     Output:
-    - `model.nodes.S`: A `(nticks+1, num_nodes)` array of susceptible counts
-    - Optional plotting via `plot()` for visual inspection of per-node and total `S`
+        - `model.nodes.S`: A `(nticks+1, num_nodes)` array of susceptible counts
+        - Optional plotting via `plot()` for visual inspection of per-node and total `S`
 
     Step Behavior:
         For tick t:
@@ -94,7 +95,8 @@ class Susceptible:
     This component does not alter agent states directly but serves as a synchronized
     counter and validator of susceptible individuals.
 
-    Example:
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             SIR.Transmission(model, ...),
@@ -163,40 +165,42 @@ class Exposed:
     Tracks number of agents becoming infectious each tick in `model.nodes.newly_infectious`.
 
     Responsibilities:
-    - Initializes exposed individuals at time 0 (if provided in the scenario)
-    - Assigns and tracks per-agent incubation timers (`etimer`)
-    - Transitions agents from `EXPOSED` to `INFECTIOUS` when `etimer == 0`
-    - Assigns new infection timers (`itimer`) upon becoming infectious
-    - Updates patch-level EXPOSED (`E`) and INFECTIOUS case counts
-    - Provides validation hooks for state and timer consistency
+        - Initializes exposed individuals at time 0 (if provided in the scenario)
+        - Assigns and tracks per-agent incubation timers (`etimer`)
+        - Transitions agents from `EXPOSED` to `INFECTIOUS` when `etimer == 0`
+        - Assigns new infection timers (`itimer`) upon becoming infectious
+        - Updates patch-level EXPOSED (`E`) and INFECTIOUS case counts
+        - Provides validation hooks for state and timer consistency
 
-    Required Inputs:
-    - `model.scenario.E`: initial count of exposed individuals per node (optional)
-    - `expdurdist`: callable returning sampled incubation durations
-    - `infdurdist`: callable returning sampled infectious durations
-    - `expdurmin`: minimum incubation period (default 1 day)
-    - `infdurmin`: minimum infectious period (default 1 day)
+    Required inputs:
+        - `model.scenario.E`: initial count of exposed individuals per node (optional)
+        - `expdurdist`: callable returning sampled incubation durations
+        - `infdurdist`: callable returning sampled infectious durations
+        - `expdurmin`: minimum incubation period (default 1 day)
+        - `infdurmin`: minimum infectious period (default 1 day)
 
     Outputs:
-    - `model.people.etimer`: agent-level incubation timer
-    - `model.nodes.E[t, i]`: number of exposed individuals at time `t` in node `i`
-    - `model.nodes.newly_infectious[t, i]`: number of newly infectious cases per node per day
+        - `model.people.etimer`: agent-level incubation timer
+        - `model.nodes.E[t, i]`: number of exposed individuals at time `t` in node `i`
+        - `model.nodes.newly_infectious[t, i]`: number of newly infectious cases per node per day
 
     Validation:
-    - Ensures consistency between individual states and `etimer` values
-    - Ensures that agents becoming infectious have valid `itimer` values assigned
-    - Prevents agents with expired `etimer` from remaining in EXPOSED state
+        - Ensures consistency between individual states and `etimer` values
+        - Ensures that agents becoming infectious have valid `itimer` values assigned
+        - Prevents agents with expired `etimer` from remaining in EXPOSED state
 
-    Step Behavior:
+    Step behavior:
         For each agent:
-            - Decrease `etimer`
-            - If `etimer == 0`, change state to `INFECTIOUS` and assign `itimer`
-            - Update `model.nodes.E` and `model.nodes.I` counts accordingly
+
+        - Decrease `etimer`
+        - If `etimer == 0`, change state to `INFECTIOUS` and assign `itimer`
+        - Update `model.nodes.E` and `model.nodes.I` counts accordingly
 
     Plotting:
-    The `plot()` method provides a time series of exposed individuals per node and total across all nodes.
+        The `plot()` method provides a time series of exposed individuals per node and total across all nodes.
 
-    Example:
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             Exposed(model, expdurdist, infdurdist),
@@ -318,19 +322,19 @@ class InfectiousSI:
     or removed state (i.e., no `R` compartment).
 
     Responsibilities:
-    - Initializes agents as infectious based on `model.scenario.I`
-    - Tracks the number of infectious individuals (`I`) in each patch over time
-    - Maintains per-tick, per-node counts in `model.nodes.I`
-    - Validates consistency between agent states and patch-level totals
+        - Initializes agents as infectious based on `model.scenario.I`
+        - Tracks the number of infectious individuals (`I`) in each patch over time
+        - Maintains per-tick, per-node counts in `model.nodes.I`
+        - Validates consistency between agent states and patch-level totals
 
     Required Inputs:
-    - `model.scenario.I`: array of initial infected counts per patch
-    - `model.people.state`: infection state per agent
-    - `model.people.nodeid`: patch assignment per agent
-    - `model.params.nticks`: number of timesteps to simulate
+        - `model.scenario.I`: array of initial infected counts per patch
+        - `model.people.state`: infection state per agent
+        - `model.people.nodeid`: patch assignment per agent
+        - `model.params.nticks`: number of timesteps to simulate
 
     Outputs:
-    - `model.nodes.I[t, i]`: number of infectious individuals in node `i` at time `t`
+        - `model.nodes.I[t, i]`: number of infectious individuals in node `i` at time `t`
 
     Step Behavior:
         For each timestep `t`, this component copies:
@@ -338,14 +342,15 @@ class InfectiousSI:
         (No recovery or removal; new infections may be added externally.)
 
     Validation:
-    - Ensures that patch-level infectious counts (`model.nodes.I`) match the agent-level state
-    - Asserts that the sum of `S` and `I` matches total population at initialization
-    - Validates that infected counts do not change unexpectedly (unless altered by another component)
+        - Ensures that patch-level infectious counts (`model.nodes.I`) match the agent-level state
+        - Asserts that the sum of `S` and `I` matches total population at initialization
+        - Validates that infected counts do not change unexpectedly (unless altered by another component)
 
     Plotting:
-    The `plot()` method shows the number of infectious agents per patch and in total across time.
+        The `plot()` method shows the number of infectious agents per patch and in total across time.
 
-    Example:
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             InfectiousSI(model),
@@ -431,37 +436,39 @@ class InfectiousIS:
     Tracks number of agents recovering each tick in `model.nodes.newly_recovered`.
 
     Responsibilities:
-    - Initializes infected agents and their infection timers (`itimer`)
-    - Decrements `itimer` daily for infectious agents
-    - Automatically transitions agents from `INFECTIOUS` to `SUSCEPTIBLE` when `itimer == 0`
-    - Tracks per-day recoveries at the node level in `model.nodes.recovered`
-    - Maintains node-level `I` and `S` counts with full timestep resolution
+        - Initializes infected agents and their infection timers (`itimer`)
+        - Decrements `itimer` daily for infectious agents
+        - Automatically transitions agents from `INFECTIOUS` to `SUSCEPTIBLE` when `itimer == 0`
+        - Tracks per-day recoveries at the node level in `model.nodes.recovered`
+        - Maintains node-level `I` and `S` counts with full timestep resolution
 
     Required Inputs:
-    - `model.scenario.I`: initial number of infectious agents per patch
-    - `infdurdist`: a callable function which samples the infectious duration distribution
-    - `infdurmin`: the minimum infection period (default = 1 time step)
+        - `model.scenario.I`: initial number of infectious agents per patch
+        - `infdurdist`: a callable function which samples the infectious duration distribution
+        - `infdurmin`: the minimum infection period (default = 1 time step)
 
     Outputs:
-    - `model.people.itimer`: per-agent infection countdown timer
-    - `model.nodes.I[t, i]`: number of infectious individuals at tick `t` in node `i`
-    - `model.nodes.recovered[t, i]`: number of recoveries at tick `t` in node `i`
+        - `model.people.itimer`: per-agent infection countdown timer
+        - `model.nodes.I[t, i]`: number of infectious individuals at tick `t` in node `i`
+        - `model.nodes.recovered[t, i]`: number of recoveries at tick `t` in node `i`
 
     Step Behavior:
         At each tick:
+
         - Infectious agents decrement their `itimer`
         - Agents with `itimer == 0` are transitioned back to susceptible
         - `model.nodes.I` is updated accordingly
         - Recovered counts are recorded in `model.nodes.recovered`
 
     Validation:
-    - Ensures consistency between agent `state` and infection timer (`itimer`)
-    - Validates `I` census against agent-level state before and after each tick
+        - Ensures consistency between agent `state` and infection timer (`itimer`)
+        - Validates `I` census against agent-level state before and after each tick
 
     Plotting:
-    The `plot()` method displays both per-node and total infectious counts over time.
+        The `plot()` method displays both per-node and total infectious counts over time.
 
-    Example:
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             InfectiousIS(model, infdurdist),
@@ -582,38 +589,39 @@ class InfectiousIR:
     Tracks number of agents recovering each tick in `model.nodes.newly_recovered`.
 
     Responsibilities:
-    - Initializes infected agents and their infection timers (`itimer`) based on scenario input
-    - Decrements `itimer` daily for infectious agents
-    - Transitions agents from `INFECTIOUS` to `RECOVERED` when `itimer == 0`
-    - Updates patch-level state variables:
-        • `I[t, i]`: infectious count at tick `t` in node `i`
-        • `R[t, i]`: recovered count
-        • `recovered[t, i]`: number of recoveries during tick `t`
+        - Initializes infected agents and their infection timers (`itimer`) based on scenario input
+        - Decrements `itimer` daily for infectious agents
+        - Transitions agents from `INFECTIOUS` to `RECOVERED` when `itimer == 0`
+        - Updates patch-level state variables:
+            - `I[t, i]`: infectious count at tick `t` in node `i`
+            - `R[t, i]`: recovered count
+            - `recovered[t, i]`: number of recoveries during tick `t`
 
     Required Inputs:
-    - `model.scenario.I`: number of initially infected individuals per patch
-    - `infdurdist`: function returning infection durations
-    - `infdurmin`: minimum infectious period (default = 1 day)
+        - `model.scenario.I`: number of initially infected individuals per patch
+        - `infdurdist`: function returning infection durations
+        - `infdurmin`: minimum infectious period (default = 1 day)
 
     Outputs:
-    - `model.people.itimer`: countdown timers per agent
-    - `model.nodes.I[t]`, `.R[t]`: infectious and recovered counts per patch
-    - `model.nodes.recovered[t]`: daily recoveries per patch
+        - `model.people.itimer`: countdown timers per agent
+        - `model.nodes.I[t]`, `.R[t]`: infectious and recovered counts per patch
+        - `model.nodes.recovered[t]`: daily recoveries per patch
 
     Step Behavior:
-    - Infectious agents decrement `itimer`
-    - When `itimer == 0`, agent state is set to `RECOVERED`
-    - Patch-level `I` and `R` are updated; `recovered` logs today's transitions
+        - Infectious agents decrement `itimer`
+        - When `itimer == 0`, agent state is set to `RECOVERED`
+        - Patch-level `I` and `R` are updated; `recovered` logs today's transitions
 
     Validation:
-    - Ensures internal consistency between agent state and timer
-    - Confirms agents with `itimer == 1` recover exactly one day later
-    - Validates population conservation (`S + I + R = N`)
+        - Ensures internal consistency between agent state and timer
+        - Confirms agents with `itimer == 1` recover exactly one day later
+        - Validates population conservation (`S + I + R = N`)
 
     Plotting:
-    The `plot()` method shows per-node and total infectious counts across time.
+        The `plot()` method shows per-node and total infectious counts across time.
 
-    Example:
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             InfectiousIR(model, infdurdist),
@@ -737,45 +745,47 @@ class InfectiousIRS:
     Tracks number of agents recovering each tick in `model.nodes.newly_recovered`.
 
     Responsibilities:
-    - Initializes infectious agents from `model.scenario.I`
-    - Assigns and tracks infectious timers (`itimer`) per agent
-    - Transitions agents from `INFECTIOUS` to `RECOVERED` when `itimer == 0`
-    - Assigns a waning immunity timer (`rtimer`) upon recovery
-    - Updates patch-level state:
-        • `I[t, i]`: current infectious count
-        • `R[t, i]`: current recovered count
-        • `recovered[t, i]`: number of agents recovering on tick `t`
+        - Initializes infectious agents from `model.scenario.I`
+        - Assigns and tracks infectious timers (`itimer`) per agent
+        - Transitions agents from `INFECTIOUS` to `RECOVERED` when `itimer == 0`
+        - Assigns a waning immunity timer (`rtimer`) upon recovery
+        - Updates patch-level state:
+            - `I[t, i]`: current infectious count
+            - `R[t, i]`: current recovered count
+            - `recovered[t, i]`: number of agents recovering on tick `t`
 
     Required Inputs:
-    - `model.scenario.I`: number of initially infected agents per node
-    - `infdurdist`: function that samples the infectious duration distribution
-    - `wandurdist`: function that samples the waning immunity duration distribution
-    - `infdurmin`: minimum infectious period (default = 1 day)
-    - `wandurmin`: minimum duration of immunity (default = 1 day)
+        - `model.scenario.I`: number of initially infected agents per node
+        - `infdurdist`: function that samples the infectious duration distribution
+        - `wandurdist`: function that samples the waning immunity duration distribution
+        - `infdurmin`: minimum infectious period (default = 1 day)
+        - `wandurmin`: minimum duration of immunity (default = 1 day)
 
     Outputs:
-    - `model.people.itimer`: days remaining in the infectious state
-    - `model.people.rtimer`: days remaining in the recovered state
-    - `model.nodes.I`, `model.nodes.R`: counts per node per tick
-    - `model.nodes.recovered[t]`: number of recoveries recorded on tick `t`
+        - `model.people.itimer`: days remaining in the infectious state
+        - `model.people.rtimer`: days remaining in the recovered state
+        - `model.nodes.I`, `model.nodes.R`: counts per node per tick
+        - `model.nodes.recovered[t]`: number of recoveries recorded on tick `t`
 
     Step Behavior:
-    - Infectious agents decrement their `itimer`
-    - When `itimer == 0`, agents become recovered and receive an `rtimer`
-    - Patch-level totals are updated
-    - Downstream components (e.g., `Recovered`) handle `rtimer` countdown and eventual return to `SUSCEPTIBLE`
+        - Infectious agents decrement their `itimer`
+        - When `itimer == 0`, agents become recovered and receive an `rtimer`
+        - Patch-level totals are updated
+        - Downstream components (e.g., `Recovered`) handle `rtimer` countdown and eventual return to `SUSCEPTIBLE`
 
     Validation:
-    - Ensures timer consistency and population accounting
-    - Confirms correct infectious-to-recovered transitions
-    - Can be chained with recovery and waning components for full SIRS/SEIRS loops
+        - Ensures timer consistency and population accounting
+        - Confirms correct infectious-to-recovered transitions
+        - Can be chained with recovery and waning components for full SIRS/SEIRS loops
 
     Plotting:
-    Two plots are provided:
-    1. Infected counts per node
-    2. Total infected and recovered counts across time
+        Two plots are provided:
 
-    Example:
+        1. Infected counts per node
+        2. Total infected and recovered counts across time
+
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             InfectiousIRS(model, infdurdist, wandurdist),
@@ -905,30 +915,31 @@ class Recovered:
     transitions itself — recovery transitions must be handled by upstream components.
 
     Responsibilities:
-    - Initializes agents as recovered if specified in `model.scenario.R`
-    - Tracks per-patch recovered counts over time in `model.nodes.R`
-    - Verifies consistency between agent state and aggregate recovered counts
-    - Propagates recovered totals forward unchanged (unless modified by other components)
+        - Initializes agents as recovered if specified in `model.scenario.R`
+        - Tracks per-patch recovered counts over time in `model.nodes.R`
+        - Verifies consistency between agent state and aggregate recovered counts
+        - Propagates recovered totals forward unchanged (unless modified by other components)
 
     Required Inputs:
-    - `model.scenario.R`: number of initially recovered individuals per node
+        - `model.scenario.R`: number of initially recovered individuals per node
 
     Outputs:
-    - `model.nodes.R[t, i]`: number of recovered individuals at tick `t` in node `i`
+        - `model.nodes.R[t, i]`: number of recovered individuals at tick `t` in node `i`
 
     Step Behavior:
-    - At each tick, carries forward:
-        R[t+1] = R[t]
-    - This component does not change any agent's state or internal timers
+        - At each tick, carries forward:
+            R[t+1] = R[t]
+        - This component does not change any agent's state or internal timers
 
-    🧪 Validation:
-    - Ensures per-agent state matches aggregate `R` counts before and after each step
-    - Detects accidental changes to recovered counts not explained by upstream logic
+    Validation:
+        - Ensures per-agent state matches aggregate `R` counts before and after each step
+        - Detects accidental changes to recovered counts not explained by upstream logic
 
     Plotting:
-    The `plot()` method shows per-node and total recovered counts over time.
+        The `plot()` method shows per-node and total recovered counts over time.
 
-    Example:
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             InfectiousIR(model, infdurdist),
@@ -1004,39 +1015,41 @@ class RecoveredRS:
     Tracks number of agents losing immunity each tick in `model.nodes.newly_waned`.
 
     Responsibilities:
-    - Initializes agents in the `RECOVERED` state using `model.scenario.R`
-    - Assigns `rtimer` values to track the duration of immunity
-    - Decrements `rtimer` each tick; transitions agents to `SUSCEPTIBLE` when `rtimer == 0`
-    - Updates patch-level counts:
-        • `R[t, i]`: number of recovered individuals in node `i` at time `t`
-        • `waned[t, i]`: number of agents who re-entered susceptibility on time step `t`
+        - Initializes agents in the `RECOVERED` state using `model.scenario.R`
+        - Assigns `rtimer` values to track the duration of immunity
+        - Decrements `rtimer` each tick; transitions agents to `SUSCEPTIBLE` when `rtimer == 0`
+        - Updates patch-level counts:
+            - `R[t, i]`: number of recovered individuals in node `i` at time `t`
+            - `waned[t, i]`: number of agents who re-entered susceptibility on time step `t`
 
     Required Inputs:
-    - `model.scenario.R`: initial number of recovered individuals per node
-    - `wandurdist`: a function sampling the waning immunity duration distribution
-    - `wandurmin`: minimum duration of immunity (default = 1 time step)
+        - `model.scenario.R`: initial number of recovered individuals per node
+        - `wandurdist`: a function sampling the waning immunity duration distribution
+        - `wandurmin`: minimum duration of immunity (default = 1 time step)
 
     Outputs:
-    - `model.people.rtimer`: per-agent countdown to immunity expiration
-    - `model.nodes.R`: recovered count per patch per timestep
-    - `model.nodes.waned`: number of immunity losses per patch per tick
+        - `model.people.rtimer`: per-agent countdown to immunity expiration
+        - `model.nodes.R`: recovered count per patch per timestep
+        - `model.nodes.waned`: number of immunity losses per patch per tick
 
     Step Behavior:
-    - Agents with `state == RECOVERED` decrement `rtimer`
-    - When `rtimer == 0`, they return to `SUSCEPTIBLE`
-    - `R` and `S` counts are updated to reflect this transition
-    - `waned[t]` logs the number of agents who lost immunity on time step `t`
+        - Agents with `state == RECOVERED` decrement `rtimer`
+        - When `rtimer == 0`, they return to `SUSCEPTIBLE`
+        - `R` and `S` counts are updated to reflect this transition
+        - `waned[t]` logs the number of agents who lost immunity on time step `t`
 
     Validation:
-    - Ensures population conservation and consistency between agent states and patch totals
-    - Detects unexpected changes in `R` or invalid transitions
+        - Ensures population conservation and consistency between agent states and patch totals
+        - Detects unexpected changes in `R` or invalid transitions
 
     Plotting:
-    The `plot()` method provides two views:
-    1. Per-node recovered trajectories
-    2. Total recovered and waned agents over time
+        The `plot()` method provides two views:
 
-    Example:
+        1. Per-node recovered trajectories
+        2. Total recovered and waned agents over time
+
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             SEIRS.Infectious(model, infdurdist, wandurdist),
@@ -1165,38 +1178,39 @@ class TransmissionSIx:
     Tracks number of new infections each tick in `model.nodes.newly_infected`.
 
     Responsibilities:
-    - Computes per-node force of infection (`λ`) at each tick:
-        λ = β * (I / N), with spatial coupling via a migration matrix
-    - Applies probabilistic infection to susceptible agents using `nb_transmission_step`
-    - Updates per-node `S` and `I` counts accordingly
-    - Tracks new infections (incidence) and FOI values per node and tick
+        - Computes per-node force of infection (`λ`) at each tick:
+            λ = β * (I / N), with spatial coupling via a migration matrix
+        - Applies probabilistic infection to susceptible agents using `nb_transmission_step`
+        - Updates per-node `S` and `I` counts accordingly
+        - Tracks new infections (incidence) and FOI values per node and tick
 
     Required Inputs:
-    - `model.nodes.I[t]`: number of infectious agents per node at tick `t`
-    - `model.nodes.S[t]`: number of susceptible agents per node at tick `t`
-    - `model.params.beta`: transmission rate (global)
-    - `model.network`: matrix of spatial coupling between nodes
+        - `model.nodes.I[t]`: number of infectious agents per node at tick `t`
+        - `model.nodes.S[t]`: number of susceptible agents per node at tick `t`
+        - `model.params.beta`: transmission rate (global)
+        - `model.network`: matrix of spatial coupling between nodes
 
     Outputs:
-    - `model.nodes.forces[t, i]`: force of infection in node `i` at tick `t`
-    - `model.nodes.incidence[t, i]`: number of new infections in node `i` at tick `t`
+        - `model.nodes.forces[t, i]`: force of infection in node `i` at tick `t`
+        - `model.nodes.newly_infected[t, i]`: number of new infections in node `i` at tick `t`
 
     Step Behavior:
-    - Computes FOI (`λ`) for each node
-    - Applies inter-node infection pressure via `model.network`
-    - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
-    - Infects susceptible agents probabilistically
-    - Updates state and records incidence
+        - Computes FOI (`λ`) for each node
+        - Applies inter-node infection pressure via `model.network`
+        - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
+        - Infects susceptible agents probabilistically
+        - Updates state and records incidence
 
     Validation:
-    - Ensures consistency between state transitions and incidence records
-    - Checks conservation of population in `S` and `I` states
-    - Validates `incidence[t] == I[t+1] - I[t]`
+        - Ensures consistency between state transitions and incidence records
+        - Checks conservation of population in `S` and `I` states
+        - Validates `newly_infected[t] == I[t+1] - I[t]`
 
     Plotting:
-    The `plot()` method displays the force of infection over time per node.
+        The `plot()` method displays the force of infection over time per node.
 
-    Example:
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             TransmissionSIx(model),
@@ -1314,38 +1328,39 @@ class TransmissionSI:
     Tracks number of new infections each tick in `model.nodes.newly_infected`.
 
     Responsibilities:
-    - Computes force of infection (FOI) `λ = β * (I / N)` per patch each tick
-    - Applies optional spatial coupling via `model.network` (infection pressure transfer)
-    - Converts FOI into Bernoulli probabilities using `p = 1 - exp(-λ)`
-    - Infects susceptible agents stochastically, assigning per-agent `itimer`
-    - Updates patch-level susceptible (`S`) and infectious (`I`) counts
-    - Records number of new infections per tick in `model.nodes.incidence`
+        - Computes force of infection (FOI) `λ = β * (I / N)` per patch each tick
+        - Applies optional spatial coupling via `model.network` (infection pressure transfer)
+        - Converts FOI into Bernoulli probabilities using `p = 1 - exp(-λ)`
+        - Infects susceptible agents stochastically, assigning per-agent `itimer`
+        - Updates patch-level susceptible (`S`) and infectious (`I`) counts
+        - Records number of new infections per tick in `model.nodes.newly_infected`
 
     Required Inputs:
-    - `model.params.beta`: transmission rate (global)
-    - `model.network`: [n x n] matrix of transmission coupling
-    - `infdurdist(tick, node)`: callable sampling the infectious duration distribution
-    - `model.people.itimer`: preallocated per-agent infection timer
+        - `model.params.beta`: transmission rate (global)
+        - `model.network`: [n x n] matrix of transmission coupling
+        - `infdurdist(tick, node)`: callable sampling the infectious duration distribution
+        - `model.people.itimer`: preallocated per-agent infection timer
 
     Outputs:
-    - `model.nodes.forces[t, i]`: computed FOI in node `i` at time `t`
-    - `model.nodes.incidence[t, i]`: new infections in node `i` on time step `t`
+        - `model.nodes.forces[t, i]`: computed FOI in node `i` at time `t`
+        - `model.nodes.newly_infected[t, i]`: new infections in node `i` on time step `t`
 
     Step Behavior:
-    - Computes FOI (`λ`) for each node
-    - Applies inter-node infection pressure via `model.network`
-    - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
-    - Infects susceptible agents probabilistically
-    - Updates state and records incidence
+        - Computes FOI (`λ`) for each node
+        - Applies inter-node infection pressure via `model.network`
+        - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
+        - Infects susceptible agents probabilistically
+        - Updates state and records incidence
 
     Validation:
-    - Ensures consistency between incidence and change in `I`
-    - Checks for correct state and population accounting before and after tick
+        - Ensures consistency between incidence and change in `I`
+        - Checks for correct state and population accounting before and after tick
 
     Plotting:
-    The `plot()` method visualizes per-node FOI (`λ`) over simulation time.
+        The `plot()` method visualizes per-node FOI (`λ`) over simulation time.
 
-    Example:
+    Examples:
+
         model.components = [
             SIR.Susceptible(model),
             TransmissionSI(model, infdurdist),
@@ -1468,55 +1483,56 @@ class TransmissionSE:
     """
     Transmission component for an SEIR/SEIRS model with S -> E transition and incubation duration.
 
-        This component simulates the transition from `SUSCEPTIBLE` to `EXPOSED` in models
-        where infection includes an incubation period before agents become infectious.
-        It handles stochastic exposure based on per-node force of infection (FOI), and
-        assigns individual incubation timers to newly exposed agents.
+    This component simulates the transition from `SUSCEPTIBLE` to `EXPOSED` in models
+    where infection includes an incubation period before agents become infectious.
+    It handles stochastic exposure based on per-node force of infection (FOI), and
+    assigns individual incubation timers to newly exposed agents.
 
-        Agents transition from Susceptible to Exposed based on force of infection.
-        Sets newly exposed agents' infection timers (etimer) based on `expdurdist` and `expdurmin`.
-        Tracks number of new infections each tick in `model.nodes.newly_infected`.
+    Agents transition from Susceptible to Exposed based on force of infection.
+    Sets newly exposed agents' infection timers (etimer) based on `expdurdist` and `expdurmin`.
+    Tracks number of new infections each tick in `model.nodes.newly_infected`.
 
-        Responsibilities:
+    Responsibilities:
         - Computes force of infection `λ = β * (I / N)` at each tick per node
         - Adjusts FOI using `model.network` for inter-node transmission coupling. Required but can be nullified by filling with all zeros.
         - Applies FOI to susceptible agents to determine exposure
         - Assigns incubation durations (`etimer`) to each newly exposed agent
         - Updates node-level counts for `S` and `E` and logs daily incidence
 
-        Required Inputs:
+    Required Inputs:
         - `model.params.beta`: global transmission rate
         - `model.network`: [n x n] matrix for FOI migration
         - `expdurdist(tick, node)`: callable that samples the exposure/incubation duration distribution
         - `expdurmin`: minimum incubation period (default = 1)
 
-        Outputs:
+    Outputs:
         - `model.nodes.forces[t, i]`: computed FOI in node `i` at tick `t`
-        - `model.nodes.incidence[t, i]`: new exposures per node per day
+        - `model.nodes.newly_infected[t, i]`: new exposures per node per day
         - `model.people.etimer`: per-agent incubation countdown
 
-        Step Behavior:
+    Step Behavior:
         - Computes FOI (`λ`) for each node
         - Optionally applies inter-node infection pressure via `model.network`
         - Converts FOI into a Bernoulli probability using: `p = 1 - exp(-λ)`
         - Infects susceptible agents probabilistically
         - Updates state and records incidence
 
-        Validation:
+    Validation:
         - Validates consistency between agent states and patch-level counts before and after tick
-        - Confirms that `incidence[t] == E[t+1] - E[t]`
+        - Confirms that `newly_infected[t] == E[t+1] - E[t]`
 
-        Plotting:
+    Plotting:
         The `plot()` method shows per-node FOI (`λ`) trajectories over time.
 
-        Example:
-            model.components = [
-                SIR.Susceptible(model),
-                TransmissionSE(model, expdurdist),
-                Exposed(model, ...),
-                InfectiousIR(model, ...),
-                Recovered(model),
-            ]
+    Examples:
+
+        model.components = [
+            SIR.Susceptible(model),
+            TransmissionSE(model, expdurdist),
+            Exposed(model, ...),
+            InfectiousIR(model, ...),
+            Recovered(model),
+        ]
     """
 
     def __init__(

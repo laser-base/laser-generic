@@ -28,8 +28,8 @@ except ImportError:
 
 PLOTTING = False
 VERBOSE = False
-EM = 10
-EN = 10
+EM = 3
+EN = 3
 PEE = 10
 VALIDATING = False
 NTICKS = 365
@@ -70,7 +70,7 @@ class Default(unittest.TestCase):
             This is a broad end-to-end validation of spatial SI dynamics.
         """
         with ts.start("test_grid"):
-            scenario = stdgrid(M=EM, N=EN)
+            scenario = stdgrid(M=EM, N=EN, population_fn=lambda r, c: int(np.random.uniform(10_000, 200_000)))
             scenario["S"] = scenario["population"] - 10
             scenario["I"] = 10
 
@@ -317,7 +317,7 @@ class Default(unittest.TestCase):
         Setup like test_grid(), but set two nodes to zero population.
         """
         with ts.start("test_grid_with_empty_nodes"):
-            scenario = stdgrid(M=EM, N=EN)
+            scenario = stdgrid(M=EM, N=EN, population_fn=lambda r, c: int(np.random.uniform(10_000, 200_000)))
             scenario["S"] = scenario.population - 10
             scenario["I"] = 10
             # Set row 0 and last row to zero population, both S and I

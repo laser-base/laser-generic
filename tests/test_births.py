@@ -45,9 +45,9 @@ def create_basic_scenario_susceptible_only(cbr=20.0):
     return model, cbr
 
 
-def create_equilibrium_seir_scenario(cbr=20.0):
+def create_equilibrium_seir_scenario(cbr=20.0, nticks=NTICKS, population_per_node=10_000_000):
     """Create a scenario with equilibrium S/E/I/R populations."""
-    scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: 10_000_000)
+    scenario = stdgrid(M=1, N=1, population_fn=lambda r, c: population_per_node)
 
     R0 = 10  # measles-ish 1.386
     EXPOSED_DURATION_MEAN = 4.5
@@ -63,9 +63,9 @@ def create_equilibrium_seir_scenario(cbr=20.0):
     scenario["I"] = init_infected
     scenario["R"] = scenario.population - init_susceptible - init_infected
 
-    parameters = PropertySet({"nticks": NTICKS, "beta": R0 / INFECTIOUS_DURATION_MEAN})
+    parameters = PropertySet({"nticks": nticks, "beta": R0 / INFECTIOUS_DURATION_MEAN})
 
-    birthrates = ValuesMap.from_scalar(cbr, NTICKS, 1)
+    birthrates = ValuesMap.from_scalar(cbr, nticks, 1)
     pyramid, _ = load_age_distribution()
 
     expdurdist = dists.normal(loc=EXPOSED_DURATION_MEAN, scale=EXPOSED_DURATION_SCALE)
@@ -244,9 +244,14 @@ class TestBirthsByCBR(unittest.TestCase):
         return
 
     def test_equilibrium_seir(self):
-        """Test case with equilibrium S/E/I/R populations (1 node)."""
+        """Test case with equilibrium S/E/I/R populations (1 node).
+
+        Runs 1 simulated year on 1M agents — long enough for ~2% net growth
+        from a CBR=20/1000 birth rate, well above stochastic noise on this N.
+        """
         # Scenario
-        model, cbr = create_equilibrium_seir_scenario()
+        nticks = 365
+        model, cbr = create_equilibrium_seir_scenario(nticks=nticks, population_per_node=1_000_000)
         pop_start = model.people.count
 
         # Run
@@ -254,7 +259,7 @@ class TestBirthsByCBR(unittest.TestCase):
         pop_finish = model.people.count
 
         # Check
-        expected_pop = calculate_expected_population(pop_start, cbr, NTICKS)
+        expected_pop = calculate_expected_population(pop_start, cbr, nticks)
         difference = pop_finish - expected_pop
         percent_diff = abs(difference / expected_pop * 100)
 

@@ -174,7 +174,7 @@ filterwarnings = [
   # When we drop support for Python 3.9, we can remove this section.
   # Silence pyparsing deprecation from matplotlib on py39
   "ignore:'enablePackrat' deprecated - use 'enable_packrat'",
-  "ignore:'oneOf' deprecated - use 'one_of':pyparsing.warnings.PyparsingDeprecationWarning",
+  "ignore:'oneOf' deprecated - use 'one_of':DeprecationWarning",
   "ignore:'parseString' deprecated - use 'parse_string'",
   "ignore:'resetCache' deprecated - use 'reset_cache'",
 ]
