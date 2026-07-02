@@ -136,7 +136,7 @@ def _render_tree(root: str, tree: dict) -> list[str]:
         depth = len(rel_parts)  # depth under the root
         indent = "  " * depth  # bullet indent under the root line we'll add earlier
         path = "/".join([root.replace(".", "/"), *rel_parts]) + "/index.md"
-        label = rel_parts[-1]  # leaf segment only, so deep names aren't truncated in the nav
+        label = rel_parts[-1]  # leaf segment only (shorter labels in the nav)
         lines.append(f"{indent}- [{label}]({path})\n")
         for seg in sorted(node.keys()):
             walk([*rel_parts, seg], node[seg])
