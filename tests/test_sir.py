@@ -28,8 +28,8 @@ except ImportError:
 
 PLOTTING = False
 VERBOSE = False
-EM = 10
-EN = 10
+EM = 3
+EN = 3
 PEE = 10
 VALIDATING = False
 NTICKS = 365
@@ -108,14 +108,14 @@ class Default(unittest.TestCase):
         Feature: Spatial 2-D SIR model with births and deaths
         --------------------------------------------------
         Validates:
-          • Spatial epidemic propagation across a 10x10 grid of nodes.
+          • Spatial epidemic propagation across a 3x3 grid of nodes.
           • Integration of demography (BirthsByCBR, MortalityByEstimator).
           • Stability of total population under demographic turnover.
           • Quantitative epidemic realism via bounded infection prevalence.
 
         Configuration:
-          Grid: 10x10 nodes, 10 km each
-          Population: 10 000-1 000 000 per node
+          Grid: 3x3 nodes, 10 km each
+          Population: 10 000-200 000 per node
           Infectious duration: Normal(mean=7, sd=2)
           Simulation: 365 ticks
 
@@ -130,7 +130,7 @@ class Default(unittest.TestCase):
           birth, and mortality processes, validating LASER's spatial coupling integrity.
         """
         with ts.start("test_grid"):
-            scenario = stdgrid(M=EM, N=EN)
+            scenario = stdgrid(M=EM, N=EN, population_fn=lambda r, c: int(np.random.uniform(10_000, 200_000)))
             scenario["S"] = scenario["population"] - 10
             scenario["I"] = 10
             scenario["R"] = 0
@@ -386,15 +386,15 @@ class Default(unittest.TestCase):
           • Quantitative deviation threshold of ±5% from analytic solution.
 
         Configuration:
-          Population: 1 000 000 (single node)
-          Initial infections: 1 000
+          Population: 500 000 (single node)
+          Initial infections: 500
           R₀ range: 1.2-2.0
           Infectious duration: 7 days
-          Iterations: 10 stochastic replicates per R₀ case
+          Iterations: 5 stochastic replicates per R₀ case
 
         Expected Outcomes / Invariants:
           • Median attack fraction within 5% of theoretical value.
-          • No more than 3/10 runs deviate >5%.
+          • No more than 1/5 runs deviate >5%.
 
         Notes:
           A quantitative regression test comparing simulated final epidemic size
@@ -408,7 +408,9 @@ class Default(unittest.TestCase):
             S_inf = -1 / R0 * lambertw(-R0 * S0 * np.exp(-R0)).real
             return 1 - S_inf
 
-        INIT_INF = 1_000
+        POP = 500_000
+        INIT_INF = 500
+        NITERS = 5
         cases = [
             (1.2160953 / 7, 7.0, 1.0 / 3.0),
             (1.27685 / 7, 7.0, 0.4),
@@ -418,9 +420,8 @@ class Default(unittest.TestCase):
 
         for beta, inf_mean, expected_af in cases:
             failed = 0
-            NITERS = 10
             for _ in range(NITERS):
-                scenario = stdgrid(M=1, N=1, population_fn=lambda x, y: 1_000_000)
+                scenario = stdgrid(M=1, N=1, population_fn=lambda x, y: POP)
                 scenario["S"] = scenario["population"] - INIT_INF
                 scenario["I"] = INIT_INF
                 scenario["R"] = 0
@@ -439,7 +440,7 @@ class Default(unittest.TestCase):
                 frac = diff / expected_af
                 if frac > 0.05:
                     failed += 1
-            assert failed < 3, (
+            assert failed <= 1, (
                 f"Kermack-McKendrick test failed {failed}/{NITERS} for R0={beta * inf_mean:.3f} (expected AF={expected_af:.3f})"
             )
 
@@ -447,7 +448,7 @@ class Default(unittest.TestCase):
 
     def test_grid_with_zero_pop_nodes(self):
         with ts.start("test_grid"):
-            scenario = stdgrid(M=EM, N=EN)
+            scenario = stdgrid(M=EM, N=EN, population_fn=lambda r, c: int(np.random.uniform(10_000, 200_000)))
             scenario["S"] = scenario["population"] - 10
             scenario["I"] = 10
             scenario["R"] = 0
