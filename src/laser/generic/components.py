@@ -1192,7 +1192,7 @@ class TransmissionSIx:
 
     Outputs:
         - `model.nodes.forces[t, i]`: force of infection in node `i` at tick `t`
-        - `model.nodes.incidence[t, i]`: number of new infections in node `i` at tick `t`
+        - `model.nodes.newly_infected[t, i]`: number of new infections in node `i` at tick `t`
 
     Step Behavior:
         - Computes FOI (`λ`) for each node
@@ -1204,7 +1204,7 @@ class TransmissionSIx:
     Validation:
         - Ensures consistency between state transitions and incidence records
         - Checks conservation of population in `S` and `I` states
-        - Validates `incidence[t] == I[t+1] - I[t]`
+        - Validates `newly_infected[t] == I[t+1] - I[t]`
 
     Plotting:
         The `plot()` method displays the force of infection over time per node.
@@ -1333,7 +1333,7 @@ class TransmissionSI:
         - Converts FOI into Bernoulli probabilities using `p = 1 - exp(-λ)`
         - Infects susceptible agents stochastically, assigning per-agent `itimer`
         - Updates patch-level susceptible (`S`) and infectious (`I`) counts
-        - Records number of new infections per tick in `model.nodes.incidence`
+        - Records number of new infections per tick in `model.nodes.newly_infected`
 
     Required Inputs:
         - `model.params.beta`: transmission rate (global)
@@ -1343,7 +1343,7 @@ class TransmissionSI:
 
     Outputs:
         - `model.nodes.forces[t, i]`: computed FOI in node `i` at time `t`
-        - `model.nodes.incidence[t, i]`: new infections in node `i` on time step `t`
+        - `model.nodes.newly_infected[t, i]`: new infections in node `i` on time step `t`
 
     Step Behavior:
         - Computes FOI (`λ`) for each node
@@ -1507,7 +1507,7 @@ class TransmissionSE:
 
     Outputs:
         - `model.nodes.forces[t, i]`: computed FOI in node `i` at tick `t`
-        - `model.nodes.incidence[t, i]`: new exposures per node per day
+        - `model.nodes.newly_infected[t, i]`: new exposures per node per day
         - `model.people.etimer`: per-agent incubation countdown
 
     Step Behavior:
@@ -1519,7 +1519,7 @@ class TransmissionSE:
 
     Validation:
         - Validates consistency between agent states and patch-level counts before and after tick
-        - Confirms that `incidence[t] == E[t+1] - E[t]`
+        - Confirms that `newly_infected[t] == E[t+1] - E[t]`
 
     Plotting:
         The `plot()` method shows per-node FOI (`λ`) trajectories over time.
