@@ -1,6 +1,10 @@
 ### Reading the wavespeed comparison plot
 
-A log-log scatter of measured versus expected wavespeed in patches per tick, with both axes spanning roughly $3 \times 10^{-3}$ to $1$. Each of the 100 parameter samples contributes two markers: a blue dot for the right-going wave and a red dot for the left-going wave, the two essentially overlaying because the lattice is symmetric. A black dashed $y = x$ identity line cuts diagonally across the panel.
+A log-log scatter of measured versus expected wavespeed in patches per tick, with both axes spanning roughly $3 \times 10^{-3}$ to $1$. Each of the 100 parameter samples contributes two markers (three legend entries in total):
+
+- **"Velocity right"** (blue dots, markersize=12): right-going wavespeed per sample.
+- **"Velocity left"** (red dots, markersize=12): left-going wavespeed per sample. The two clouds essentially overlay because the lattice is symmetric.
+- **"y=x"** (black, dashed): the identity line cutting diagonally across the panel.
 
 At low expected speeds (below ~$2 \times 10^{-2}$ patches/tick) the cloud straddles the identity line with high scatter — some points overshoot, others fall well below. As the expected speed rises above ~$5 \times 10^{-2}$ patches/tick the cloud consistently sits below the diagonal, settling around $2$–$3 \times 10^{-1}$ measured for expected values approaching $5 \times 10^{-1}$, i.e. roughly a factor-of-two shortfall at the upper end. No point clears the $y = x$ line in that high-speed regime.
 

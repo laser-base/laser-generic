@@ -2,8 +2,8 @@
 
 A 10-year SIR trajectory on a single node of 1,000,000 agents, time on the x-axis from 0 to ~3,650 days. Two y-axes share the figure:
 
-- **Left axis (0 to 1e6)** carries blue (Susceptible) and green (Recovered) lines.
-- **Right axis (0 to ~3,000)** carries the red Infectious curve and a flat gray "Seasonality (scaled)" reference line that sits dead-level at the midpoint — confirming $\beta(t)$ has no temporal modulation in this run.
+- **Left axis (0 to 1e6)** carries **"Susceptible (S) - Node 0"** (blue) and **"Recovered (R) - Node 0"** (green).
+- **Right axis (0 to ~3,000)** carries **"Infectious (I) - Node 0"** (red) and **"Seasonality (scaled)"** (flat gray reference line, dead-level at the midpoint — confirming $\beta(t)$ has no temporal modulation in this run).
 
 S sits near 70,000 and R near 940,000 throughout, both nearly flat. The red I curve, by contrast, oscillates wildly with peaks of ~2,500 spaced roughly every 500 days — an emergent, undriven cycle arising from the interplay between waning susceptibility (births via `ConstantPopVitalDynamics` with CBR=33) and depletion-driven outbreak crashes. Peak heights drift between ~2,200 and ~2,500 with no strict periodicity.
 
