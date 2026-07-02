@@ -5,6 +5,7 @@ from laser.generic.immunization import RoutineImmunization
 from laser.generic.importation import Infect_Random_Agents
 from laser.generic.model import Model
 from laser.generic.shared import State
+from laser.generic.utils import get_default_parameters
 
 from . import SEIR
 from . import SEIRS
@@ -25,4 +26,5 @@ __all__ = [
     "Model",
     "RoutineImmunization",
     "State",
+    "get_default_parameters",
 ]
