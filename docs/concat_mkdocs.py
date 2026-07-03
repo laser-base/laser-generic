@@ -34,12 +34,15 @@ except Exception:
 MIN_SECTION_CHARS = 150  # drop near-empty placeholder/index pages
 EXPECTED_MIN_MAIN_PAGES = 8  # fail loud if the site walk looks broken
 
-# laser-generic notebooks call tqdm with a description like
-# "1,000,000 agents in 1 node(s)", which produces many "<n> agents in <m>
-# node(s):  37%|...| ..." progress snapshots in cell outputs. They add no
-# semantic value and hurt RAG/retrieval quality, so we drop matching lines
-# at output-build time. Pattern matches the description + percent token.
-_TQDM_PROGRESS_RE = re.compile(r"agents in \d+ node\(s\):\s*\d+%")
+# laser-generic notebooks produce many tqdm progress-bar snapshots in cell
+# outputs. They add no semantic value and hurt RAG/retrieval quality, so we
+# drop them at output-build time. Matching by the tqdm rate marker at
+# end-of-line (`it/s]` or its inverse `s/it]`) catches all tqdm variants
+# uniformly — with a description ("1,000,000 agents in 1 node(s): 37%|..."),
+# with a custom description ("10/10 simulations: 45%|..."), or with no
+# description ("100%|... 25/25 [02:15<00:00, 5.41s/it]"). The rate marker
+# is a tqdm-specific signature and rarely appears elsewhere.
+_TQDM_PROGRESS_RE = re.compile(r"it/s\]|s/it\]")
 
 
 class _NavLoader(yaml.SafeLoader):
