@@ -675,7 +675,7 @@ demographic model.
   `make_scenario()` and a vector of populations to drive a grid. The
   vital-dynamics components apply per-node.
 - **Time-varying rates.** Each rate input above is a `ValuesMap`. Build
-  one with `ValuesMap.from_array(np_array, n_nodes)` to make CBR/CDR
-  vary across the simulation horizon.
+  one with `ValuesMap()$from_array(np_array)` (where `np_array` has shape
+  `(nticks, n_nodes)`) to make CBR/CDR vary across the simulation horizon.
 - **Real survival data.** Substitute another country’s survival curve by
   replacing the `Nigeria-Survival-2020.csv` load.

@@ -1,5 +1,5 @@
 # Shared helpers for the laser-generic R/reticulate tutorials.
-# Source from `.Rmd` chunks: source("helpers.R", local = knitr::knit_global())
+# Source from `.Rmd` chunks: source("helpers.R")
 #
 # Convention: every helper takes plain R values and handles the
 # R <-> Python dtype boundary inside, so the tutorial chunks read like
