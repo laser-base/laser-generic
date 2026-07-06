@@ -40,7 +40,7 @@ ValuesMap     <- function() .lg_env$laser_gutils$ValuesMap
 #' Seed both R and laser's PRNG for reproducible knits.
 seed_everything <- function(seed = 271828L) {
     set.seed(seed)
-    .lg_env$laser_random$seed(as.integer(seed)) # this also set's NumPy's random seed
+    .lg_env$laser_random$seed(as.integer(seed)) # this also sets NumPy's random seed
     invisible(seed)
 }
 
