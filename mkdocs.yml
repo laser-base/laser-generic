@@ -1,5 +1,5 @@
 site_name: LASER # update to your project name
-site_url: https://institutefordiseasemodeling.github.io/laser-generic # update to your project URL
+site_url: https://laser.idmod.org/laser-generic/ # update to your project URL
 repo_name: InstituteforDiseaseModeling/laser-generic # update to your repo name
 repo_url: https://github.com/InstituteforDiseaseModeling/laser-generic # update to your repo URL
 theme:
@@ -156,7 +156,7 @@ plugins:
         - customization/gen-files.py # exclude file generation script
         - includes/glossary.md # exclude glossary include file
 
-copyright: Copyright &copy; 2025 Gates Foundation. All rights reserved.
+copyright: Copyright &copy; 2026 Gates Foundation. All rights reserved.
 
 extra:
   generator: false

@@ -19,7 +19,7 @@ Suggested order:
 1. [Exploring the critical community size of an SIR model](notebooks/07_SIR_CCS.ipynb)
 1. [The relationship between coupling and incidence correlation in a 2-patch model](notebooks/08_2patch_SIR_wbirths_correlation.ipynb)
 1. [Modeling the spread of rabies in one dimension](notebooks/09_rabies_diffusion_1D.ipynb)
-1. [Periodicity of measles in England and Wales](notebooks/10_EW_periodicity.ipynb)
+1. [Spatial features of measles transmission in England and Wales during the pre-vaccine era](notebooks/10_England_and_Wales.ipynb)
 
 Once you have completed the above notebooks, please explore the following notebooks in any desired order to learn how to implement and integrate custom components:
 
