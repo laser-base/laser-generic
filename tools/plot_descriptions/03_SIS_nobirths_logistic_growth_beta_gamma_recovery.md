@@ -1,4 +1,4 @@
-### Reading the β- and γ-recovery plots
+#### Reading the β- and γ-recovery plots
 
 The cell emits four scatter plots from a 10-seed sweep with $\beta \sim U(0.02, 0.1)$ and $\gamma \sim U(1/300, 1/100)$:
 

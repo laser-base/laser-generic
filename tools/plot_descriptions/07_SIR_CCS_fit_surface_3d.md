@@ -1,4 +1,4 @@
-### Reading the 3D best-fit surface plot
+#### Reading the 3D best-fit surface plot
 
 A three-dimensional view of the fitted power-law $\text{CCS} = c \cdot \alpha^{a} \cdot (R_0/(R_0-1))^{b}$ against the simulation points:
 

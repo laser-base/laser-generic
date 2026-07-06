@@ -1,4 +1,4 @@
-### Reading the β- and CBR-recovery plots
+#### Reading the β- and CBR-recovery plots
 
 The cell emits four scatter plots from a 10-seed sweep over $\beta \in \{0.010, 0.015, \ldots, 0.055\}$ paired with randomly drawn crude birth rates $\mathrm{CBR} \in [15, 50)$:
 

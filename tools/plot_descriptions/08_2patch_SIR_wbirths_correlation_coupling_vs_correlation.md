@@ -1,4 +1,4 @@
-### Reading the coupling-vs-correlation plot
+#### Reading the coupling-vs-correlation plot
 
 A single scatter-plus-fit on a log-linear axis: $x$ is the inter-patch coupling $\sigma$ from $10^{-4}$ to $\sim 0.5$, $y$ is the Pearson correlation $C$ between the $I_1$ and $I_2$ incidence time series measured over the final 25 simulated years.
 

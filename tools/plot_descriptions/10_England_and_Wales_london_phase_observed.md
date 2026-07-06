@@ -1,4 +1,4 @@
-### Reading the observed London wavelet-phase plot
+#### Reading the observed London wavelet-phase plot
 
 A single scatter of blue dots: **wavelet phase difference (degrees) versus distance from London**. The x-axis runs 5 to 30 (distance units as in the dataset) and the y-axis runs from $-90$ to $0$, with the title "Phase difference of London wavelet transform".
 

@@ -1,4 +1,4 @@
-### Reading the SIR-trajectory and age-at-infection plots
+#### Reading the SIR-trajectory and age-at-infection plots
 
 The first cell emits two figures from a single 30-year simulation of an SIR model with births and deaths at a crude birth rate of 90 per 1000:
 

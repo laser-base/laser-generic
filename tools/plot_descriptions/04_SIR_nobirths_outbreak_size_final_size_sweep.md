@@ -1,4 +1,4 @@
-### Reading the final-size sweep plots
+#### Reading the final-size sweep plots
 
 The cell emits four figures from a 115-point sweep over $R_0 \in [0.2, 10]$ crossed with $S(0) \in \{1.0, 0.8, 0.6, 0.4, 0.2\}$. In every panel, solid lines are the Kermack-McKendrick analytic expectation and dots are the LASER simulation observation; colors encode $S(0)$ (blue 1.0, green 0.8, red 0.6, cyan 0.4, magenta 0.2).
 

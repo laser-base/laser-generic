@@ -1,4 +1,4 @@
-### Reading the infectious-snapshots map grid
+#### Reading the infectious-snapshots map grid
 
 A 3 x 4 grid of small spatial maps, one per panel, titled `Infectious at tick 0`, `30`, `60`, …, `330` (12 snapshots, 30-tick stride). Each panel reuses the hub-and-spoke geometry from the previous plots — Central City at the origin, five towns on a radius-150 km pentagon, two interim nodes per spoke — with nodes colored by current `I` count on a `Reds` colormap and a per-panel colorbar (each panel auto-scales).
 

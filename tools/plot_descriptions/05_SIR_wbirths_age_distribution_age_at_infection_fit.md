@@ -1,4 +1,4 @@
-### Reading the age-at-infection fit plot
+#### Reading the age-at-infection fit plot
 
 A density-normalized histogram (blue) of simulated ages at infection (in years) for infections occurring after day 5000, overlaid with two curves:
 

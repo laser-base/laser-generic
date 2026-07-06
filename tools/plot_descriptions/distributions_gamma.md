@@ -1,4 +1,4 @@
-### Reading the Gamma plot
+#### Reading the Gamma plot
 
 Overlaid density histograms on $[0, 15]$, y-axis density from 0 to about 1.6. Seven shape–scale pairs sampled at $N = 100{,}000$:
 

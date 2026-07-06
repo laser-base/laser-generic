@@ -1,4 +1,4 @@
-### Reading the logistic-fit-with-offset plot
+#### Reading the logistic-fit-with-offset plot
 
 Same log-scale axes as the sanity-check plot — currently-infected versus day, 1 to $10^6$ on the y-axis. Three curves:
 

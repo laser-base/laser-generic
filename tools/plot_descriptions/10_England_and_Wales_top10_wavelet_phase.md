@@ -1,4 +1,4 @@
-### Reading the top-10 wavelet-phase-similarity plots
+#### Reading the top-10 wavelet-phase-similarity plots
 
 Ten single-axes scatter plots, one per figure, each emitted by the same loop and titled `Simulation <idx> Wavelet Phase Similarity`. Across all ten the axes are identical: x-axis is distance from London (0 to ~30), y-axis is phase difference in degrees (roughly $-90$ up to $+5$).
 

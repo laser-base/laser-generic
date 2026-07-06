@@ -1,4 +1,4 @@
-### Reading the seed-check plot
+#### Reading the seed-check plot
 
 A single blue curve on linear axes showing currently-infected $I_t$ versus day (0 to ~730). The trajectory starts at the seed of 3 infections, smoulders along the x-axis through the first ~30 days, then climbs sharply, peaks near $I \approx 29{,}000$ around day 80, and decays back to zero by roughly day 200. The remainder of the 730-day window is a flat line at $I = 0$.
 

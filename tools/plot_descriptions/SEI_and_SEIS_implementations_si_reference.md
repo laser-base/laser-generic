@@ -1,4 +1,4 @@
-### Reading the SI reference suite plots
+#### Reading the SI reference suite plots
 
 Two vertically stacked linear-scale subplots over 0–365 days, ten overlapping seed-trajectories visible as a single ribbon at $10^6$ agents each. Same $\beta = 0.3$ as the SEI run, but with no exposed compartment.
 

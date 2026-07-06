@@ -1,4 +1,4 @@
-### Reading the central-city grid plot
+#### Reading the central-city grid plot
 
 A 7 x 7 patch grid plotted in Web Mercator meters — x and y axes both span 0 to 70,000 meters, with each square patch 10 km on a side. Patches are colored by population using the `viridis` colormap (a sequential dark-purple-to-yellow scale), with a colorbar running roughly 15,000 to 100,000 on the right. Red `x` markers sit at the centroid of every patch, on a regular 10 km lattice at coordinates (5000, 15000, …, 65000) in both directions.
 

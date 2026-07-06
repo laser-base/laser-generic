@@ -1,4 +1,4 @@
-### Reading the Normal plot
+#### Reading the Normal plot
 
 Overlaid density histograms on $[-5, 5]$ (samples clipped to this range), y-axis density from 0 to about 0.85. Four mean–variance pairs sampled at $N = 100{,}000$, with the scale parameter passed as $\sqrt{\sigma^2}$:
 

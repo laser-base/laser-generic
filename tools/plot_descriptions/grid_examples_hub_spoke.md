@@ -1,4 +1,4 @@
-### Reading the custom hub-and-spoke scenario plot
+#### Reading the custom hub-and-spoke scenario plot
 
 A free-form spatial layout in meters, axes roughly -150,000 to +150,000 on both x and y — built from a hand-assembled GeoDataFrame rather than `grid()`. Each node is drawn as a filled circle whose marker reflects its geographic buffer radius, colored by population on a `viridis` scale (colorbar 0 to 1.0 x 10^6).
 

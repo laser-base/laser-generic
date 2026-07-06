@@ -1,4 +1,4 @@
-### Reading the dose-timing histogram
+#### Reading the dose-timing histogram
 
 The `RoutineImmunizationEx` component was constructed with `track=True`, exposing the per-agent `initial_ri` array — the day-of-life at which each individual is scheduled to receive their RI dose. This plot keeps only non-zero entries (i.e. agents actually scheduled, not the 30% un-covered tail).
 

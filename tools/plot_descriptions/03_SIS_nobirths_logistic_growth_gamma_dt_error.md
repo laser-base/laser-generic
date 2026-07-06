@@ -1,4 +1,4 @@
-### Reading the equilibrium-error vs $\gamma\Delta t$ plot
+#### Reading the equilibrium-error vs $\gamma\Delta t$ plot
 
 A single scatter, x-axis $\gamma$ from 0 to 1.0, y-axis $\left|1 - I(\infty)_{\text{obs}}/I(\infty)_{\text{exp}}\right|$ from 0 to ~0.45. Title: *"Error in equilibrium infected fraction increases roughly linearly in $\gamma\Delta t$"*. Sixteen points from a sweep of mean infectious periods $1/\gamma \in \{1, 1.5, 2, 2.5, 3, 6, 12, 18, 30, 45, 60, 90, 120, 180, 240, 300\}$ with $\beta = 3\gamma$ held fixed so that $R_0 = 3$ at every point.
 

@@ -1,4 +1,4 @@
-### Reading the sinusoidal-forcing (no importation) plot
+#### Reading the sinusoidal-forcing (no importation) plot
 
 Same axes layout as the baseline plot — 10 years on x, S/R on the left axis (0 to 1e6), I on the right axis (0 to ~8,500). The gray "Seasonality (scaled)" curve is now a clean sinusoid completing 10 cycles, oscillating $\pm 20\%$ around 1.0 with peaks anchored to day 214 + multiples of 365 (start of school). This is the $1 + 0.2\sin((t-214) \cdot 2\pi/365)$ forcing.
 

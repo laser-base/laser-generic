@@ -1,4 +1,4 @@
-### Reading the SEIS single-node suite plots
+#### Reading the SEIS single-node suite plots
 
 Three vertically stacked linear-scale subplots, 0–365 days, with all ten seed realizations overlapping into a single visual ribbon at $10^6$ agents per simulation.
 

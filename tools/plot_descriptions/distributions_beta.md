@@ -1,4 +1,4 @@
-### Reading the Beta plot
+#### Reading the Beta plot
 
 Overlaid density histograms on $[0, 1]$, y-axis density from 0 to about 6.5. Five parameter pairs sampled at $N = 100{,}000$:
 

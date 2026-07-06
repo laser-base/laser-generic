@@ -1,4 +1,4 @@
-### Reading the linear (1-D) grid plot
+#### Reading the linear (1-D) grid plot
 
 A single row of 9 patches stretched horizontally — x-axis runs 0 to 90,000 meters, y-axis runs 0 to 10,000 meters, so each patch is 10 km square but laid out edge-to-edge along a line. Red `x` centroids sit at (5000, 15000, …, 85000) on a single row at y = 5000. The `viridis` colorbar spans 0.2 x 10^6 to 1.0 x 10^6.
 

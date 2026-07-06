@@ -1,4 +1,4 @@
-### Reading the CCS calibration-grid plot
+#### Reading the CCS calibration-grid plot
 
 A 6-by-2 grid of small-multiple panels, one per parameter set, showing the **critical community size (CCS)** signature: proportion of weeks with zero measles cases versus $\log_{10}(\text{population})$ across the England-and-Wales places.
 

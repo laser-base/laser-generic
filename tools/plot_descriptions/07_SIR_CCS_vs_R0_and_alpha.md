@@ -1,4 +1,4 @@
-### Reading the CCS-vs-parameter scatter plots
+#### Reading the CCS-vs-parameter scatter plots
 
 Two stacked scatter panels, one per simulation in the 200-sim parameter sweep, with the smallest persisting patch population (the empirical CCS estimate) on a log y-axis spanning $\sim 10^3$ to $10^6$:
 

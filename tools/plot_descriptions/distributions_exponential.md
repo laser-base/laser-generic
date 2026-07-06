@@ -1,4 +1,4 @@
-### Reading the Exponential plot
+#### Reading the Exponential plot
 
 Overlaid density histograms on $[0, 8]$ (samples clipped at 8), y-axis density from 0 to about 1.45. Three rate parameters sampled at $N = 100{,}000$, each constructed by passing `scale = 1/λ`:
 

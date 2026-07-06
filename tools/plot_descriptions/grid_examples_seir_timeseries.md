@@ -1,4 +1,4 @@
-### Reading the SEIR-per-node time-series plot
+#### Reading the SEIR-per-node time-series plot
 
 A stack of four panels sharing an x-axis of Time in days (0 to ~365). From top to bottom the y-axis labels are S, E, I, R — the four SEIR compartments. Each panel overlays one curve per node in the hub-and-spoke scenario (Central City, Town 1-5, Interim 1a/1b through 5a/5b — 16 curves total, color-coded by node and listed in the per-panel legends).
 

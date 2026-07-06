@@ -1,4 +1,4 @@
-### Reading the no-RI baseline SEIR plot
+#### Reading the no-RI baseline SEIR plot
 
 The baseline run is a single-node SEIR over 730 days with a 200,000 starting population, 100 seed infections, and $R_0 = 7$. After `initialize_susceptibility` reclassifies everyone over five as recovered, only ~31,000 individuals are left in S — so this is effectively an outbreak in the under-five compartment.
 

@@ -1,4 +1,4 @@
-### Reading the fraction-susceptible-by-age plot
+#### Reading the fraction-susceptible-by-age plot
 
 Fraction of agents still in the $S$ compartment plotted against age in years (0 to 15 on the x-axis, 0 to 1 on the y-axis), forced through $(0, 1)$. Three series:
 

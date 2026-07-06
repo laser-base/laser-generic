@@ -1,4 +1,4 @@
-### Reading the Logistic plot
+#### Reading the Logistic plot
 
 Overlaid density histograms on $[-5, 25]$ (samples clipped to this range), y-axis density from 0 to about 0.25. Five location–scale pairs sampled at $N = 100{,}000$:
 

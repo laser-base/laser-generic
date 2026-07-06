@@ -1,4 +1,4 @@
-### Reading the SEI single-node suite plots
+#### Reading the SEI single-node suite plots
 
 Three vertically stacked linear-scale subplots sharing a 0–365 day x-axis, one curve per seed (10 seeds), all overlapping into a single visual ribbon — the ten realizations are effectively indistinguishable at this population size of $10^6$ agents per simulation.
 

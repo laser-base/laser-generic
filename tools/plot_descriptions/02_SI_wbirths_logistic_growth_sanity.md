@@ -1,4 +1,4 @@
-### Reading the sanity-check plot
+#### Reading the sanity-check plot
 
 Two nearly-overlapping curves on a shared log y-axis (1 to $10^6$) versus time in days (0 to ~730):
 

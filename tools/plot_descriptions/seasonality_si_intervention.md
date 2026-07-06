@@ -1,4 +1,4 @@
-### Reading the SI "radical seasonality" intervention plot
+#### Reading the SI "radical seasonality" intervention plot
 
 Same SI configuration as the previous baseline — 1,000,000 agents, $\beta = 0.03125$, 730 days, linear y-axis 0 to 1e6 — but now the seasonality array is used as a non-cyclical intervention: $\beta(t)$ is multiplied by 1.0 through day 300, ramps linearly down to 0.0 between days 300 and 400, and stays at 0.0 thereafter.
 

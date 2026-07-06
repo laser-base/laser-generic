@@ -1,4 +1,4 @@
-### Reading the MortalityByEstimator SEIR channels plot
+#### Reading the MortalityByEstimator SEIR channels plot
 
 Same four-line layout as the earlier `MortalityByCDR` single-run plot — population vs. time in days (0 to ~3650), four colored traces for S, E, I, R — but the mortality engine is now `MortalityByEstimator`, which draws a date-of-death (DoD) per agent from a Kaplan-Meier survival curve fit to Nigeria 2020 life-table data, with initial ages sampled from a Nigeria 2020 population pyramid via `AliasedDistribution`.
 

@@ -1,4 +1,4 @@
-### Reading the baseline-vs-RI infectious comparison plot
+#### Reading the baseline-vs-RI infectious comparison plot
 
 A single panel directly overlays the infectious curves from the two preceding runs — same x-axis (time in days, 0–730), same y-axis (infectious individuals, 0–~410):
 

@@ -1,4 +1,4 @@
-### Reading the Poisson plot
+#### Reading the Poisson plot
 
 Discrete spike histogram on integer support from 0 to ~20, y-axis density from 0 to about 5.4. Three rate parameters sampled at $N = 100{,}000$:
 

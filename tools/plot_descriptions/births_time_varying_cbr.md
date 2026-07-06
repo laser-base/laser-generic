@@ -1,4 +1,4 @@
-### Reading the time-varying-CBR population-growth plot
+#### Reading the time-varying-CBR population-growth plot
 
 A linear-axis plot of total population versus time in days (0 to 3650), with the same faint grid styling as the previous plot:
 

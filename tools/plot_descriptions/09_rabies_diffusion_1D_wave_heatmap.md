@@ -1,4 +1,4 @@
-### Reading the spatial-spread heatmap
+#### Reading the spatial-spread heatmap
 
 A two-dimensional intensity map of the infectious compartment $I$ over the full simulation: x-axis is time in ticks (0 to ~730), y-axis is patch index along the 1D lattice (0 to 200), and the viridis colorbar (labeled **"Infectious"** in the code) runs from 0 (deep purple) to ~675 infectives per patch (bright yellow). The simulation seeds three infectives at the central patch (index 101), and from that origin two narrow bright-yellow stripes fan outward in a near-perfect ">" shape — one rising upward toward patch 200, one descending toward patch 0 — both reaching the boundaries at roughly tick 570–580. The stripes are sharp and constant in width, with a faint diffusive halo around them and dark purple everywhere ahead of and behind the front.
 

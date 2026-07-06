@@ -1,4 +1,4 @@
-### Reading the Weibull plot
+#### Reading the Weibull plot
 
 Overlaid density histograms on $[0, 2.5]$ (samples clipped at 2.5), y-axis density from 0 to about 7.3. Four shape values at fixed scale $\lambda = 1$, sampled at $N = 100{,}000$:
 

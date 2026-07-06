@@ -1,4 +1,4 @@
-### Reading the seasonality-plus-importation plot
+#### Reading the seasonality-plus-importation plot
 
 Same two-axis SIR layout — 10 years on x, S/R on the left axis (0 to 1e6), I on the right axis (0 to ~14,000). The gray sinusoidal seasonality curve is identical to the previous figure (annual cycle, $\pm 20\%$ around 1.0, anchored to day 214).
 

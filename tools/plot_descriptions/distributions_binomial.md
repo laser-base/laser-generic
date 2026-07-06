@@ -1,4 +1,4 @@
-### Reading the Binomial plot
+#### Reading the Binomial plot
 
 Discrete spike histogram with integer support from 0 to ~31 on the x-axis, density on the y-axis from 0 to about 1.3. Three parameter pairs sampled at $N = 100{,}000$:
 

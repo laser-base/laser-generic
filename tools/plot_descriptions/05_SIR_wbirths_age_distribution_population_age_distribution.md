@@ -1,4 +1,4 @@
-### Reading the population-age-distribution plot
+#### Reading the population-age-distribution plot
 
 Density-normalized histogram of agent ages at the final tick (in years, 0 to 60 on the x-axis, 0 to ~0.09 on the y-axis), overlaid with:
 

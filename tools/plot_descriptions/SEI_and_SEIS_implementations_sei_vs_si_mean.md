@@ -1,4 +1,4 @@
-### Reading the SEI vs SI mean-trajectory plot
+#### Reading the SEI vs SI mean-trajectory plot
 
 A single linear-scale panel, 0–365 days on the x-axis, 0 to $10^6$ agents on the y-axis. Four curves showing seed-averaged means:
 

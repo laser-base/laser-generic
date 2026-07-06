@@ -1,4 +1,4 @@
-### Reading the best-combined-rank plots
+#### Reading the best-combined-rank plots
 
 The cell prints the best simulation index and parameters, then emits two figures side by side in the rendered output. Both panels share the same parameter-set title line: `beta=3.87, amplitude=1.31, k=0.0446, b=0.251, c=1.56`.
 

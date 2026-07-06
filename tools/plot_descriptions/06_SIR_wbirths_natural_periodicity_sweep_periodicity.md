@@ -1,4 +1,4 @@
-### Reading the parameter-sweep periodicity plots
+#### Reading the parameter-sweep periodicity plots
 
 Ten figures, one per simulation in the $(\mu, \gamma, R_0)$ sweep (`nsims=10`, CBR sampled in 70–100, `inf_mean` in 50–100, $R_0$ in 5–15). Each panel shares the same anatomy as the single-run sanity-check plot above: blue mean-subtracted, Gaussian-smoothed infected trajectory $I_t$ versus tick index over the ~50-year post-cutoff window (x-axis $\sim$0–18,250 days, y-axis spanning roughly $\pm 300$–$500$), with red `x` markers at peaks and black `x` markers at valleys, and a top-right text block reporting `T expected`, peak-finder, valley-finder, and FFT-based observed periods in years.
 

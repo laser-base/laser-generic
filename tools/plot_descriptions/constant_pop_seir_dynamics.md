@@ -1,4 +1,4 @@
-### Reading the constant-population SEIR plot
+#### Reading the constant-population SEIR plot
 
 A single wide panel with twin y-axes versus time in days (0 to ~3650, i.e. 10 years), six curves drawn from a 25-node SEIR run with `ConstantPopVitalDynamics` and a CBR of 35 per 1000 per year:
 

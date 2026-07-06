@@ -1,4 +1,4 @@
-### Reading the sanity-check plots
+#### Reading the sanity-check plots
 
 Two side-by-side panels on log y-axes, both running from time 0 to ~3000 ticks:
 

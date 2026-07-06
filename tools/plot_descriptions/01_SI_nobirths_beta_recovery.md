@@ -1,4 +1,4 @@
-### Reading the β-recovery plots
+#### Reading the β-recovery plots
 
 The cell emits two scatter plots side by side from a 10-seed sweep over $\beta \in \{0.02, 0.03, \ldots, 0.11\}$:
 

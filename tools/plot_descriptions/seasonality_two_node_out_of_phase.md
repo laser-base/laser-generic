@@ -1,4 +1,4 @@
-### Reading the two-node out-of-phase coupling plot
+#### Reading the two-node out-of-phase coupling plot
 
 Same layout extended to two coupled nodes (500,000 agents each, network coupling ~0.02% per tick). 10 years on x; left axis (0 to 500,000) carries S and R; right axis (0 to ~4,500) carries I. Solid lines are Node 0, dashed lines are Node 1.
 

@@ -1,4 +1,4 @@
-### Reading the constant-CBR population-growth plot
+#### Reading the constant-CBR population-growth plot
 
 A linear-axis plot of total population versus time in days (0 to 3650, i.e. ten years), with a faint background grid:
 
