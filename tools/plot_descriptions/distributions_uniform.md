@@ -1,5 +1,4 @@
-### Reading the Uniform plot
-
+**Reading the Uniform plot.**
 Overlaid density histograms on $[-1, 4.2]$, y-axis density from 0 to about 2.5. Six $[low, high]$ pairs sampled at $N = 100{,}000$ — each histogram is a flat rectangle of height $1/(high - low)$:
 
 - **Red — Uniform(0.0, 1.0)** rectangle on $[0, 1]$ at density 1.0.

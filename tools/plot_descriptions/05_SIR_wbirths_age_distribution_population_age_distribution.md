@@ -1,5 +1,4 @@
-### Reading the population-age-distribution plot
-
+**Reading the population-age-distribution plot.**
 Density-normalized histogram of agent ages at the final tick (in years, 0 to 60 on the x-axis, 0 to ~0.09 on the y-axis), overlaid with:
 
 - **"Expected exponential distribution - A = 11.60 years"** (orange, solid, thick): the analytic prediction with mean $A = \frac{1}{\mu}$, where $\mu$ is the per-day mortality rate matching the 90-per-1000 crude birth rate.

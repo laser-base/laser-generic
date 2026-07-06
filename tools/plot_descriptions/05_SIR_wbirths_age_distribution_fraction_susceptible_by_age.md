@@ -1,5 +1,4 @@
-### Reading the fraction-susceptible-by-age plot
-
+**Reading the fraction-susceptible-by-age plot.**
 Fraction of agents still in the $S$ compartment plotted against age in years (0 to 15 on the x-axis, 0 to 1 on the y-axis), forced through $(0, 1)$. Three series:
 
 - **"Fraction susceptible at age"** (blue dots): simulation fraction susceptible in each age bin (180 bins across 0-15 years), restricted to agents born after day 5000.

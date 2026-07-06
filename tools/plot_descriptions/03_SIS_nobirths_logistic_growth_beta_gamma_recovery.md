@@ -1,5 +1,4 @@
-### Reading the β- and γ-recovery plots
-
+**Reading the β- and γ-recovery plots.**
 The cell emits four scatter plots from a 10-seed sweep with $\beta \sim U(0.02, 0.1)$ and $\gamma \sim U(1/300, 1/100)$:
 
 - **Panel 1 — Fitted β vs True β.** Square frame 0.02–0.10 on both axes. Ten points hug the identity line; recovery is essentially unbiased across the range.

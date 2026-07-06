@@ -1,5 +1,4 @@
-### Reading the observed London wavelet-phase plot
-
+**Reading the observed London wavelet-phase plot.**
 A single scatter of blue dots: **wavelet phase difference (degrees) versus distance from London**. The x-axis runs 5 to 30 (distance units as in the dataset) and the y-axis runs from $-90$ to $0$, with the title "Phase difference of London wavelet transform".
 
 Each point is one England-and-Wales place within 30 distance units of London. Phase is extracted from the complex Morlet wavelet transform of weekly cases in the 2–3 year (biennial) band, then the angle of the mean cross-spectrum against London is taken.

@@ -1,5 +1,4 @@
-### Reading the Binomial plot
-
+**Reading the Binomial plot.**
 Discrete spike histogram with integer support from 0 to ~31 on the x-axis, density on the y-axis from 0 to about 1.3. Three parameter pairs sampled at $N = 100{,}000$:
 
 - **Blue — Binomial(n = 20, p = 0.5)** symmetric envelope centered on $np = 10$, peak density ~1.0 at $k = 10$, support roughly 3–17.

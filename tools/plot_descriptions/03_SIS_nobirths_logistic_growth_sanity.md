@@ -1,5 +1,4 @@
-### Reading the sanity-check plots
-
+**Reading the sanity-check plots.**
 Two side-by-side panels on log y-axes, both running from time 0 to ~3000 ticks:
 
 - **Left — Susceptible over time.** Y-axis spans $10^5$ to $3\times10^5$. The susceptible count $S_t$ (blue, thick) sits at $N = 3\times10^5$ through day ~150, drops sharply between days ~180 and ~280, and settles into a noisy plateau just below $10^5$ for the remainder. The orange curve overlays the reconstruction $S_{t-1} + \text{recovered}_{t-1} - \text{newly\_infected}_{t-1}$.

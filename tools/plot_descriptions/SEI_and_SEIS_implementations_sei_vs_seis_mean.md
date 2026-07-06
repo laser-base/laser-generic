@@ -1,5 +1,4 @@
-### Reading the SEI vs SEIS mean-trajectory plot
-
+**Reading the SEI vs SEIS mean-trajectory plot.**
 A single linear-scale panel, 0–365 days on the x-axis, 0 to $10^6$ agents on the y-axis. Six curves comparing seed-averaged means — solid for SEI, dashed for SEIS — sharing the same color per compartment.
 
 - **Susceptible (blue).** **"SEI Mean Susceptible"** (solid) drops from $10^6$ to ~0 by day ~100. **"SEIS Mean Susceptible"** (dashed) tracks it closely but pulls up to an endemic plateau near ~215,000 from day ~120 onward.

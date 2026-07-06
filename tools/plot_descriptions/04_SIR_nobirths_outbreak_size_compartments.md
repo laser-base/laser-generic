@@ -1,5 +1,4 @@
-### Reading the SIR compartment plot
-
+**Reading the SIR compartment plot.**
 Four solid/dashed curves plus a horizontal reference line on linear axes — number of people (0 to $10^5$) versus day (0 to ~730), titled "SIR Model with No Births or Deaths":
 
 - **"S"** (blue, solid): susceptible count $S_t$. Starts at $10^5$, holds flat until ~day 40, drops steeply through the epidemic, and settles at $S_\infty \approx 6{,}000$.

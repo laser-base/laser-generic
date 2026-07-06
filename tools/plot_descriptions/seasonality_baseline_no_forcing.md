@@ -1,5 +1,4 @@
-### Reading the baseline (no seasonality) plot
-
+**Reading the baseline (no seasonality) plot.**
 A 10-year SIR trajectory on a single node of 1,000,000 agents, time on the x-axis from 0 to ~3,650 days. Two y-axes share the figure:
 
 - **Left axis (0 to 1e6)** carries **"Susceptible (S) - Node 0"** (blue) and **"Recovered (R) - Node 0"** (green).

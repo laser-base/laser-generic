@@ -1,5 +1,4 @@
-### Reading the $\bar{A}_I$ expected-vs-observed plot
-
+**Reading the $\bar{A}_I$ expected-vs-observed plot.**
 A scatter plot from a 25-run sweep over random pairs $(R_0 \in [5, 15], \text{cbr} \in [70, 100])$:
 
 - **X-axis — Average_Iage_expected**, the analytic $\frac{1}{R_0 \mu}$ converted to years, ranging from ~0.73 to ~2.33.

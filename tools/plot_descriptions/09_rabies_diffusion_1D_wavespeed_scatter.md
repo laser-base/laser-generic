@@ -1,5 +1,4 @@
-### Reading the wavespeed comparison plot
-
+**Reading the wavespeed comparison plot.**
 A log-log scatter of measured versus expected wavespeed in patches per tick, with both axes spanning roughly $3 \times 10^{-3}$ to $1$. Each of the 100 parameter samples contributes two markers (three legend entries in total):
 
 - **"Velocity right"** (blue dots, markersize=12): right-going wavespeed per sample.

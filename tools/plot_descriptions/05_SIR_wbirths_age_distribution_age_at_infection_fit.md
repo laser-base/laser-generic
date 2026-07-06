@@ -1,5 +1,4 @@
-### Reading the age-at-infection fit plot
-
+**Reading the age-at-infection fit plot.**
 A density-normalized histogram (blue) of simulated ages at infection (in years) for infections occurring after day 5000, overlaid with two curves:
 
 - **"Expected exponential distribution - A = 0.98 years"** (orange, solid, thick): the analytic prediction $A = \frac{1}{R_0 \mu}$ once mortality censoring is folded in.

@@ -1,5 +1,4 @@
-### Reading the baseline-vs-RI infectious comparison plot
-
+**Reading the baseline-vs-RI infectious comparison plot.**
 A single panel directly overlays the infectious curves from the two preceding runs — same x-axis (time in days, 0–730), same y-axis (infectious individuals, 0–~410):
 
 - **Red — No RI (baseline)**: the noisy outbreak from the no-RI run, starting at 100, climbing through a long humped phase, peaking near 410 around day 350, then decaying to ~30 by day 730.

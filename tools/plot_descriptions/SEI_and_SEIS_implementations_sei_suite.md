@@ -1,5 +1,4 @@
-### Reading the SEI single-node suite plots
-
+**Reading the SEI single-node suite plots.**
 Three vertically stacked linear-scale subplots sharing a 0–365 day x-axis, one curve per seed (10 seeds), all overlapping into a single visual ribbon — the ten realizations are effectively indistinguishable at this population size of $10^6$ agents per simulation.
 
 - **Top — Susceptible** $S_t$. Holds flat at $10^6$ from day 0 through day ~40, then drops in a sigmoidal sweep, reaching near zero around day 100 and remaining flat thereafter.

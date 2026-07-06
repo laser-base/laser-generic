@@ -1,5 +1,4 @@
-### Reading the SEIS single-node suite plots
-
+**Reading the SEIS single-node suite plots.**
 Three vertically stacked linear-scale subplots, 0–365 days, with all ten seed realizations overlapping into a single visual ribbon at $10^6$ agents per simulation.
 
 - **Top — Susceptible** $S_t$. Holds at $10^6$ through day ~50, drops sigmoidally to a minimum around day ~100 of ~200,000, then rebounds slightly and locks onto an equilibrium plateau near ~215,000 for the rest of the run.

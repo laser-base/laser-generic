@@ -1,5 +1,4 @@
-### Reading the per-patch infection heatmap
-
+**Reading the per-patch infection heatmap.**
 A single heatmap from one of the 200 simulations showing $\log_{10}$ of the prevalence (infected fraction) in each patch over time:
 
 - **x-axis — time in days** from 0 to ~14,600 (40 years).

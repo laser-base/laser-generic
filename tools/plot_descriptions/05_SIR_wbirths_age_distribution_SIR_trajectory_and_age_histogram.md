@@ -1,5 +1,4 @@
-### Reading the SIR-trajectory and age-at-infection plots
-
+**Reading the SIR-trajectory and age-at-infection plots.**
 The first cell emits two figures from a single 30-year simulation of an SIR model with births and deaths at a crude birth rate of 90 per 1000:
 
 - **Top — compartment trajectories** versus tick (0 to ~11000 days). Four curves labeled by compartment: **"S"** (blue) crashes from ~300000 down through a deep oscillation, **"I"** (red) spikes briefly, **"R"** (green) shoots up to ~275000, and **"N"** (black) plateaus near 290000. After damped oscillations across the first ~2000 days, all four lines settle to a flat endemic equilibrium: $S^* \approx 25000$, $I^* \approx 3000$, $R^* \approx 258000$.

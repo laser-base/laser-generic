@@ -1,5 +1,4 @@
-### Reading the Beta plot
-
+**Reading the Beta plot.**
 Overlaid density histograms on $[0, 1]$, y-axis density from 0 to about 6.5. Five parameter pairs sampled at $N = 100{,}000$:
 
 - **Red — Beta(0.5, 0.5)** U-shaped with tall spikes at both 0 and 1 reaching density ~6.5, the bathtub of the Jeffreys prior.

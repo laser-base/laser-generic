@@ -1,5 +1,4 @@
-### Reading the dose-timing histogram
-
+**Reading the dose-timing histogram.**
 The `RoutineImmunizationEx` component was constructed with `track=True`, exposing the per-agent `initial_ri` array — the day-of-life at which each individual is scheduled to receive their RI dose. This plot keeps only non-zero entries (i.e. agents actually scheduled, not the 30% un-covered tail).
 
 - **Sky-blue histogram** (unlabeled): non-zero `initial_ri` values, 30 bins spanning roughly 210–340 days. The shape is a clean bell with peak counts of ~2,000 near the center bins.

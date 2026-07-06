@@ -1,5 +1,4 @@
-### Reading the MortalityByCDR single-run SEIR channels plot
-
+**Reading the MortalityByCDR single-run SEIR channels plot.**
 Four colored line traces on a linear-axis figure of population vs. time in days (0 to ~3650, i.e. 10 years). Initial compartments are seeded at S=37,500, E=12,500, I=12,500, R=37,500 out of a 100,000-agent single-node population.
 
 - **"Susceptible (S)"** (blue): starts at ~37,500 and decays roughly linearly to ~30,500 by day 3650.

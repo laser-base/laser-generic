@@ -1,5 +1,4 @@
-### Reading the SEI vs SI mean-trajectory plot
-
+**Reading the SEI vs SI mean-trajectory plot.**
 A single linear-scale panel, 0–365 days on the x-axis, 0 to $10^6$ agents on the y-axis. Four curves showing seed-averaged means:
 
 - **"SEI Mean Susceptible"** (blue, solid): flat at $10^6$ through day ~40, sigmoidal drop, crossing $5 \times 10^5$ near day ~75, and ~0 by day ~100.

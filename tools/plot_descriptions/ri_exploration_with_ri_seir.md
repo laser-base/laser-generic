@@ -1,5 +1,4 @@
-### Reading the 70%-coverage routine-immunization SEIR plot
-
+**Reading the 70%-coverage routine-immunization SEIR plot.**
 Same single-node SEIR setup as the baseline, but now with `RoutineImmunizationEx` added: 70% coverage (`distributions.constant_float(0.7)`) and a dose timing drawn from `Normal(loc=274, scale=15)` days (about 9 months) with a 6-month floor.
 
 Four curves on twin y-axes over 730 days:

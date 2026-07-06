@@ -1,5 +1,4 @@
-### Reading the CCS-vs-parameter scatter plots
-
+**Reading the CCS-vs-parameter scatter plots.**
 Two stacked scatter panels, one per simulation in the 200-sim parameter sweep, with the smallest persisting patch population (the empirical CCS estimate) on a log y-axis spanning $\sim 10^3$ to $10^6$:
 
 - **Top — CCS_est vs $R_0$.** x-axis from ~1 to ~16, points coloured by $\log_{10}(\alpha)$ (viridis, ~1.75 dark to ~3.5 yellow, where $\alpha = (\gamma+\mu)/\mu$). The cloud is broad and shows only a weak downward trend with $R_0$; the dominant visual structure is the colour gradient — dark (low-$\alpha$) points sit at the bottom near $10^3$–$10^4$, yellow (high-$\alpha$) points pile up against the $10^6$ ceiling.

@@ -1,5 +1,4 @@
-### Reading the SIS logistic-fit-with-offset plot
-
+**Reading the SIS logistic-fit-with-offset plot.**
 Log y-axis from $10^{-1}$ to ~$3\times10^5$, time on the x-axis from 0 to 3000 ticks. Three curves:
 
 - **"Model output"** (blue, solid, thick): the stochastic SIS trajectory from this single realization.

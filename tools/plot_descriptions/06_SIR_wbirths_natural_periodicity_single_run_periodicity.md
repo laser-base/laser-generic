@@ -1,5 +1,4 @@
-### Reading the single-run periodicity plot
-
+**Reading the single-run periodicity plot.**
 A blue time series of mean-subtracted, Gaussian-smoothed (sigma=50 days) infected count $I_t$ against tick index, spanning roughly day 0 to day 18,250 — the 50-year post-`cutoff` window of a 100-year simulation at $\beta = 0.4$, `inf_mean` $= 12$, CBR $= 90$. The signal oscillates between roughly $-300$ and $+550$ around zero, with red `x` markers picking out local peaks and black `x` markers picking out local valleys (each constrained to be at least $T_{\text{exp}}/2$ apart). Top-right text panel reports `T expected: 1.99 y`, `T observed, peakfinding: 1.98 y`, `T observed, valley-finding: 1.98 y`, `T observed, FFT: 2.04 y`.
 
 This is the intrinsic damped oscillation of the SIR-with-births system around its endemic equilibrium — the system is a stochastic non-linear oscillator with natural period $T \approx 2\pi\sqrt{A G}$, and the three independent estimators (time-domain peaks, time-domain valleys, frequency-domain autocorrelation FFT) all agree with the analytic prediction to within ~2.5%. **The figure demonstrates that the linearized analytic period $T \approx 2\pi\sqrt{A G}$ correctly predicts the natural oscillation period of the stochastic SIR model with vital dynamics on a single realization.**

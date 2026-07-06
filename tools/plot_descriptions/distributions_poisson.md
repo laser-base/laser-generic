@@ -1,5 +1,4 @@
-### Reading the Poisson plot
-
+**Reading the Poisson plot.**
 Discrete spike histogram on integer support from 0 to ~20, y-axis density from 0 to about 5.4. Three rate parameters sampled at $N = 100{,}000$:
 
 - **Orange — Poisson(λ = 1)** tall narrow spike at $k = 1$ reaching density ~5.4 (because the bin width is sub-unit), with secondary spikes at $k = 0$ and $k = 2$ near density ~0.5–1.0.

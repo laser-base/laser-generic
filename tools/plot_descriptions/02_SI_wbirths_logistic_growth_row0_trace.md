@@ -1,5 +1,4 @@
-### Reading the case-trace-and-fit plot
-
+**Reading the case-trace-and-fit plot.**
 A single linear-scale plot titled "Case Trace and Logistic Fit for Row 0" showing the last sweep row (index 9: $\beta = 0.055$, $\mathrm{CBR} = 30$) over 1825 days (5 years):
 
 - **"Case Trace"** (blue, solid): the model's $I_t$ from `model.nodes.I[:, 0]` for this run.

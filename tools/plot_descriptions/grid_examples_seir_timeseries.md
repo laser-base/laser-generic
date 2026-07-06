@@ -1,5 +1,4 @@
-### Reading the SEIR-per-node time-series plot
-
+**Reading the SEIR-per-node time-series plot.**
 A stack of four panels sharing an x-axis of Time in days (0 to ~365). From top to bottom the y-axis labels are S, E, I, R — the four SEIR compartments. Each panel overlays one curve per node in the hub-and-spoke scenario (Central City, Town 1-5, Interim 1a/1b through 5a/5b — 16 curves total, color-coded by node and listed in the per-panel legends).
 
 The seeded node is Town 1 (100 initial infections). Its blue trajectory dominates every panel: S falls from 1 x 10^5 to near zero in a sigmoid around day 150-250; E peaks at ~80,000 near day 200; I peaks at ~175,000 around day 220 (overshoot above the population reflects the cumulative infectious-period accounting); R rises to ~1 x 10^5 by day 350. Every other node — including the Central City of 1,000,000 — shows only a faint, much-delayed bump in E and I (peaks under ~25,000) and a small R rise, because spread out of Town 1 is gated by the gravity model with `gravity_c = 2.5`. **The figure demonstrates that running SEIR on a custom multi-node scenario produces per-node compartment time series, and that with a single seeded outlying town the outbreak burns through that town long before gravity-mediated spillover meaningfully infects the rest of the network.**

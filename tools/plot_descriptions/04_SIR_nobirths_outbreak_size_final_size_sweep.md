@@ -1,5 +1,4 @@
-### Reading the final-size sweep plots
-
+**Reading the final-size sweep plots.**
 The cell emits four figures from a 115-point sweep over $R_0 \in [0.2, 10]$ crossed with $S(0) \in \{1.0, 0.8, 0.6, 0.4, 0.2\}$. In every panel, solid lines are the Kermack-McKendrick analytic expectation and dots are the LASER simulation observation; colors encode $S(0)$ (blue 1.0, green 0.8, red 0.6, cyan 0.4, magenta 0.2).
 
 - **Figure 1 — $I(t \to \infty)$ vs $R_0$.** Five sigmoidal curves, one per $S(0)$. Each curve sits at zero attack fraction below its epidemic threshold $R_0 \cdot S(0) = 1$ (so threshold $R_0 = 1, 1.25, 1.67, 2.5, 5.0$ respectively), then rises and saturates toward the asymptote $I_\infty = S(0)$. Dots overlay the lines almost perfectly across the full $R_0$ range.

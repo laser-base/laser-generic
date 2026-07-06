@@ -1,5 +1,4 @@
-### Reading the Weibull plot
-
+**Reading the Weibull plot.**
 Overlaid density histograms on $[0, 2.5]$ (samples clipped at 2.5), y-axis density from 0 to about 7.3. Four shape values at fixed scale $\lambda = 1$, sampled at $N = 100{,}000$:
 
 - **Blue — Weibull(k = 0.5, λ = 1)** monotone decay with a huge spike at the origin reaching density ~7.3, the sub-exponential regime ($k < 1$) where the hazard rate decreases over time.

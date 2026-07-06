@@ -1,5 +1,4 @@
-### Reading the β-recovery plots
-
+**Reading the β-recovery plots.**
 The cell emits two scatter plots side by side from a 10-seed sweep over $\beta \in \{0.02, 0.03, \ldots, 0.11\}$:
 
 - **Left — Fitted β vs True β.** Ten points lying very close to the identity line on a 0.02–0.11 axis. Recovery is near-perfect at low $\beta$ and drifts slightly below the diagonal as $\beta$ grows.

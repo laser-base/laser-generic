@@ -1,5 +1,4 @@
-### Reading the LogNormal plot
-
+**Reading the LogNormal plot.**
 Overlaid density histograms on $[0, 3]$ (samples clipped at 3), y-axis density from 0 to about 1.65. Three sigma values at fixed $\mu = 0$ (so the median sits at $e^0 = 1$), sampled at $N = 100{,}000$:
 
 - **Blue — Lognormal(0, 1)** broadest curve, mode near $x \approx 0.37 = e^{-1}$ with peak density ~0.8, long right tail extending past $x = 3$.

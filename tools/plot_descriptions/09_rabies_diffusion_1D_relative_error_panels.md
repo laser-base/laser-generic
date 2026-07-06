@@ -1,5 +1,4 @@
-### Reading the relative-error sweep plots
-
+**Reading the relative-error sweep plots.**
 The cell emits three scatter plots in sequence, each showing the same y-axis quantity — relative wavespeed error $(c_{measured} - c_{expected}) / c_{expected}$, ranging from about $-0.8$ to $+0.8$ — against the expected wavespeed on a log x-axis from ~$5 \times 10^{-3}$ to ~$6 \times 10^{-1}$ patches/tick. Each panel re-colors the same 100-sample cloud by a different parameter, with filled circles labeled **"Right"** for the right-going wave and "x" markers labeled **"Left"** for the left-going wave.
 
 - **Panel 1 — colored by $\beta = R_0 / \bar{T}_{inf}$ (viridis, ~0.1 to ~1.0).** A clear vertical gradient: dark-purple low-$\beta$ points sit deepest in the negative band ($-0.4$ to $-0.8$) while yellow-green high-$\beta$ points cluster near or above zero at any given expected speed.

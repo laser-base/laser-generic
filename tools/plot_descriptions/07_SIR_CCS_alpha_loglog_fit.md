@@ -1,5 +1,4 @@
-### Reading the CCS-vs-alpha log-log fit plot
-
+**Reading the CCS-vs-alpha log-log fit plot.**
 A single log-log scatter overlaying the fitted power law on the simulation cloud:
 
 - **x-axis — $\alpha$** on a log scale from ~50 to ~2000.

@@ -1,5 +1,4 @@
-### Reading the SI baseline (no seasonality) plot
-
+**Reading the SI baseline (no seasonality) plot.**
 A single-node SI run on 1,000,000 agents over 730 days, $\beta = 0.03125$, seeded with 10 infections. Single linear y-axis (population, 0 to 1e6). Two curves:
 
 - **"Susceptible (S)"** (blue): starts at 1,000,000, holds essentially flat through day ~200, then rolls over through an inflection near day ~370 and asymptotes to 0 by day ~600.

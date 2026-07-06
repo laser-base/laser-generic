@@ -1,5 +1,4 @@
-### Reading the constant-population SEIR plot
-
+**Reading the constant-population SEIR plot.**
 A single wide panel with twin y-axes versus time in days (0 to ~3650, i.e. 10 years), six curves drawn from a 25-node SEIR run with `ConstantPopVitalDynamics` and a CBR of 35 per 1000 per year:
 
 - **Left y-axis (Population, 0 to $1.4\times10^7$)** carries: **"Total Population"** (black, solid) pinned flat across the top; **"Susceptible (S)"** (blue, solid) flat at ~$1.4\times10^6$; **"Recovered (R)"** (green, solid) flat at ~$1.28\times10^7$ after a brief settle from the $1/R_0$ initialization.

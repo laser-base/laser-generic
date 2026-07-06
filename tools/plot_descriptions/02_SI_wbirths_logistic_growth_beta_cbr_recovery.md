@@ -1,5 +1,4 @@
-### Reading the β- and CBR-recovery plots
-
+**Reading the β- and CBR-recovery plots.**
 The cell emits four scatter plots from a 10-seed sweep over $\beta \in \{0.010, 0.015, \ldots, 0.055\}$ paired with randomly drawn crude birth rates $\mathrm{CBR} \in [15, 50)$:
 
 - **Plot 1 — Fitted β vs True β.** Axes 0.00–0.06 on both sides. Ten points cluster tightly along the identity line. Notably, two points near $\beta = 0.040$ sit visibly *above* the diagonal (fitted ≈ 0.047) — an over-shoot rather than the systematic under-shoot seen in the births-free notebook.
