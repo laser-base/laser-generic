@@ -42,7 +42,7 @@ EXPECTED_MIN_MAIN_PAGES = 8  # fail loud if the site walk looks broken
 # with a custom description ("10/10 simulations: 45%|..."), or with no
 # description ("100%|... 25/25 [02:15<00:00, 5.41s/it]"). The rate marker
 # is a tqdm-specific signature and rarely appears elsewhere.
-_TQDM_PROGRESS_RE = re.compile(r"it/s\]|s/it\]")
+_TQDM_PROGRESS_RE = re.compile(r"(?<![A-Za-z])(?:it/s|s/it)\]\s*$")
 
 
 class _NavLoader(yaml.SafeLoader):
