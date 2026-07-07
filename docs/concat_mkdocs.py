@@ -335,8 +335,20 @@ def append_section(parts: list, source, md: str, url: str = "") -> bool:
 _SECTION_SOFT_MAX = 5000
 
 
+def _find_source_before(combined: str, pos: int) -> str:
+    """Walk backward from ``pos`` to the nearest ``**Source:** `<path>`
+    breadcrumb (emitted by :func:`append_section`) and return that path.
+    Returns ``"?"`` if no breadcrumb is found — shouldn't happen given
+    every section is prefixed with one, but degrade gracefully.
+    """
+    m = None
+    for candidate in re.finditer(r"\*\*Source:\*\* `([^`]+)`", combined[:pos]):
+        m = candidate
+    return m.group(1) if m else "?"
+
+
 def _warn_oversized_sections(combined: str) -> int:
-    """Report H2+ sections that exceed the soft cap.
+    """Report H2+ sections that exceed the soft cap, with source-file provenance.
 
     Downstream (see laser-mcp/ingest.py) uses MarkdownHeaderTextSplitter on
     H1/H2/H3/H4 then a 1200-char character splitter for anything still too big.
@@ -345,6 +357,11 @@ def _warn_oversized_sections(combined: str) -> int:
     tear fenced code examples across chunks and hurt retrieval quality. Warn
     so authors can add subheadings (H3/H4/H5) or split the underlying notebook
     cells into smaller logical sections.
+
+    Each warning line names the source file (notebook or .md) that contributed
+    the section, resolved via the ``**Source:**`` breadcrumbs that
+    :func:`append_section` emits — so authors can go straight to the file
+    that needs subheadings without grepping.
     """
     positions = [(m.start(), m.group(0).strip()) for m in re.finditer(r"^##+ [^\n]+", combined, re.MULTILINE)]
     positions.append((len(combined), None))
@@ -352,12 +369,13 @@ def _warn_oversized_sections(combined: str) -> int:
     for (start, heading), (end, _) in zip(positions[:-1], positions[1:]):
         size = end - start
         if size > _SECTION_SOFT_MAX:
-            warnings.append((size, heading))
+            source = _find_source_before(combined, start)
+            warnings.append((size, heading, source))
     if warnings:
         warnings.sort(reverse=True)
         print(f"\n  WARNING: {len(warnings)} section(s) exceed {_SECTION_SOFT_MAX:,} chars (RAG chunking may fracture code examples):")
-        for size, heading in warnings[:15]:
-            print(f"    {size:>7,} chars  {heading[:80]}")
+        for size, heading, source in warnings[:15]:
+            print(f"    {size:>7,} chars  {heading[:60]:60}  {source}")
         if len(warnings) > 15:
             print(f"    ...{len(warnings) - 15} more")
         print(f"  Add subheadings (H3/H4/H5) or split cells so no section exceeds {_SECTION_SOFT_MAX:,} chars.")
