@@ -3,12 +3,16 @@ name: Build Combined Doc
 on:
   workflow_dispatch:
     inputs:
+      execute_notebooks:
+        description: 'Re-execute notebooks before building the combined doc (slower, ~30 min, validates every notebook still runs against the current API). Off by default — the fast path uses the notebook outputs already committed to docs/.'
+        type: boolean
+        default: false
       allow_notebook_errors:
-        description: 'Publish the combined doc even if notebooks have execution errors (artifact may contain tracebacks).'
+        description: 'Only relevant when execute_notebooks is true. Publish the combined doc even if notebooks have execution errors (artifact may contain tracebacks).'
         type: boolean
         default: false
       nb_timeout:
-        description: 'Per-cell execution timeout in seconds. Heavy parameter-sweep cells (e.g. nb04, nb05) can exceed the Makefile default of 600. 1800 is a comfortable headroom.'
+        description: 'Only relevant when execute_notebooks is true. Per-cell execution timeout in seconds. Heavy parameter-sweep cells (e.g. nb04, nb05) can exceed the Makefile default of 600. 1800 is a comfortable headroom.'
         type: string
         default: '1800'
 
@@ -23,9 +27,17 @@ jobs:
       - name: Install dependencies
         run: make docs-install
       - name: Build combined doc
-        # Translate the workflow_dispatch boolean into the 0/1 the Makefile uses.
-        # nb_timeout is forwarded as NB_TIMEOUT (per-cell timeout, seconds).
-        run: make docs-jenner ALLOW_NB_ERRORS=${{ inputs.allow_notebook_errors && '1' || '0' }} NB_TIMEOUT=${{ inputs.nb_timeout }}
+        # Fast path (default): docs-jenner uses the notebook outputs already
+        # committed to docs/ — no re-execution, ~1 min instead of ~30.
+        # Full path (execute_notebooks=true): docs-jenner-execute re-executes
+        # every notebook, error-gates via docs-check-nbs, then builds.
+        # ALLOW_NB_ERRORS / NB_TIMEOUT only apply on the full path.
+        run: |
+          if [ "${{ inputs.execute_notebooks }}" = "true" ]; then
+            make docs-jenner-execute ALLOW_NB_ERRORS=${{ inputs.allow_notebook_errors && '1' || '0' }} NB_TIMEOUT=${{ inputs.nb_timeout }}
+          else
+            make docs-jenner
+          fi
       - name: Upload combined_mkdocs.md
         uses: actions/upload-artifact@v7.0.1
         with:
