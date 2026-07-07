@@ -85,9 +85,9 @@ docs-check-nbs: docs-executed-nbs
 # sufficient for the RAG corpus: the outputs already in the .ipynb files
 # capture every code cell's result, and re-executing them just to re-embed the
 # same content in the corpus is wasted CI time. If a notebook committer
-# forgets to re-run a cell after editing it, the drift is caught by
-# `docs-check-nbs` (which can be run separately or via `docs-jenner-execute`
-# below), not by this build.
+# forgets to re-run a cell after editing it, this fast build will not detect
+# stale outputs; use `docs-check-nbs` / `docs-jenner-execute` to re-execute and
+# fail on runtime errors against the current API.
 docs-jenner: docs-build
 	$(PYTHON) -c "from pathlib import Path; Path('$(COMBINED)').parent.mkdir(parents=True, exist_ok=True)"
 	$(PYTHON) docs/concat_mkdocs.py $(SITE_DIR) docs $(COMBINED)
