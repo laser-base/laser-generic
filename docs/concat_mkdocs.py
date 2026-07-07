@@ -351,7 +351,7 @@ def _warn_oversized_sections(combined: str) -> int:
     """Report H2+ sections that exceed the soft cap, with source-file provenance.
 
     Downstream (see laser-mcp/ingest.py) uses MarkdownHeaderTextSplitter on
-    H1/H2/H3/H4 then a 1200-char character splitter for anything still too big.
+    H1/H2/H3, then a 1200-char character splitter for anything still too big.
     Once a section is much larger than a few chunks the character splitter
     falls through its code-block-aware separators to line-level splits — which
     tear fenced code examples across chunks and hurt retrieval quality. Warn
