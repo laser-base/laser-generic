@@ -262,7 +262,7 @@ def notebook_to_markdown(nb_path: Path) -> str:
         if not in_fence:
             m = re.match(r"^(#{1,5})(?= )", line)
             if m:
-                line = "#" * (len(m.group(1)) + 1) + line[len(m.group(1)):]
+                line = "#" * (len(m.group(1)) + 1) + line[len(m.group(1)) :]
         out_lines.append(line)
     return "\n".join(out_lines)
 
