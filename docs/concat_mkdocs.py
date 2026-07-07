@@ -238,7 +238,33 @@ def notebook_to_markdown(nb_path: Path) -> str:
                 parts.append(f"```\n{body}\n```")
 
     md = "\n\n".join(parts)
-    return re.sub(r"\n{3,}", "\n\n", md).strip()
+    md = re.sub(r"\n{3,}", "\n\n", md).strip()
+
+    # Demote all headings by one level so:
+    #   - notebook titles (originally H1) become H2, sitting cleanly under the
+    #     combined doc's single H1 ("# laser-generic documentation"),
+    #   - notebook subsections (originally H2 like "## Larger test suite")
+    #     become H3, which the RAG header-splitter catches structurally,
+    #   - nested notebook sections stay proportionally deeper.
+    # Levels are clamped at H6 (Markdown's max) to avoid emitting invalid H7+.
+    #
+    # CRITICAL: skip lines inside fenced code blocks — Python comments like
+    # ``# %%capture`` or ``# TODO`` would otherwise be misread as headings and
+    # demoted, corrupting the code AND emitting bogus H2 section boundaries.
+    out_lines = []
+    in_fence = False
+    for line in md.split("\n"):
+        stripped = line.lstrip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            out_lines.append(line)
+            continue
+        if not in_fence:
+            m = re.match(r"^(#{1,5})(?= )", line)
+            if m:
+                line = "#" * (len(m.group(1)) + 1) + line[len(m.group(1)):]
+        out_lines.append(line)
+    return "\n".join(out_lines)
 
 
 def iter_nav_pages(nav):
@@ -301,6 +327,44 @@ def append_section(parts: list, source, md: str, url: str = "") -> bool:
         provenance += f" · [View page online]({url})"
     parts.append(f"\n\n---\n\n{provenance}\n\n{md}")
     return True
+
+
+# Soft cap for section size beyond which the RAG chunker starts making lossy
+# splits (fracturing fenced code examples across chunks). Not a hard error —
+# just a warning that surfaces which content needs subheadings or cell splits.
+_SECTION_SOFT_MAX = 5000
+
+
+def _warn_oversized_sections(combined: str) -> int:
+    """Report H2+ sections that exceed the soft cap.
+
+    Downstream (see laser-mcp/ingest.py) uses MarkdownHeaderTextSplitter on
+    H1/H2/H3/H4 then a 1200-char character splitter for anything still too big.
+    Once a section is much larger than a few chunks the character splitter
+    falls through its code-block-aware separators to line-level splits — which
+    tear fenced code examples across chunks and hurt retrieval quality. Warn
+    so authors can add subheadings (H3/H4/H5) or split the underlying notebook
+    cells into smaller logical sections.
+    """
+    positions = [(m.start(), m.group(0).strip())
+                 for m in re.finditer(r"^##+ [^\n]+", combined, re.MULTILINE)]
+    positions.append((len(combined), None))
+    warnings = []
+    for (start, heading), (end, _) in zip(positions[:-1], positions[1:]):
+        size = end - start
+        if size > _SECTION_SOFT_MAX:
+            warnings.append((size, heading))
+    if warnings:
+        warnings.sort(reverse=True)
+        print(f"\n  WARNING: {len(warnings)} section(s) exceed {_SECTION_SOFT_MAX:,} chars "
+              f"(RAG chunking may fracture code examples):")
+        for size, heading in warnings[:15]:
+            print(f"    {size:>7,} chars  {heading[:80]}")
+        if len(warnings) > 15:
+            print(f"    ...{len(warnings) - 15} more")
+        print(f"  Add subheadings (H3/H4/H5) or split cells so no section exceeds "
+              f"{_SECTION_SOFT_MAX:,} chars.")
+    return len(warnings)
 
 
 def _is_reference_entry(entry: str) -> bool:
@@ -413,9 +477,12 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
     if nb_included == 0:
         print("WARNING: 0 notebook pages included — were notebooks executed into the dir?")
 
+    combined = "\n".join(parts)
+    _warn_oversized_sections(combined)
+
     output = Path(output_file)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text("\n".join(parts), encoding="utf-8")
+    output.write_text(combined, encoding="utf-8")
 
     total = main_included + nb_included + ref_included
     print(f"\nWrote {total} sections ({skipped} skipped) -> {output_file}")
