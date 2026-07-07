@@ -154,6 +154,7 @@ plugins:
       glob:
         - customization/gen-files.py # exclude file generation script
         - includes/glossary.md # exclude glossary include file
+        - tutorials/notebooks/research/* # full-fidelity research copies of tutorial notebooks (not in nav, not executed in CI)
 
 copyright: Copyright &copy; 2025 Gates Foundation. All rights reserved.
 
