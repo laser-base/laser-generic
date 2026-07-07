@@ -66,8 +66,7 @@ model.components = [Susceptible(model), Infectious(model, infdurdist),
 `Model.__init__` uses attribute access (`self.params.nticks`), so a plain dict raises
 `AttributeError: 'dict' object has no attribute 'nticks'`. Build the params with
 `PropertySet({...})`, or with `get_default_parameters() | {...}` (the `|` merge returns a
-`PropertySet`) — but import `get_default_parameters` from `laser.generic.utils`, not from
-top-level `laser.generic`.
+`PropertySet`).
 
 The model's `PropertySet` must include `beta` (the per-day transmission rate) and `nticks`
 (number of ticks to run). The `Transmission` component reads `model.params.beta` and raises
