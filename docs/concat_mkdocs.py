@@ -346,8 +346,7 @@ def _warn_oversized_sections(combined: str) -> int:
     so authors can add subheadings (H3/H4/H5) or split the underlying notebook
     cells into smaller logical sections.
     """
-    positions = [(m.start(), m.group(0).strip())
-                 for m in re.finditer(r"^##+ [^\n]+", combined, re.MULTILINE)]
+    positions = [(m.start(), m.group(0).strip()) for m in re.finditer(r"^##+ [^\n]+", combined, re.MULTILINE)]
     positions.append((len(combined), None))
     warnings = []
     for (start, heading), (end, _) in zip(positions[:-1], positions[1:]):
@@ -356,14 +355,12 @@ def _warn_oversized_sections(combined: str) -> int:
             warnings.append((size, heading))
     if warnings:
         warnings.sort(reverse=True)
-        print(f"\n  WARNING: {len(warnings)} section(s) exceed {_SECTION_SOFT_MAX:,} chars "
-              f"(RAG chunking may fracture code examples):")
+        print(f"\n  WARNING: {len(warnings)} section(s) exceed {_SECTION_SOFT_MAX:,} chars (RAG chunking may fracture code examples):")
         for size, heading in warnings[:15]:
             print(f"    {size:>7,} chars  {heading[:80]}")
         if len(warnings) > 15:
             print(f"    ...{len(warnings) - 15} more")
-        print(f"  Add subheadings (H3/H4/H5) or split cells so no section exceeds "
-              f"{_SECTION_SOFT_MAX:,} chars.")
+        print(f"  Add subheadings (H3/H4/H5) or split cells so no section exceeds {_SECTION_SOFT_MAX:,} chars.")
     return len(warnings)
 
 
