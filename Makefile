@@ -98,7 +98,6 @@ docs-jenner: docs-build
 # for release-time builds) — the docs-check-nbs gate is what catches drift
 # between notebook code and current APIs.
 docs-jenner-execute: docs-check-nbs docs-build
-	$(PYTHON) -c "from pathlib import Path; Path('$(COMBINED)').parent.mkdir(parents=True, exist_ok=True)"
 	$(PYTHON) docs/concat_mkdocs.py $(SITE_DIR) $(EXEC_DIR) $(COMBINED)
 
 # ── Clean ─────────────────────────────────────────────────────────────────────
