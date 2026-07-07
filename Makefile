@@ -20,8 +20,10 @@ ALLOW_NB_ERRORS  ?= 0
 # Comma-separated substrings of docs/-relative paths that should NOT be executed
 # by the doc-build pipeline. EW_analysis is a research-only notebook maintained
 # for manual exploration — its dependencies and runtime aren't suitable for the
-# automated execute-and-check flow, so it's left out by default.
-NB_EXCLUDE       ?= EW_analysis
+# automated execute-and-check flow. `research/` catches full-fidelity copies
+# of tutorial notebooks (e.g. tutorials/notebooks/research/06_...ipynb) that
+# are kept for reference but too slow for CI (see docs/tutorials/notebooks/research/README.md).
+NB_EXCLUDE       ?= EW_analysis,research/
 
 help:
 	@echo "laser-generic documentation targets"
