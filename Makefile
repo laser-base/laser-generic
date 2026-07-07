@@ -89,7 +89,6 @@ docs-check-nbs: docs-executed-nbs
 # stale outputs; use `docs-check-nbs` / `docs-jenner-execute` to re-execute and
 # fail on runtime errors against the current API.
 docs-jenner: docs-build
-	$(PYTHON) -c "from pathlib import Path; Path('$(COMBINED)').parent.mkdir(parents=True, exist_ok=True)"
 	$(PYTHON) docs/concat_mkdocs.py $(SITE_DIR) docs $(COMBINED)
 
 # ── Combined markdown pipeline with fresh notebook execution ─────────────────
