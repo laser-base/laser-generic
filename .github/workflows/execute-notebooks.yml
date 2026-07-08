@@ -9,6 +9,20 @@ name: Execute Notebooks
 # cache miss = full nbconvert --execute pass, currently ~25 min with the
 # env-var-lite path for nb06 (GITHUB_ACTIONS=true triggers the light branch
 # introduced in #233).
+#
+# ── Policy: committed notebook outputs are decorative, not authoritative ──────
+# This artifact is the source of truth for downstream doc / RAG builds. The
+# outputs field of committed .ipynb files under docs/tutorials/notebooks/
+# has NO effect on any CI-produced artifact and is kept only so browsing the
+# repo on github.com renders charts inline. Consequences:
+#   - Contributors MAY commit executed notebooks (for GitHub rendering).
+#   - Contributors MAY commit source-only notebooks (nbstripout, --ClearOutputPreprocessor).
+#   - Both work identically for the doc build. CI ignores committed outputs.
+#   - Committed outputs may drift from source; that's fine here because no
+#     downstream product reads them.
+# If a future decision requires strict source-only commits (e.g. to control
+# repo bloat), add a check step to github-actions.yml that fails PRs whose
+# notebooks contain non-empty outputs. Not enforced today.
 
 on:
   push:
