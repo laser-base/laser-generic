@@ -62,6 +62,12 @@ model.components = [Susceptible(model), Infectious(model, infdurdist),
 
 ## Parameters (`PropertySet`)
 
+`Model(scenario, params)` requires `params` to be a `PropertySet`, **never a plain `dict`**.
+`Model.__init__` uses attribute access (`self.params.nticks`), so a plain dict raises
+`AttributeError: 'dict' object has no attribute 'nticks'`. Build the params with
+`PropertySet({...})`, or with `get_default_parameters() | {...}` (the `|` merge returns a
+`PropertySet`).
+
 The model's `PropertySet` must include `beta` (the per-day transmission rate) and `nticks`
 (number of ticks to run). The `Transmission` component reads `model.params.beta` and raises
 `AttributeError: 'PropertySet' object has no attribute 'beta'` if it is missing.

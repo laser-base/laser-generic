@@ -5,121 +5,28 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+
 jobs:
   test:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.tox_env }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
+        tox_env: ['py310', 'py314']
+        os:      ['ubuntu-latest', 'windows-latest', 'macos-latest']
         include:
-          - name: 'check'
-            python: '3.12'
-            toxpython: 'python3.12'
-            tox_env: 'check'
-            os: 'ubuntu-latest'
-          - name: 'docs'
-            python: '3.12'
-            toxpython: 'python3.12'
-            tox_env: 'docs'
-            os: 'ubuntu-latest'
-          - name: 'py310 (ubuntu/x86_64)'
-            python: '3.10'
-            toxpython: 'python3.10'
-            python_arch: 'x64'
-            tox_env: 'py310'
-            cibw_arch: 'x86_64'
-            cibw_build: false
-            os: 'ubuntu-latest'
-          - name: 'py310 (windows/AMD64)'
-            python: '3.10'
-            toxpython: 'python3.10'
-            python_arch: 'x64'
-            tox_env: 'py310'
-            cibw_arch: 'AMD64'
-            cibw_build: false
-            os: 'windows-latest'
-          - name: 'py310 (macos/arm64)'
-            python: '3.10'
-            toxpython: 'python3.10'
-            python_arch: 'arm64'
-            tox_env: 'py310'
-            cibw_arch: 'arm64'
-            cibw_build: false
-            os: 'macos-latest'
-          - name: 'py314 (ubuntu/x86_64)'
-            python: '3.14'
-            toxpython: 'python3.14'
-            python_arch: 'x64'
-            tox_env: 'py314'
-            cibw_arch: 'x86_64'
-            cibw_build: false
-            os: 'ubuntu-latest'
-          - name: 'py314 (windows/AMD64)'
-            python: '3.14'
-            toxpython: 'python3.14'
-            python_arch: 'x64'
-            tox_env: 'py314'
-            cibw_arch: 'AMD64'
-            cibw_build: false
-            os: 'windows-latest'
-          - name: 'py314 (macos/arm64)'
-            python: '3.14'
-            toxpython: 'python3.14'
-            python_arch: 'arm64'
-            tox_env: 'py314'
-            cibw_arch: 'arm64'
-            cibw_build: false
-            os: 'macos-latest'
+          - { tox_env: 'check', os: 'ubuntu-latest' }
+          - { tox_env: 'docs',  os: 'ubuntu-latest' }
+
     steps:
-    - uses: docker/setup-qemu-action@v3
-      if: matrix.cibw_arch == 'aarch64'
-      with:
-        platforms: arm64
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python }}
-        architecture: ${{ matrix.python_arch }}
-    - name: install dependencies
-      run: |
-        python -mpip install --progress-bar=off cibuildwheel -r ci/requirements.txt
-        virtualenv --version
-        pip --version
-        tox --version
-        pip list --format=freeze
-    - name: cibw build and test
-      if: matrix.cibw_build
-      run: cibuildwheel
-      env:
-        TOXPYTHON: '${{ matrix.toxpython }}'
-        CIBW_ARCHS: '${{ matrix.cibw_arch }}'
-        CIBW_BUILD: '${{ matrix.cibw_build }}'
-        CIBW_BUILD_VERBOSITY: '3'
-        CIBW_TEST_REQUIRES: >
-          tox
-          tox-direct
-        CIBW_TEST_COMMAND: >
-          cd {project} &&
-          tox --skip-pkg-install --direct-yolo -e ${{ matrix.tox_env }} -v
-        CIBW_TEST_COMMAND_WINDOWS: >
-          cd /d {project} &&
-          tox --skip-pkg-install --direct-yolo -e ${{ matrix.tox_env }} -v
-    - name: regular build and test
-      env:
-        TOXPYTHON: '${{ matrix.toxpython }}'
-      if: >
-        !matrix.cibw_build
-      run: >
-        tox -e ${{ matrix.tox_env }} -v
-    - name: check wheel
-      if: matrix.cibw_build
-      run: twine check wheelhouse/*.whl
-    - name: upload wheel
-      uses: actions/upload-artifact@v4
-      if: matrix.cibw_build
-      with:
-        path: wheelhouse/*.whl
+      - uses: actions/checkout@v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v8.3.0
+
+      - name: regular build and test
+        run: uvx --with tox-uv tox -e ${{ matrix.tox_env }} -v
