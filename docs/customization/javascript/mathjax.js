@@ -11,12 +11,17 @@ window.MathJax = {
     processEnvironments: true
   },
   options: {
-    ignoreHtmlClass: ".*|",
+    ignoreHtmlClass: ".*",
     processHtmlClass: "arithmatex"
   }
 };
 
 document$.subscribe(() => {
+  // Guards against the MathJax CDN script failing to load (network block,
+  // ad-blocker, offline): without this check, a failed load leaves
+  // MathJax.startup undefined, throwing here and killing this subscription
+  // for the rest of the session, including on later page navigations.
+  if (!window.MathJax?.startup) return;
   MathJax.startup.output.clearCache();
   MathJax.typesetClear();
   MathJax.texReset();

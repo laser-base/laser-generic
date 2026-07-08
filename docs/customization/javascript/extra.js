@@ -2,7 +2,7 @@
 //
 // Material renders the feedback form with a `hidden` attribute and only ships
 // the JS that reveals it as part of its analytics-provider integration
-// (partials/integrations/analytics/google.html). We don't set
+// (partials/integrations/analytics/google.html). We set a custom
 // extra.analytics.provider, so that JS never loads and the form stays hidden.
 // This block reproduces Material's native behavior (un-hide, disable on submit,
 // reveal the matching thank-you note) without pulling in Google Analytics.
@@ -35,4 +35,4 @@ window.document$.subscribe(function() {
             if (note) note.hidden = false;
         });
     }
-})
+});
