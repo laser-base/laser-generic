@@ -76,7 +76,6 @@ docs = [
   "mkdocs-mermaid2-plugin",
   "mkdocs-exclude",
   # markdown extensions used by mkdocs.yml
-  "python-markdown-math",
   "pymdown-extensions",
   # API reference generation
   "mkdocstrings",

@@ -1,18 +1,18 @@
-// MathJax configuration for pymdownx.arithmatex (generic mode).
-// Enables inline \(...\) and display \[...\] delimiters that arithmatex emits,
-// restricts typesetting to .arithmatex spans, and re-typesets after Material's
-// instant navigation swaps page content (otherwise math fails to render on
-// client-side page changes).
+// MathJax configuration for pymdownx.arithmatex (generic mode) and Jupyter notebooks.
+// Enables inline \(...\)/$...$ and display \[...\]/$$...$$ delimiters: \(...\) and \[...\]
+// are what arithmatex emits for regular Markdown pages, while $...$ and $$...$$ are the raw
+// delimiters nbconvert leaves in notebook cells (mkdocs-jupyter renders notebooks outside the
+// Markdown/arithmatex pipeline, so its own math never gets converted to \(...\)/\[...\]).
+// No ignoreHtmlClass/processHtmlClass restriction: MathJax's default skipHtmlTags already
+// excludes script/style/pre/code, and a class-based allowlist can't reach notebook math anyway
+// - it sits inside an unclassed <p> wrapper one level below the notebook's own output class, so
+// the allowlist match doesn't survive the extra nesting.
 window.MathJax = {
   tex: {
-    inlineMath: [["\\(", "\\)"]],
-    displayMath: [["\\[", "\\]"]],
+    inlineMath: [["\\(", "\\)"], ["$", "$"]],
+    displayMath: [["\\[", "\\]"], ["$$", "$$"]],
     processEscapes: true,
     processEnvironments: true
-  },
-  options: {
-    ignoreHtmlClass: ".*",
-    processHtmlClass: "arithmatex"
   }
 };
 
