@@ -1,19 +1,24 @@
 name: Build Combined Doc
 
+# Builds the combined-markdown RAG corpus and syncs it into laser-mcp.
+# Consumes the executed_nbs artifact published by Execute Notebooks — no
+# in-workflow notebook execution. Triggered automatically after each
+# successful Execute Notebooks run on main, or manually via dispatch.
+
 on:
+  # Auto-fire after every successful Execute Notebooks run.
+  workflow_run:
+    workflows: ["Execute Notebooks"]
+    types: [completed]
+    branches: [main]
+  # Manual: pulls the latest successful Execute Notebooks artifact.
   workflow_dispatch:
-    inputs:
-      allow_notebook_errors:
-        description: 'Publish the combined doc even if notebooks have execution errors (artifact may contain tracebacks).'
-        type: boolean
-        default: false
-      nb_timeout:
-        description: 'Per-cell execution timeout in seconds. Heavy parameter-sweep cells (e.g. nb04, nb05) can exceed the Makefile default of 600. 1800 is a comfortable headroom.'
-        type: string
-        default: '1800'
 
 jobs:
   build:
+    # Skip if the upstream Execute Notebooks run failed (no artifact worth
+    # consuming). workflow_dispatch triggers pass this check trivially.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.0
@@ -22,12 +27,43 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: make docs-install
-      - name: Build combined doc
-        # Translate the workflow_dispatch boolean into the 0/1 the Makefile uses.
-        # nb_timeout is forwarded as NB_TIMEOUT (per-cell timeout, seconds).
-        run: make docs-jenner ALLOW_NB_ERRORS=${{ inputs.allow_notebook_errors && '1' || '0' }} NB_TIMEOUT=${{ inputs.nb_timeout }}
+
+      # Two download paths, one for each trigger. workflow_run passes the
+      # specific upstream run-id so we always fetch the artifact that just
+      # signalled completion. workflow_dispatch has no such linkage and grabs
+      # whatever the most recent successful Execute Notebooks run produced.
+      - name: Download executed notebooks (from triggering run)
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: executed_nbs
+          path: dist/executed_nbs
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # dawidd6/action-download-artifact is used here (not actions/download-artifact)
+      # because the first-party action can only fetch from the current run or a
+      # run-id you already know. This one searches for the latest successful run
+      # of a named workflow — which is exactly what workflow_dispatch needs
+      # since there's no "triggering upstream run" to point at.
+      - name: Download executed notebooks (latest successful)
+        if: github.event_name == 'workflow_dispatch'
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: execute-notebooks.yml
+          name: executed_nbs
+          path: dist/executed_nbs
+          workflow_conclusion: success
+          if_no_artifact_found: fail
+
+      # No re-execution here — Execute Notebooks already produced the executed
+      # tree and gated on docs-check-nbs. This step just builds the mkdocs
+      # site and concats it with the downloaded executed notebooks.
+      - name: Build combined doc from artifact
+        run: make docs-jenner-artifact
+
       - name: Upload combined_mkdocs.md
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v4
         with:
           name: combined_mkdocs
           path: dist/combined_mkdocs.md

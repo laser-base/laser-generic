@@ -1,0 +1,90 @@
+name: Execute Notebooks
+
+# Executes every docs/**/*.ipynb and publishes the results as a workflow
+# artifact ("executed_nbs"). The Build Combined Doc workflow consumes this
+# artifact instead of re-executing notebooks on every doc build.
+#
+# Cache is keyed on a hash of everything that can affect notebook outputs
+# (notebook source, library source, dependencies). Cache hit = seconds;
+# cache miss = full nbconvert --execute pass, currently ~25 min with the
+# env-var-lite path for nb06 (GITHUB_ACTIONS=true triggers the light branch
+# introduced in #233).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.ipynb'                       # notebook source changed
+      - 'src/**'                                # library that notebooks import changed
+      - 'pyproject.toml'                        # dependencies changed
+      - 'docs/execute_notebooks.py'             # exec harness itself changed
+      - 'docs/check_executed_nbs.py'            # error gate changed
+      - '.github/workflows/execute-notebooks.yml'
+  workflow_dispatch:
+    inputs:
+      nb_timeout:
+        description: 'Per-cell timeout (s). Heavy notebooks (nb04, nb05) benefit from 1800.'
+        type: string
+        default: '1800'
+      allow_notebook_errors:
+        description: 'Publish artifact even if notebooks errored (for debugging).'
+        type: boolean
+        default: false
+      force_reexecute:
+        description: 'Ignore the cache and re-execute all notebooks.'
+        type: boolean
+        default: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    env:
+      # Nb06's env-var toggle (#233) picks the CI-lite path (n_years=20, nsims=2)
+      # so the full pipeline stays under the ~40-min doc-build budget.
+      GITHUB_ACTIONS: 'true'
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - uses: actions/setup-python@v6.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: make docs-install
+
+      # Any change to the hashed inputs busts the cache and forces re-execution.
+      # Bump the key prefix (executed-nbs-vN) to invalidate the whole cache pool
+      # if the executor itself is upgraded in a way we want to redo across all
+      # historic source states.
+      - name: Cache executed notebooks
+        id: nb-cache
+        if: ${{ !inputs.force_reexecute }}
+        uses: actions/cache@v4
+        with:
+          path: dist/executed_nbs
+          key: executed-nbs-v1-${{ hashFiles('docs/**/*.ipynb', 'src/**/*.py', 'pyproject.toml') }}
+
+      - name: Execute notebooks (cache miss or forced)
+        if: ${{ steps.nb-cache.outputs.cache-hit != 'true' || inputs.force_reexecute }}
+        run: make docs-executed-nbs NB_TIMEOUT=${{ inputs.nb_timeout || '1800' }}
+
+      # Gate: fail if any executed notebook contains error outputs. Invoke the
+      # underlying script directly rather than `make docs-check-nbs` — the make
+      # target has docs-executed-nbs as a prereq, which would force
+      # re-execution even on cache hit.
+      - name: Check for execution errors
+        run: |
+          python docs/check_executed_nbs.py dist/executed_nbs \
+            ${{ inputs.allow_notebook_errors && '--allow-errors' || '' }}
+
+      # Upload regardless of check outcome so debug workflows can inspect the
+      # tracebacks in failed builds. 400 days = maximum retention on
+      # GitHub-hosted artifacts; these are the source-of-truth outputs for any
+      # downstream RAG / doc build.
+      - name: Upload executed notebooks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed_nbs
+          path: dist/executed_nbs
+          retention-days: 400
