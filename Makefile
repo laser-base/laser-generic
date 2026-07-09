@@ -9,7 +9,7 @@
 # work identically under bash, cmd.exe, and PowerShell — no SHELL override
 # needed. Multi-step logic lives in docs/*.py helpers instead of inline shell.
 
-.PHONY: help docs-install docs-build docs-executed-nbs docs-check-nbs docs-jenner clean-docs
+.PHONY: help docs-install docs-build docs-executed-nbs docs-check-nbs docs-jenner docs-jenner-artifact clean-docs
 
 PYTHON           ?= python
 SITE_DIR         ?= site
@@ -33,6 +33,8 @@ help:
 	@echo "  make docs-check-nbs      Fail if any executed notebook contains errors"
 	@echo "  make docs-jenner       Full pipeline (execute + check + build + concat)"
 	@echo "                           Output: $(COMBINED)"
+	@echo "  make docs-jenner-artifact  Build + concat only (assumes \$$(EXEC_DIR) pre-populated)"
+	@echo "                           Used by the Execute Notebooks -> Build Combined Doc CI chain"
 	@echo "  make clean-docs          Remove $(SITE_DIR)/, $(EXEC_DIR)/, $(COMBINED)"
 	@echo ""
 	@echo "Tunable variables (override on the command line):"
@@ -73,6 +75,16 @@ docs-check-nbs: docs-executed-nbs
 # independent of notebook execution (mkdocs-jupyter has execute:false and
 # reads the source .ipynb files directly), so it's safe to keep in parallel.
 docs-jenner: docs-check-nbs docs-build
+	$(PYTHON) -c "from pathlib import Path; Path('$(COMBINED)').parent.mkdir(parents=True, exist_ok=True)"
+	$(PYTHON) docs/concat_mkdocs.py $(SITE_DIR) $(EXEC_DIR) $(COMBINED)
+
+# ── Combined markdown from a pre-built executed-notebooks tree ────────────────
+# Same output as docs-jenner but skips both docs-executed-nbs and docs-check-nbs
+# — assumes $(EXEC_DIR) is already populated (typically by the Execute
+# Notebooks GitHub Action's artifact download). No execution, no error gate,
+# both already guaranteed upstream. Local users generally want `docs-jenner`
+# instead.
+docs-jenner-artifact: docs-build
 	$(PYTHON) -c "from pathlib import Path; Path('$(COMBINED)').parent.mkdir(parents=True, exist_ok=True)"
 	$(PYTHON) docs/concat_mkdocs.py $(SITE_DIR) $(EXEC_DIR) $(COMBINED)
 
