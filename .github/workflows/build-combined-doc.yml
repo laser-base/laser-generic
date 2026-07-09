@@ -88,7 +88,8 @@ jobs:
             'pyproject.toml',
             'docs/requirements.txt',
             'docs/**/*.py',
-            'Makefile'
+            'Makefile',
+            '.github/workflows/execute-notebooks.yml'
           ) }}"
           ARTIFACT_HASH=$(python -c "import json; print(json.load(open('dist/executed_nbs/manifest.json'))['source_hash'])")
           echo "artifact hash: $ARTIFACT_HASH"
