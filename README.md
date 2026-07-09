@@ -125,14 +125,12 @@ uv pip install -e ".[dev]"
 
 Now you can run tests in the `tests` directory or run the entire check+docs+test suite with ```tox```. Running ```tox``` will run several consistency checks, build documentation, run tests against the supported versions of Python, and create a code coverage report based on the test suite. Note that the first run of ```tox``` may take a few minutes (~5). Subsequent runs should be quicker depending on the speed of your machine and the test suite (~2 minutes). You can use ```tox``` to run tests against a single version of Python with, for example, ```tox -e py312```.
 
-## Executed notebook artifacts
+## Executed tutorial notebooks
 
-The tutorial notebooks under [`docs/tutorials/notebooks/`](docs/tutorials/notebooks/) are executed in CI by the [Execute Notebooks](.github/workflows/execute-notebooks.yml) workflow on every push to `main` that touches notebook or library source. Each run publishes an `executed_nbs` artifact containing every notebook re-executed against that commit, plus a `manifest.json` recording provenance (commit SHA, source hash, Python version, cache-hit status).
+**Read the rendered notebooks on the docs site: [laser.idmod.org/laser-generic/tutorials/](https://laser.idmod.org/laser-generic/tutorials/).**
 
-**To download the latest executed notebooks:**
+That's the freshly-executed, browsable, hosted-by-GitHub-Pages view — no download, no local Jupyter setup. Every tutorial notebook has its own page. The docs site is auto-rebuilt whenever notebook or library source changes on `main`.
 
-1. Open the [latest successful Execute Notebooks run](https://github.com/laser-base/laser-generic/actions/workflows/execute-notebooks.yml?query=is%3Asuccess+branch%3Amain).
-2. Scroll to the *Artifacts* panel at the bottom of the run's summary page.
-3. Click `executed_nbs` (retention: 400 days) to download a zip of all executed notebooks.
+Under the hood: the [Execute Notebooks](.github/workflows/execute-notebooks.yml) workflow runs every notebook against a fresh Python environment and publishes an `executed_nbs` artifact plus a `manifest.json` recording provenance (commit SHA, source hash, Python version). The [Build Combined Doc](.github/workflows/build-combined-doc.yml) workflow consumes that artifact and rebuilds the site.
 
-The rendered notebook pages on the [documentation site](https://laser.idmod.org/laser-generic) come from the same artifact — see the [`Build Combined Doc`](.github/workflows/build-combined-doc.yml) workflow for how the artifact feeds the doc build. If you need to inspect a specific commit's outputs (e.g. to debug a doc-quality regression), each artifact's `manifest.json` tells you which commit it was executed against.
+If you need the raw `.ipynb` files (with outputs) that were executed against a specific commit — e.g. to reproduce a doc-quality regression, or to compare corpora across time — see [`docs/tutorials/notebooks/README.md`](docs/tutorials/notebooks/README.md) for the artifact-download procedure. For regular browsing, use the docs site.
