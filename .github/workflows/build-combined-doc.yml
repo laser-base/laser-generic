@@ -65,7 +65,7 @@ jobs:
       # since there's no "triggering upstream run" to point at.
       - name: Download executed notebooks (latest successful)
         if: github.event_name == 'workflow_dispatch'
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: execute-notebooks.yml
           name: executed_nbs
