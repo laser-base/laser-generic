@@ -3,16 +3,22 @@ name: Build Combined Doc
 # Builds the combined-markdown RAG corpus and syncs it into laser-mcp.
 # Consumes the executed_nbs artifact published by Execute Notebooks — no
 # in-workflow notebook execution. Triggered automatically after each
-# successful Execute Notebooks run on main, or manually via dispatch.
+# successful push-driven Execute Notebooks run on main, or manually via
+# dispatch.
 
 on:
-  # Auto-fire after every successful Execute Notebooks run.
+  # Auto-fire after every successful push-triggered Execute Notebooks run.
   workflow_run:
     workflows: ["Execute Notebooks"]
     types: [completed]
     branches: [main]
   # Manual: pulls the latest successful Execute Notebooks artifact.
   workflow_dispatch:
+    inputs:
+      use_latest_anyway:
+        description: 'On workflow_dispatch, skip the source-hash-vs-checkout compatibility check. Use if you deliberately want to build against a mismatched (older/different) artifact.'
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -21,7 +27,7 @@ jobs:
     # workflow_dispatch runs — a debug dispatch (e.g. allow_notebook_errors=true
     # or force_reexecute=true) would otherwise auto-fire this workflow and
     # push a possibly-corrupted corpus PR into laser-mcp. Manual doc rebuilds
-    # (with the latest known-good artifact) go through this workflow's own
+    # (against the latest known-good artifact) go through this workflow's own
     # workflow_dispatch trigger, which is always allowed.
     if: >-
       github.event_name == 'workflow_dispatch' ||
@@ -66,6 +72,33 @@ jobs:
           path: dist/executed_nbs
           workflow_conclusion: success
           if_no_artifact_found: fail
+
+      # Provenance gate — only meaningful for workflow_dispatch. The
+      # workflow_run path already fetches by explicit run-id, so no drift is
+      # possible there. Compares the artifact's manifest.source_hash to a
+      # freshly-computed hash of the current checkout using the same file set
+      # as execute-notebooks.yml. Bypass with use_latest_anyway=true if you
+      # intentionally want to build against an older artifact.
+      - name: Verify artifact matches checkout (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch' && !inputs.use_latest_anyway
+        run: |
+          CURRENT_HASH="${{ hashFiles(
+            'docs/**/*.ipynb',
+            'src/**/*.py',
+            'pyproject.toml',
+            'docs/requirements.txt',
+            'docs/**/*.py',
+            'Makefile'
+          ) }}"
+          ARTIFACT_HASH=$(python -c "import json; print(json.load(open('dist/executed_nbs/manifest.json'))['source_hash'])")
+          echo "artifact hash: $ARTIFACT_HASH"
+          echo "checkout hash: $CURRENT_HASH"
+          if [ "$ARTIFACT_HASH" != "$CURRENT_HASH" ]; then
+              echo "::error::Artifact source-hash does not match the currently-checked-out tree."
+              echo "::error::The executed notebooks in the latest successful Execute Notebooks run were produced from a different source state than what's checked out here."
+              echo "::error::Kick a fresh Execute Notebooks run, or re-dispatch this workflow with use_latest_anyway=true."
+              exit 1
+          fi
 
       # No re-execution here — Execute Notebooks already produced the executed
       # tree and gated on docs-check-nbs. This step just builds the mkdocs

@@ -5,10 +5,20 @@ name: Execute Notebooks
 # artifact instead of re-executing notebooks on every doc build.
 #
 # Cache is keyed on a hash of everything that can affect notebook outputs
-# (notebook source, library source, dependencies). Cache hit = seconds;
-# cache miss = full nbconvert --execute pass, currently ~25 min with the
-# env-var-lite path for nb06 (GITHUB_ACTIONS=true triggers the light branch
-# introduced in #233).
+# (notebook source, library source, dependencies, exec harness, Makefile
+# defaults). Cache hit = seconds; cache miss = full nbconvert --execute pass,
+# currently ~25 min with the env-var-lite path for nb06 (GITHUB_ACTIONS=true
+# triggers the light branch introduced in #233).
+#
+# Artifact naming (canonical name matters — Build Combined Doc's manual
+# workflow_dispatch path searches for the latest successful run of a
+# workflow that produced an artifact named "executed_nbs"):
+#
+#   push to main (success)             -> executed_nbs                    (400d)
+#   workflow_dispatch (success, clean)  -> executed_nbs                    (400d)
+#   workflow_dispatch (allow_errors=1)  -> executed_nbs-debug-<run_id>     (30d)
+#   pull_request (success)              -> executed_nbs-pr-<N>             (90d)
+#   any failure                         -> executed_nbs-failed-<run_id>    (30d)
 #
 # ── Policy: committed notebook outputs are decorative, not authoritative ──────
 # This artifact is the source of truth for downstream doc / RAG builds. The
@@ -28,17 +38,28 @@ on:
   push:
     branches: [main]
     # Trigger whenever ANY input that could change executed-notebook outputs
-    # changes. Kept in sync with the cache-key hashFiles below — if you add
-    # something here that affects outputs, add it to the cache key too, else
-    # a push could trigger this workflow but hit an old cache entry.
+    # changes. Kept in sync with the source-hash computation step below.
     paths:
       - 'docs/**/*.ipynb'                       # notebook source
       - 'src/**'                                # library that notebooks import
       - 'pyproject.toml'                        # runtime dependencies
       - 'docs/requirements.txt'                 # docs / exec-time dependencies
-      - 'docs/execute_notebooks.py'             # exec harness itself
-      - 'docs/check_executed_nbs.py'            # error gate
+      - 'docs/**/*.py'                          # exec harness, checkers, other doc scripts
       - 'Makefile'                              # NB_EXCLUDE / NB_TIMEOUT / other exec defaults
+      - '.github/workflows/execute-notebooks.yml'
+  pull_request:
+    branches: [main]
+    # PR validation: run execution + error gate so reviewers see notebook
+    # breakage before merge. Uploads to a PR-scoped artifact name so Build
+    # Combined Doc's "latest successful" search can't accidentally pick up
+    # PR-branch outputs.
+    paths:
+      - 'docs/**/*.ipynb'
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'docs/requirements.txt'
+      - 'docs/**/*.py'
+      - 'Makefile'
       - '.github/workflows/execute-notebooks.yml'
   workflow_dispatch:
     inputs:
@@ -47,7 +68,7 @@ on:
         type: string
         default: '1800'
       allow_notebook_errors:
-        description: 'Publish artifact even if notebooks errored (for debugging).'
+        description: 'Publish artifact even if notebooks errored (for debugging). Skips the canonical artifact — debug output uploads under a distinct name.'
         type: boolean
         default: false
       force_reexecute:
@@ -72,11 +93,24 @@ jobs:
       - name: Install dependencies
         run: make docs-install
 
+      # Compute the source-hash ONCE, then reuse in both cache key and manifest.
+      # If you extend this list, extend both the paths filter above (push +
+      # pull_request) and the cache-key placeholder below.
+      - name: Compute source hash
+        id: source-hash
+        run: |
+          SOURCE_HASH="${{ hashFiles(
+            'docs/**/*.ipynb',
+            'src/**/*.py',
+            'pyproject.toml',
+            'docs/requirements.txt',
+            'docs/**/*.py',
+            'Makefile'
+          ) }}"
+          echo "hash=$SOURCE_HASH" >> "$GITHUB_OUTPUT"
+          echo "Source hash: $SOURCE_HASH"
+
       # Any change to the hashed inputs busts the cache and forces re-execution.
-      # Files hashed here MUST cover everything that can affect executed
-      # notebook outputs — else a change (e.g. to NB_EXCLUDE in the Makefile,
-      # or a new dep in docs/requirements.txt) would trigger this workflow via
-      # the paths filter above but still hit an old cache entry.
       # Bump the key prefix (executed-nbs-vN) to invalidate the whole cache
       # pool if the hashing set itself needs to change historic-state-wide.
       - name: Cache executed notebooks
@@ -85,15 +119,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: dist/executed_nbs
-          key: >-
-            executed-nbs-v2-${{ hashFiles(
-              'docs/**/*.ipynb',
-              'src/**/*.py',
-              'pyproject.toml',
-              'docs/requirements.txt',
-              'docs/execute_notebooks.py',
-              'Makefile'
-            ) }}
+          key: executed-nbs-v3-${{ steps.source-hash.outputs.hash }}
 
       - name: Execute notebooks (cache miss or forced)
         if: ${{ steps.nb-cache.outputs.cache-hit != 'true' || inputs.force_reexecute }}
@@ -104,18 +130,90 @@ jobs:
       # target has docs-executed-nbs as a prereq, which would force
       # re-execution even on cache hit.
       - name: Check for execution errors
+        id: check
         run: |
           python docs/check_executed_nbs.py dist/executed_nbs \
             ${{ inputs.allow_notebook_errors && '--allow-errors' || '' }}
 
-      # Upload regardless of check outcome so debug workflows can inspect the
-      # tracebacks in failed builds. 400 days = maximum retention on
-      # GitHub-hosted artifacts; these are the source-of-truth outputs for any
-      # downstream RAG / doc build.
-      - name: Upload executed notebooks
+      # Write a manifest so downstream consumers can verify provenance and
+      # detect stale-artifact drift on manual dispatch. Placed inside the
+      # artifact so `download-artifact` includes it automatically.
+      - name: Write artifact manifest
         if: always()
+        run: |
+          mkdir -p dist/executed_nbs
+          python <<PYEOF
+          import json, os, sys
+          from datetime import datetime, timezone
+          manifest = {
+              "schema_version": 1,
+              "commit_sha": "${{ github.sha }}",
+              "commit_ref": "${{ github.ref }}",
+              "source_hash": "${{ steps.source-hash.outputs.hash }}",
+              "python_version": sys.version.split()[0],
+              "run_id": "${{ github.run_id }}",
+              "run_number": ${{ github.run_number }},
+              "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "event_name": "${{ github.event_name }}",
+              "created_at": datetime.now(timezone.utc).isoformat(),
+              "was_cache_hit": ${{ steps.nb-cache.outputs.cache-hit == 'true' }},
+              "was_forced": ${{ inputs.force_reexecute || false }},
+              "was_allow_errors": ${{ inputs.allow_notebook_errors || false }},
+          }
+          with open("dist/executed_nbs/manifest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          print("Wrote manifest:")
+          print(json.dumps(manifest, indent=2))
+          PYEOF
+
+      # ── Canonical upload: consumed by Build Combined Doc ──────────────────
+      # Only produced when we're confident the outputs represent a clean
+      # execution against a trusted branch state. push-to-main and clean
+      # workflow_dispatch (no error-allow) qualify; PR runs and debug
+      # dispatches do NOT — they upload under distinct names below.
+      - name: Upload executed notebooks (canonical)
+        if: >-
+          success()
+          && (
+            (github.event_name == 'push' && github.ref == 'refs/heads/main')
+            || (github.event_name == 'workflow_dispatch' && !inputs.allow_notebook_errors)
+          )
         uses: actions/upload-artifact@v4
         with:
           name: executed_nbs
           path: dist/executed_nbs
           retention-days: 400
+
+      # ── PR-scoped upload: reviewers can download to inspect ───────────────
+      # Distinct name means dawidd6/action-download-artifact's "latest
+      # successful" lookup on Build Combined Doc can't match this.
+      - name: Upload executed notebooks (PR validation)
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed_nbs-pr-${{ github.event.number }}
+          path: dist/executed_nbs
+          retention-days: 90
+
+      # ── Debug uploads: run-id-scoped, non-canonical ───────────────────────
+      # Debug dispatches (allow_notebook_errors=true) and any failure path
+      # upload here — reviewers can pull tracebacks without polluting the
+      # canonical artifact stream.
+      - name: Upload executed notebooks (debug dispatch)
+        if: >-
+          success()
+          && github.event_name == 'workflow_dispatch'
+          && inputs.allow_notebook_errors
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed_nbs-debug-${{ github.run_id }}
+          path: dist/executed_nbs
+          retention-days: 30
+
+      - name: Upload executed notebooks (failure debug)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed_nbs-failed-${{ github.run_id }}
+          path: dist/executed_nbs
+          retention-days: 30
