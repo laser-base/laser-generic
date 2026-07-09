@@ -16,9 +16,20 @@ on:
 
 jobs:
   build:
-    # Skip if the upstream Execute Notebooks run failed (no artifact worth
-    # consuming). workflow_dispatch triggers pass this check trivially.
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    # Auto-chain from workflow_run is restricted to push-triggered upstream
+    # Execute Notebooks runs. This intentionally excludes upstream
+    # workflow_dispatch runs — a debug dispatch (e.g. allow_notebook_errors=true
+    # or force_reexecute=true) would otherwise auto-fire this workflow and
+    # push a possibly-corrupted corpus PR into laser-mcp. Manual doc rebuilds
+    # (with the latest known-good artifact) go through this workflow's own
+    # workflow_dispatch trigger, which is always allowed.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run'
+        && github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.event == 'push'
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.0

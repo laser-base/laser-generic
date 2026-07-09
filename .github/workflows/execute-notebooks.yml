@@ -27,12 +27,18 @@ name: Execute Notebooks
 on:
   push:
     branches: [main]
+    # Trigger whenever ANY input that could change executed-notebook outputs
+    # changes. Kept in sync with the cache-key hashFiles below — if you add
+    # something here that affects outputs, add it to the cache key too, else
+    # a push could trigger this workflow but hit an old cache entry.
     paths:
-      - 'docs/**/*.ipynb'                       # notebook source changed
-      - 'src/**'                                # library that notebooks import changed
-      - 'pyproject.toml'                        # dependencies changed
-      - 'docs/execute_notebooks.py'             # exec harness itself changed
-      - 'docs/check_executed_nbs.py'            # error gate changed
+      - 'docs/**/*.ipynb'                       # notebook source
+      - 'src/**'                                # library that notebooks import
+      - 'pyproject.toml'                        # runtime dependencies
+      - 'docs/requirements.txt'                 # docs / exec-time dependencies
+      - 'docs/execute_notebooks.py'             # exec harness itself
+      - 'docs/check_executed_nbs.py'            # error gate
+      - 'Makefile'                              # NB_EXCLUDE / NB_TIMEOUT / other exec defaults
       - '.github/workflows/execute-notebooks.yml'
   workflow_dispatch:
     inputs:
@@ -67,16 +73,27 @@ jobs:
         run: make docs-install
 
       # Any change to the hashed inputs busts the cache and forces re-execution.
-      # Bump the key prefix (executed-nbs-vN) to invalidate the whole cache pool
-      # if the executor itself is upgraded in a way we want to redo across all
-      # historic source states.
+      # Files hashed here MUST cover everything that can affect executed
+      # notebook outputs — else a change (e.g. to NB_EXCLUDE in the Makefile,
+      # or a new dep in docs/requirements.txt) would trigger this workflow via
+      # the paths filter above but still hit an old cache entry.
+      # Bump the key prefix (executed-nbs-vN) to invalidate the whole cache
+      # pool if the hashing set itself needs to change historic-state-wide.
       - name: Cache executed notebooks
         id: nb-cache
         if: ${{ !inputs.force_reexecute }}
         uses: actions/cache@v4
         with:
           path: dist/executed_nbs
-          key: executed-nbs-v1-${{ hashFiles('docs/**/*.ipynb', 'src/**/*.py', 'pyproject.toml') }}
+          key: >-
+            executed-nbs-v2-${{ hashFiles(
+              'docs/**/*.ipynb',
+              'src/**/*.py',
+              'pyproject.toml',
+              'docs/requirements.txt',
+              'docs/execute_notebooks.py',
+              'Makefile'
+            ) }}
 
       - name: Execute notebooks (cache miss or forced)
         if: ${{ steps.nb-cache.outputs.cache-hit != 'true' || inputs.force_reexecute }}
