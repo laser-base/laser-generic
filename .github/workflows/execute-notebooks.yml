@@ -133,27 +133,44 @@ jobs:
       # Write a manifest so downstream consumers can verify provenance and
       # detect stale-artifact drift on manual dispatch. Placed inside the
       # artifact so `download-artifact` includes it automatically.
+      #
+      # GHA-evaluated booleans (`${{ ... }}`) render as lowercase `true`/`false`
+      # which are invalid Python identifiers; pass them via env vars and parse
+      # in Python instead of substituting into the source directly.
       - name: Write artifact manifest
         if: always()
+        env:
+          MANIFEST_COMMIT_SHA: ${{ github.sha }}
+          MANIFEST_COMMIT_REF: ${{ github.ref }}
+          MANIFEST_SOURCE_HASH: ${{ steps.source-hash.outputs.hash }}
+          MANIFEST_RUN_ID: ${{ github.run_id }}
+          MANIFEST_RUN_NUMBER: ${{ github.run_number }}
+          MANIFEST_WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MANIFEST_EVENT_NAME: ${{ github.event_name }}
+          MANIFEST_WAS_CACHE_HIT: ${{ steps.nb-cache.outputs.cache-hit == 'true' }}
+          MANIFEST_WAS_FORCED: ${{ inputs.force_reexecute || false }}
+          MANIFEST_WAS_ALLOW_ERRORS: ${{ inputs.allow_notebook_errors || false }}
         run: |
           mkdir -p dist/executed_nbs
-          python <<PYEOF
+          python <<'PYEOF'
           import json, os, sys
           from datetime import datetime, timezone
+          def as_bool(name):
+              return os.environ.get(name, "").strip().lower() == "true"
           manifest = {
               "schema_version": 1,
-              "commit_sha": "${{ github.sha }}",
-              "commit_ref": "${{ github.ref }}",
-              "source_hash": "${{ steps.source-hash.outputs.hash }}",
+              "commit_sha": os.environ["MANIFEST_COMMIT_SHA"],
+              "commit_ref": os.environ["MANIFEST_COMMIT_REF"],
+              "source_hash": os.environ["MANIFEST_SOURCE_HASH"],
               "python_version": sys.version.split()[0],
-              "run_id": "${{ github.run_id }}",
-              "run_number": ${{ github.run_number }},
-              "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "event_name": "${{ github.event_name }}",
+              "run_id": os.environ["MANIFEST_RUN_ID"],
+              "run_number": int(os.environ["MANIFEST_RUN_NUMBER"]),
+              "workflow_url": os.environ["MANIFEST_WORKFLOW_URL"],
+              "event_name": os.environ["MANIFEST_EVENT_NAME"],
               "created_at": datetime.now(timezone.utc).isoformat(),
-              "was_cache_hit": ${{ steps.nb-cache.outputs.cache-hit == 'true' }},
-              "was_forced": ${{ inputs.force_reexecute || false }},
-              "was_allow_errors": ${{ inputs.allow_notebook_errors || false }},
+              "was_cache_hit": as_bool("MANIFEST_WAS_CACHE_HIT"),
+              "was_forced": as_bool("MANIFEST_WAS_FORCED"),
+              "was_allow_errors": as_bool("MANIFEST_WAS_ALLOW_ERRORS"),
           }
           with open("dist/executed_nbs/manifest.json", "w") as f:
               json.dump(manifest, f, indent=2)
