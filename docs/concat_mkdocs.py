@@ -23,6 +23,13 @@ import markdownify
 import yaml
 from bs4 import BeautifulSoup
 
+# Shared regex + strip helpers live in docs/tqdm_strip.py. That tool is wired
+# into docs/execute_notebooks.py, so the CI-produced executed_nbs artifact
+# ships with tqdm noise already removed. The filter usage here is a
+# defensive second pass for local dev flows or when concat runs against
+# not-freshly-executed notebooks (e.g. committed decorative outputs).
+from tqdm_strip import TQDM_PROGRESS_RE as _TQDM_PROGRESS_RE
+
 try:
     import laser.generic
 
@@ -33,13 +40,6 @@ except Exception:
 
 MIN_SECTION_CHARS = 150  # drop near-empty placeholder/index pages
 EXPECTED_MIN_MAIN_PAGES = 8  # fail loud if the site walk looks broken
-
-# laser-generic notebooks call tqdm with a description like
-# "1,000,000 agents in 1 node(s)", which produces many "<n> agents in <m>
-# node(s):  37%|...| ..." progress snapshots in cell outputs. They add no
-# semantic value and hurt RAG/retrieval quality, so we drop matching lines
-# at output-build time. Pattern matches the description + percent token.
-_TQDM_PROGRESS_RE = re.compile(r"agents in \d+ node\(s\):\s*\d+%")
 
 
 class _NavLoader(yaml.SafeLoader):
@@ -238,7 +238,33 @@ def notebook_to_markdown(nb_path: Path) -> str:
                 parts.append(f"```\n{body}\n```")
 
     md = "\n\n".join(parts)
-    return re.sub(r"\n{3,}", "\n\n", md).strip()
+    md = re.sub(r"\n{3,}", "\n\n", md).strip()
+
+    # Demote all headings by one level so:
+    #   - notebook titles (originally H1) become H2, sitting cleanly under the
+    #     combined doc's single H1 ("# laser-generic documentation"),
+    #   - notebook subsections (originally H2 like "## Larger test suite")
+    #     become H3, which the RAG header-splitter catches structurally,
+    #   - nested notebook sections stay proportionally deeper.
+    # Levels are clamped at H6 (Markdown's max) to avoid emitting invalid H7+.
+    #
+    # CRITICAL: skip lines inside fenced code blocks — Python comments like
+    # ``# %%capture`` or ``# TODO`` would otherwise be misread as headings and
+    # demoted, corrupting the code AND emitting bogus H2 section boundaries.
+    out_lines = []
+    in_fence = False
+    for line in md.split("\n"):
+        stripped = line.lstrip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            out_lines.append(line)
+            continue
+        if not in_fence:
+            m = re.match(r"^(#{1,5})(?= )", line)
+            if m:
+                line = "#" * (len(m.group(1)) + 1) + line[len(m.group(1)) :]
+        out_lines.append(line)
+    return "\n".join(out_lines)
 
 
 def iter_nav_pages(nav):
@@ -301,6 +327,59 @@ def append_section(parts: list, source, md: str, url: str = "") -> bool:
         provenance += f" · [View page online]({url})"
     parts.append(f"\n\n---\n\n{provenance}\n\n{md}")
     return True
+
+
+# Soft cap for section size beyond which the RAG chunker starts making lossy
+# splits (fracturing fenced code examples across chunks). Not a hard error —
+# just a warning that surfaces which content needs subheadings or cell splits.
+_SECTION_SOFT_MAX = 5000
+
+
+def _find_source_before(combined: str, pos: int) -> str:
+    """Walk backward from ``pos`` to the nearest ``**Source:** `<path>`
+    breadcrumb (emitted by :func:`append_section`) and return that path.
+    Returns ``"?"`` if no breadcrumb is found — shouldn't happen given
+    every section is prefixed with one, but degrade gracefully.
+    """
+    m = None
+    for candidate in re.finditer(r"\*\*Source:\*\* `([^`]+)`", combined[:pos]):
+        m = candidate
+    return m.group(1) if m else "?"
+
+
+def _warn_oversized_sections(combined: str) -> int:
+    """Report H2+ sections that exceed the soft cap, with source-file provenance.
+
+    Downstream (see laser-mcp/ingest.py) uses MarkdownHeaderTextSplitter on
+    H1/H2/H3, then a 1200-char character splitter for anything still too big.
+    Once a section is much larger than a few chunks the character splitter
+    falls through its code-block-aware separators to line-level splits — which
+    tear fenced code examples across chunks and hurt retrieval quality. Warn
+    so authors can add subheadings (H3/H4/H5) or split the underlying notebook
+    cells into smaller logical sections.
+
+    Each warning line names the source file (notebook or .md) that contributed
+    the section, resolved via the ``**Source:**`` breadcrumbs that
+    :func:`append_section` emits — so authors can go straight to the file
+    that needs subheadings without grepping.
+    """
+    positions = [(m.start(), m.group(0).strip()) for m in re.finditer(r"^##+ [^\n]+", combined, re.MULTILINE)]
+    positions.append((len(combined), None))
+    warnings = []
+    for (start, heading), (end, _) in zip(positions[:-1], positions[1:]):
+        size = end - start
+        if size > _SECTION_SOFT_MAX:
+            source = _find_source_before(combined, start)
+            warnings.append((size, heading, source))
+    if warnings:
+        warnings.sort(reverse=True)
+        print(f"\n  WARNING: {len(warnings)} section(s) exceed {_SECTION_SOFT_MAX:,} chars (RAG chunking may fracture code examples):")
+        for size, heading, source in warnings[:15]:
+            print(f"    {size:>7,} chars  {heading[:60]:60}  {source}")
+        if len(warnings) > 15:
+            print(f"    ...{len(warnings) - 15} more")
+        print(f"  Add subheadings (H3/H4/H5) or split cells so no section exceeds {_SECTION_SOFT_MAX:,} chars.")
+    return len(warnings)
 
 
 def _is_reference_entry(entry: str) -> bool:
@@ -413,9 +492,12 @@ def concat(mkdocs_dir: str, notebooks_dir: str, output_file: str):
     if nb_included == 0:
         print("WARNING: 0 notebook pages included — were notebooks executed into the dir?")
 
+    combined = "\n".join(parts)
+    _warn_oversized_sections(combined)
+
     output = Path(output_file)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text("\n".join(parts), encoding="utf-8")
+    output.write_text(combined, encoding="utf-8")
 
     total = main_included + nb_included + ref_included
     print(f"\nWrote {total} sections ({skipped} skipped) -> {output_file}")

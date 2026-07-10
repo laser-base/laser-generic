@@ -2,6 +2,7 @@
 
 [![Documentation Build Status](https://github.com/laser-base/laser-generic/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/laser-base/laser-generic/actions/workflows/pages/pages-build-deployment)
 [![build](https://github.com/laser-base/laser-generic/actions/workflows/github-actions.yml/badge.svg?branch=main)](https://github.com/laser-base/laser-generic/actions/workflows/github-actions.yml)
+[![Execute Notebooks](https://github.com/laser-base/laser-generic/actions/workflows/execute-notebooks.yml/badge.svg?branch=main)](https://github.com/laser-base/laser-generic/actions/workflows/execute-notebooks.yml)
 [![Coverage Status](https://codecov.io/gh/laser-base/laser-generic/branch/main/graphs/badge.svg?branch=main)](https://app.codecov.io/github/laser-base/laser-generic)
 [![PyPI Package latest release](https://img.shields.io/pypi/v/laser-generic.svg)](https://test.pypi.org/project/laser-generic)
 [![PyPI Wheel](https://img.shields.io/pypi/wheel/laser-generic.svg)](https://test.pypi.org/project/laser-generic)
@@ -123,3 +124,13 @@ uv pip install -e ".[dev]"
 #### Running Tests
 
 Now you can run tests in the `tests` directory or run the entire check+docs+test suite with ```tox```. Running ```tox``` will run several consistency checks, build documentation, run tests against the supported versions of Python, and create a code coverage report based on the test suite. Note that the first run of ```tox``` may take a few minutes (~5). Subsequent runs should be quicker depending on the speed of your machine and the test suite (~2 minutes). You can use ```tox``` to run tests against a single version of Python with, for example, ```tox -e py312```.
+
+## Executed tutorial notebooks
+
+**Read the rendered notebooks on the docs site: [laser.idmod.org/laser-generic/tutorials/](https://laser.idmod.org/laser-generic/tutorials/).**
+
+That's the freshly-executed, browsable, hosted-by-GitHub-Pages view — no download, no local Jupyter setup. Every tutorial notebook has its own page. The docs site is auto-rebuilt on every push to `main` by the [MkDocs Deploy](.github/workflows/mkdocs-ghp.yml) workflow, which downloads the latest successful `executed_nbs` artifact from [Execute Notebooks](.github/workflows/execute-notebooks.yml) and overlays those CI-executed notebook outputs onto the `docs/` tree before `mkdocs build`.
+
+Notebook execution (~25 min on a cache miss) is expensive, so Execute Notebooks only runs when its declared execution inputs change — notebooks, library source, Python dependencies, or the CI harness that runs them (executor script, Makefile execution defaults, workflow file). See the workflow's [paths filter](.github/workflows/execute-notebooks.yml) for the exact list. Pushes that don't touch any of those reuse the most recently produced artifact and the site rebuild finishes in ~2 min. The `executed_nbs` artifact also carries a `manifest.json` recording provenance (commit SHA, source hash, Python version) for downstream traceability, and is separately consumed by [Build Combined Doc](.github/workflows/build-combined-doc.yml) to sync the RAG corpus into laser-mcp.
+
+If you need the raw `.ipynb` files (with outputs) that were executed against a specific commit — e.g. to reproduce a doc-quality regression, or to compare corpora across time — see [`docs/tutorials/notebooks/README.md`](docs/tutorials/notebooks/README.md) for the artifact-download procedure. For regular browsing, use the docs site.

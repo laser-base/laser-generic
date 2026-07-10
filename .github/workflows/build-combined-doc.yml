@@ -1,19 +1,41 @@
 name: Build Combined Doc
 
+# Builds the combined-markdown RAG corpus and syncs it into laser-mcp.
+# Consumes the executed_nbs artifact published by Execute Notebooks — no
+# in-workflow notebook execution. Triggered automatically after each
+# successful push-driven Execute Notebooks run on main, or manually via
+# dispatch.
+
 on:
+  # Auto-fire after every successful push-triggered Execute Notebooks run.
+  workflow_run:
+    workflows: ["Execute Notebooks"]
+    types: [completed]
+    branches: [main]
+  # Manual: pulls the latest successful Execute Notebooks artifact.
   workflow_dispatch:
     inputs:
-      allow_notebook_errors:
-        description: 'Publish the combined doc even if notebooks have execution errors (artifact may contain tracebacks).'
+      use_latest_anyway:
+        description: 'On workflow_dispatch, skip the source-hash-vs-checkout compatibility check. Use if you deliberately want to build against a mismatched (older/different) artifact.'
         type: boolean
         default: false
-      nb_timeout:
-        description: 'Per-cell execution timeout in seconds. Heavy parameter-sweep cells (e.g. nb04, nb05) can exceed the Makefile default of 600. 1800 is a comfortable headroom.'
-        type: string
-        default: '1800'
 
 jobs:
   build:
+    # Auto-chain from workflow_run is restricted to push-triggered upstream
+    # Execute Notebooks runs. This intentionally excludes upstream
+    # workflow_dispatch runs — a debug dispatch (e.g. allow_notebook_errors=true
+    # or force_reexecute=true) would otherwise auto-fire this workflow and
+    # push a possibly-corrupted corpus PR into laser-mcp. Manual doc rebuilds
+    # (against the latest known-good artifact) go through this workflow's own
+    # workflow_dispatch trigger, which is always allowed.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run'
+        && github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.event == 'push'
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.0
@@ -22,12 +44,71 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: make docs-install
-      - name: Build combined doc
-        # Translate the workflow_dispatch boolean into the 0/1 the Makefile uses.
-        # nb_timeout is forwarded as NB_TIMEOUT (per-cell timeout, seconds).
-        run: make docs-jenner ALLOW_NB_ERRORS=${{ inputs.allow_notebook_errors && '1' || '0' }} NB_TIMEOUT=${{ inputs.nb_timeout }}
+
+      # Two download paths, one for each trigger. workflow_run passes the
+      # specific upstream run-id so we always fetch the artifact that just
+      # signalled completion. workflow_dispatch has no such linkage and grabs
+      # whatever the most recent successful Execute Notebooks run produced.
+      - name: Download executed notebooks (from triggering run)
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: executed_nbs
+          path: dist/executed_nbs
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # dawidd6/action-download-artifact is used here (not actions/download-artifact)
+      # because the first-party action can only fetch from the current run or a
+      # run-id you already know. This one searches for the latest successful run
+      # of a named workflow — which is exactly what workflow_dispatch needs
+      # since there's no "triggering upstream run" to point at.
+      - name: Download executed notebooks (latest successful)
+        if: github.event_name == 'workflow_dispatch'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: execute-notebooks.yml
+          name: executed_nbs
+          path: dist/executed_nbs
+          workflow_conclusion: success
+          if_no_artifact_found: fail
+
+      # Provenance gate — only meaningful for workflow_dispatch. The
+      # workflow_run path already fetches by explicit run-id, so no drift is
+      # possible there. Compares the artifact's manifest.source_hash to a
+      # freshly-computed hash of the current checkout using the same file set
+      # as execute-notebooks.yml. Bypass with use_latest_anyway=true if you
+      # intentionally want to build against an older artifact.
+      - name: Verify artifact matches checkout (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch' && !inputs.use_latest_anyway
+        run: |
+          CURRENT_HASH="${{ hashFiles(
+            'docs/**/*.ipynb',
+            'src/**/*.py',
+            'pyproject.toml',
+            'docs/requirements.txt',
+            'docs/execute_notebooks.py',
+            'Makefile',
+            '.github/workflows/execute-notebooks.yml'
+          ) }}"
+          ARTIFACT_HASH=$(python -c "import json; print(json.load(open('dist/executed_nbs/manifest.json'))['source_hash'])")
+          echo "artifact hash: $ARTIFACT_HASH"
+          echo "checkout hash: $CURRENT_HASH"
+          if [ "$ARTIFACT_HASH" != "$CURRENT_HASH" ]; then
+              echo "::error::Artifact source-hash does not match the currently-checked-out tree."
+              echo "::error::The executed notebooks in the latest successful Execute Notebooks run were produced from a different source state than what's checked out here."
+              echo "::error::Kick a fresh Execute Notebooks run, or re-dispatch this workflow with use_latest_anyway=true."
+              exit 1
+          fi
+
+      # No re-execution here — Execute Notebooks already produced the executed
+      # tree and gated on docs-check-nbs. This step just builds the mkdocs
+      # site and concats it with the downloaded executed notebooks.
+      - name: Build combined doc from artifact
+        run: make docs-jenner-artifact
+
       - name: Upload combined_mkdocs.md
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v4
         with:
           name: combined_mkdocs
           path: dist/combined_mkdocs.md
