@@ -11,6 +11,8 @@ theme:
   logo: images/idm-logo-transparent.png
   favicon: images/favicon.ico
   features:
+    - navigation.instant # SPA-style navigation without full page reloads
+    - navigation.instant.progress # show a progress bar for slower page loads
     - navigation.footer # include a footer with links to privacy, terms, etc.
     - content.code.copy # enable copy buttons for code blocks
     - navigation.indexes # enable parent index page for sections
@@ -88,16 +90,12 @@ markdown_extensions:
   - def_list
   - tables # render Markdown pipe tables
   - footnotes
-  - pymdownx.snippets: # insert content from other files
-      auto_append:
-        - docs/includes/glossary.md
-  - abbr # term/abbreviation hover description
   - pymdownx.emoji: # emojis and icons
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.arithmatex: # Latex processing for math equations
       generic: true
-  - pymdownx.snippets: # snippet reuse functionality
+  - pymdownx.snippets: # insert content from other files
   - pymdownx.blocks.details: # allows nesting of collapsible code
   - pymdownx.highlight: # syntax highlighting for code blocks
       linenums: true
@@ -115,12 +113,15 @@ markdown_extensions:
 
 # javascript customization for math
 extra_javascript:
+  - customization/javascript/mathjax.js # MathJax config: enables inline math and re-typesets on navigation
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+  - customization/javascript/extra.js # fixes the feedback form display
 
 extra_css:
   - customization/css/extra.css # custom CSS for footer spacing
 plugins:
   - search # search functionality
+  - git-revision-date-localized # per-page last-updated dates from git history (requires full clone; see workflows)
   - autorefs # automatically create linkable references
   - include-markdown # include other files, such as READMEs
   - table-reader # enables rendering of CSV/TSV files or tables
@@ -154,7 +155,6 @@ plugins:
   - exclude:
       glob:
         - customization/gen-files.py # exclude file generation script
-        - includes/glossary.md # exclude glossary include file
 
 copyright: Copyright &copy; 2026 Gates Foundation. All rights reserved.
 
