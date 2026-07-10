@@ -10,6 +10,7 @@ Reads tools/plot_descriptions/config.json (the fat manifest). For each entry:
 
 Idempotent: no-ops if the exact figtext line is already present.
 """
+
 import json
 import re
 import sys
@@ -17,17 +18,28 @@ from pathlib import Path
 
 
 FIGTEXT_TRIGGERS = (
-    "demonstrate", "takeaway", "confirms", "shows that",
-    "validates", "verifies", "reproduces", "matches",
-    "reveals", "consistent with", "recovers", "predicts",
-    "successfully", "scales as", "agrees with", "sanity check",
+    "demonstrate",
+    "takeaway",
+    "confirms",
+    "shows that",
+    "validates",
+    "verifies",
+    "reproduces",
+    "matches",
+    "reveals",
+    "consistent with",
+    "recovers",
+    "predicts",
+    "successfully",
+    "scales as",
+    "agrees with",
+    "sanity check",
 )
 
 MANUAL_TAKEAWAY = {
-    "01_SI_nobirths_sanity.md":
-        "The three curves overlay across the entire range, sanity-checking that "
-        "the model preserves N = S + I at every tick and that cumulative "
-        "incidence tracks running I_t minus the initial seed.",
+    "01_SI_nobirths_sanity.md": "The three curves overlay across the entire range, sanity-checking that "
+    "the model preserves N = S + I at every tick and that cumulative "
+    "incidence tracks running I_t minus the initial seed.",
 }
 
 
@@ -50,10 +62,7 @@ def extract_takeaway(md_text: str, md_filename: str) -> str:
 def build_figtext_line(takeaway: str) -> str:
     text = takeaway.strip().strip("*").strip()
     py_repr = repr(text)
-    return (
-        f"plt.figtext(0.5, -0.05, {py_repr}, "
-        f'ha="center", va="top", wrap=True, fontsize=8)'
-    )
+    return f'plt.figtext(0.5, -0.05, {py_repr}, ha="center", va="top", wrap=True, fontsize=8)'
 
 
 def inject_before_show(source_lines, figtext_line):
@@ -78,10 +87,7 @@ def inject_before_show(source_lines, figtext_line):
 def find_code_cell(cells, ins):
     if "after_cell_containing" in ins:
         needle = ins["after_cell_containing"]
-        matches = [
-            i for i, c in enumerate(cells)
-            if c.get("cell_type") == "code" and needle in "".join(c.get("source", []))
-        ]
+        matches = [i for i, c in enumerate(cells) if c.get("cell_type") == "code" and needle in "".join(c.get("source", []))]
     elif "after_cell_id" in ins:
         cid = ins["after_cell_id"]
         matches = [i for i, c in enumerate(cells) if c.get("id") == cid]
@@ -96,11 +102,7 @@ def strip_description_cells(cells):
     """Remove markdown cells whose first line starts with '### Reading the'."""
     before = len(cells)
     cells[:] = [
-        c for c in cells
-        if not (
-            c.get("cell_type") == "markdown"
-            and "".join(c.get("source", [])).lstrip().startswith("### Reading the")
-        )
+        c for c in cells if not (c.get("cell_type") == "markdown" and "".join(c.get("source", [])).lstrip().startswith("### Reading the"))
     ]
     return before - len(cells)
 
