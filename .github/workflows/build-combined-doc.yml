@@ -87,7 +87,7 @@ jobs:
             'src/**/*.py',
             'pyproject.toml',
             'docs/requirements.txt',
-            'docs/**/*.py',
+            'docs/execute_notebooks.py',
             'Makefile',
             '.github/workflows/execute-notebooks.yml'
           ) }}"

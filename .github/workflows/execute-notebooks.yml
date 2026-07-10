@@ -46,13 +46,23 @@ on:
   push:
     branches: [main]
     # Trigger whenever ANY input that could change executed-notebook outputs
-    # changes. Kept in sync with the source-hash computation step below.
+    # OR the pass/fail verdict on those outputs changes. Narrower than the
+    # source-hash below because the check script affects the verdict but not
+    # the outputs — hitting the cache and re-running the check with a new
+    # gate is desired.
+    #
+    # Deliberately DOES NOT include docs/**/*.py (too broad) — that would
+    # fire on concat_mkdocs.py edits, which is a post-execution assembly
+    # step and doesn't affect notebook outputs. Concat changes should
+    # trigger Build Combined Doc + MkDocs Deploy (both consume the
+    # artifact separately), not re-execution.
     paths:
       - 'docs/**/*.ipynb'                       # notebook source
       - 'src/**'                                # library that notebooks import
       - 'pyproject.toml'                        # runtime dependencies
       - 'docs/requirements.txt'                 # docs / exec-time dependencies
-      - 'docs/**/*.py'                          # exec harness, checkers, other doc scripts
+      - 'docs/execute_notebooks.py'             # the executor itself
+      - 'docs/check_executed_nbs.py'            # the pass/fail gate
       - 'Makefile'                              # NB_EXCLUDE / NB_TIMEOUT / other exec defaults
       - '.github/workflows/execute-notebooks.yml'
   workflow_dispatch:
@@ -90,6 +100,11 @@ jobs:
       # Compute the source-hash ONCE, then reuse in both cache key and manifest.
       # If you extend this list, extend the push paths filter above too, so
       # a change to any hashed input actually triggers a run.
+      # Files hashed here are the ones whose changes affect executed-notebook
+      # outputs. NARROWER than the push paths filter above by design — the
+      # check script (docs/check_executed_nbs.py) can trigger a run to
+      # re-verify the gate, but doesn't affect outputs, so a cache hit is
+      # desirable in that case.
       - name: Compute source hash
         id: source-hash
         run: |
@@ -98,7 +113,7 @@ jobs:
             'src/**/*.py',
             'pyproject.toml',
             'docs/requirements.txt',
-            'docs/**/*.py',
+            'docs/execute_notebooks.py',
             'Makefile',
             '.github/workflows/execute-notebooks.yml'
           ) }}"
@@ -114,7 +129,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: dist/executed_nbs
-          key: executed-nbs-v4-${{ steps.source-hash.outputs.hash }}
+          key: executed-nbs-v5-${{ steps.source-hash.outputs.hash }}
 
       - name: Execute notebooks (cache miss or forced)
         if: ${{ steps.nb-cache.outputs.cache-hit != 'true' || inputs.force_reexecute }}
