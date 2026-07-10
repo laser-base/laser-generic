@@ -39,7 +39,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build, docs-deploy]
+    needs: [build]
     runs-on: ubuntu-latest
 
     steps:
@@ -73,7 +73,7 @@ jobs:
 
   publish:
     name: Publish to PyPI
-    needs: [build, docs-deploy]
+    needs: [build]
     runs-on: ubuntu-latest
     environment:
       name: restricted
@@ -110,42 +110,11 @@ jobs:
           verbose: true
           print-hash: true
 
-  docs-deploy:
-    name: Execute notebooks and deploy docs
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7.0.0
-      - name: Configure Git Credentials
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-      - uses: actions/setup-python@v6.3.0
-        with:
-          python-version: "3.12"
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
-      - uses: actions/cache@v6.1.0
-        with:
-          key: mkdocs-material-${{ env.cache_id }}
-          path: .cache
-          restore-keys: |
-            mkdocs-material-
-      - name: Install dependencies
-        run: |
-          pip install --index-url https://packages.idmod.org/artifactory/api/pypi/pypi-production/simple -e ".[docs]"
-      - name: Build MkDocs site
-        env:
-          MKDOCS_EXECUTE_NOTEBOOKS: true
-          MKDOCS_ALLOW_ERRORS: false
-        run: mkdocs build
-      - name: Assert API reference content floor
-        run: |
-          ref_count=$(find site/reference -name 'index.html' 2>/dev/null | wc -l)
-          echo "rendered reference pages: $ref_count"
-          if [ "$ref_count" -lt 25 ]; then
-            echo "ERROR: site/reference is degraded (only $ref_count pages, expected 30+)"
-            exit 1
-          fi
-      - name: Deploy to GitHub Pages
-        run: mkdocs gh-deploy --force --dirty
+# Note: the docs site deploy is NOT part of the release workflow anymore.
+# When a release commit hits main (typically the version bump PR merging),
+# the MkDocs Deploy workflow (mkdocs-ghp.yml) fires automatically and
+# deploys the site to GitHub Pages, using the executed_nbs artifact
+# produced by the Execute Notebooks workflow. That path uses cached
+# CI-executed notebooks rather than the in-band mkdocs-jupyter
+# execution the removed `docs-deploy` job used, so it's ~30 min faster
+# and consistent with the docs site's normal update flow.
