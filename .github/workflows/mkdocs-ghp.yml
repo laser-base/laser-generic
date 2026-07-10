@@ -1,16 +1,60 @@
 name: MkDocs Deploy
+
+# Deploys the docs site (laser.idmod.org/laser-generic) to GitHub Pages.
+#
+# Before building, this workflow overlays the latest successful
+# `executed_nbs` artifact from the Execute Notebooks workflow onto the
+# committed docs/ tree, so mkdocs-jupyter's `execute: false` setting can
+# render notebook pages with fresh (CI-executed) outputs instead of
+# whatever decorative outputs happen to be committed.
+#
+# Trigger matrix:
+#   push to main                        → deploy with latest available artifact
+#   workflow_run: Execute Notebooks     → deploy with THAT run's artifact,
+#                                          restricted to push-triggered upstream
+#   workflow_dispatch                   → deploy with latest available artifact
+#
+# On bootstrap (no artifact exists yet), the download step warns and the
+# build proceeds with committed decorative outputs — same behavior as
+# before this workflow was updated.
+#
+# Concurrency: the gh-pages-deploy group with cancel-in-progress: true
+# means a push-triggered deploy that starts before Execute Notebooks
+# finishes will be superseded when the workflow_run chain fires with the
+# fresher artifact.
+
 on:
   push:
     branches:
       - master
       - main
+  workflow_run:
+    workflows: ["Execute Notebooks"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
 permissions:
-  contents: write
+  contents: write   # mkdocs gh-deploy pushes to the gh-pages branch
+  actions: read     # both download-artifact steps need this to fetch executed_nbs
+                    # from Execute Notebooks runs (otherwise 403 at runtime)
+
 concurrency:
   group: gh-pages-deploy
   cancel-in-progress: true
+
 jobs:
   deploy:
+    # Skip auto-chain from failed or dispatch-triggered Execute Notebooks
+    # runs — a debug dispatch (allow_notebook_errors=true or
+    # force_reexecute=true) shouldn't publish a possibly-suspect site.
+    # Push and workflow_dispatch triggers on this workflow pass trivially.
+    if: >-
+      github.event_name != 'workflow_run'
+      || (
+        github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.event == 'push'
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.0
@@ -30,8 +74,68 @@ jobs:
             mkdocs-material-
       - run: |
           pip install --index-url https://packages.idmod.org/artifactory/api/pypi/pypi-production/simple -e ".[docs]"
+
+      # Download the executed notebooks so mkdocs-jupyter renders them with
+      # fresh CI-executed outputs (matching what Build Combined Doc feeds
+      # into the RAG corpus). Two paths depending on trigger:
+      #   workflow_run: fetch that specific upstream run's artifact by ID.
+      #   push / workflow_dispatch: fetch the latest successful Execute
+      #     Notebooks run's artifact (may be from an earlier commit if
+      #     this push doesn't affect notebook execution paths — that's
+      #     the right behavior for docs-only edits).
+      - name: Download executed notebooks (from triggering run)
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: executed_nbs
+          path: dist/executed_nbs
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download executed notebooks (latest successful)
+        if: github.event_name != 'workflow_run'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: execute-notebooks.yml
+          name: executed_nbs
+          path: dist/executed_nbs
+          workflow_conclusion: success
+          # Bootstrap-safe: on first deploy (no prior artifact) OR on a
+          # deploy for a docs-only change with no fresh execution yet,
+          # emit a warning and continue with committed decorative outputs.
+          if_no_artifact_found: warn
+
+      # Overlay every .ipynb from the artifact onto its committed
+      # counterpart under docs/. The artifact preserves the docs/ layout
+      # (dist/executed_nbs/tutorials/notebooks/*.ipynb etc.), so a targeted
+      # per-file copy keeps the docs/ tree intact and only refreshes
+      # notebook contents.
+      - name: Overlay executed notebooks onto docs/
+        if: hashFiles('dist/executed_nbs/**/*.ipynb') != ''
+        run: |
+          count=0
+          while IFS= read -r -d '' src; do
+              rel="${src#dist/executed_nbs/}"
+              dest="docs/$rel"
+              mkdir -p "$(dirname "$dest")"
+              cp "$src" "$dest"
+              count=$((count + 1))
+          done < <(find dist/executed_nbs -name '*.ipynb' -print0)
+          echo "Overlaid $count executed notebooks onto docs/."
+          if [ -f dist/executed_nbs/manifest.json ]; then
+              echo "Artifact manifest:"
+              cat dist/executed_nbs/manifest.json
+          fi
+
+      - name: Note if artifact was unavailable
+        if: hashFiles('dist/executed_nbs/**/*.ipynb') == ''
+        run: |
+          echo "::warning::No executed_nbs artifact was overlaid. Building with committed decorative outputs."
+          echo "::warning::This can happen on first bootstrap or if Execute Notebooks hasn't run successfully yet."
+
       - name: Build MkDocs site
         run: mkdocs build
+
       - name: Assert API reference content floor
         run: |
           ref_count=$(find site/reference -name 'index.html' 2>/dev/null | wc -l)
@@ -40,5 +144,6 @@ jobs:
             echo "ERROR: site/reference is degraded (only $ref_count pages, expected 30+)"
             exit 1
           fi
+
       - name: Deploy to GitHub Pages
         run: mkdocs gh-deploy --force --dirty
