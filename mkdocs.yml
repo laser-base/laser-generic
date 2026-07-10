@@ -95,6 +95,7 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.arithmatex: # Latex processing for math equations
       generic: true
+  - pymdownx.snippets: # insert content from other files
   - pymdownx.blocks.details: # allows nesting of collapsible code
   - pymdownx.highlight: # syntax highlighting for code blocks
       linenums: true
@@ -120,6 +121,7 @@ extra_css:
   - customization/css/extra.css # custom CSS for footer spacing
 plugins:
   - search # search functionality
+  - git-revision-date-localized # per-page last-updated dates from git history (requires full clone; see workflows)
   - autorefs # automatically create linkable references
   - include-markdown # include other files, such as READMEs
   - table-reader # enables rendering of CSV/TSV files or tables

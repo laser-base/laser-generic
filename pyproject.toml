@@ -67,6 +67,7 @@ docs = [
   # mkdocs ecosystem
   "mkdocs-material",
   "mkdocs-include-markdown-plugin",
+  "mkdocs-git-revision-date-localized-plugin",
   "mkdocs-autorefs",
   "mkdocs-gen-files",
   "mkdocs-literate-nav",

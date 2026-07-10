@@ -1,6 +1,7 @@
 --index-url https://packages.idmod.org/artifactory/api/pypi/pypi-production/simple
 mkdocs-material # doc theme that includes extensive functionality
 mkdocs-include-markdown-plugin # include files outside /docs
+mkdocs-git-revision-date-localized-plugin # per-page last-updated dates from git history
 mkdocs-autorefs # create automatic linkable references to sections, etc.
 mkdocs-gen-files # generate external module reference docs
 mkdocs-literate-nav # use a SUMMARY.md file for API reference TOC
