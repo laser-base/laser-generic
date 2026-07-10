@@ -43,7 +43,7 @@ MANUAL_TAKEAWAY = {
 }
 
 
-def extract_takeaway(md_text: str, md_filename: str) -> str:
+def extract_takeaway(md_text: str, md_filename: str) -> str | None:
     if md_filename in MANUAL_TAKEAWAY:
         return MANUAL_TAKEAWAY[md_filename]
     bolds = list(re.finditer(r"\*\*([^*]+)\*\*", md_text))
@@ -65,10 +65,23 @@ def build_figtext_line(takeaway: str) -> str:
     return f'plt.figtext(0.5, -0.05, {py_repr}, ha="center", va="top", wrap=True, fontsize=8)'
 
 
-def inject_before_show(source_lines, figtext_line):
-    src = "".join(source_lines)
+def inject_before_show(source, figtext_line):
+    """Inject ``figtext_line`` just before the final ``plt.show()`` in the given
+    cell source (or append at end if no show call).
+
+    Preserves the caller's source representation: nbformat allows a cell's
+    ``source`` field to be either a plain string or a list of lines (with
+    embedded ``\\n``). Returning the same shape as the input keeps future
+    diffs minimal — a cell that was a string stays a string; a cell that was
+    a list stays a list.
+
+    Returns ``(new_source, changed_bool)``.
+    """
+    was_list = isinstance(source, list)
+    src = "".join(source) if was_list else source
     if figtext_line in src:
-        return source_lines, False
+        return source, False
+
     lines = src.splitlines(keepends=True)
     last_show_idx = None
     for i, ln in enumerate(lines):
@@ -81,7 +94,8 @@ def inject_before_show(source_lines, figtext_line):
     else:
         indent = re.match(r"^(\s*)", lines[last_show_idx]).group(1)
         lines.insert(last_show_idx, f"{indent}{figtext_line}\n")
-    return lines, True
+
+    return (lines if was_list else "".join(lines)), True
 
 
 def find_code_cell(cells, ins):
