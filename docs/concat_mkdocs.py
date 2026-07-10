@@ -23,6 +23,13 @@ import markdownify
 import yaml
 from bs4 import BeautifulSoup
 
+# Shared regex + strip helpers live in docs/tqdm_strip.py. That tool is wired
+# into docs/execute_notebooks.py, so the CI-produced executed_nbs artifact
+# ships with tqdm noise already removed. The filter usage here is a
+# defensive second pass for local dev flows or when concat runs against
+# not-freshly-executed notebooks (e.g. committed decorative outputs).
+from tqdm_strip import TQDM_PROGRESS_RE as _TQDM_PROGRESS_RE
+
 try:
     import laser.generic
 
@@ -33,16 +40,6 @@ except Exception:
 
 MIN_SECTION_CHARS = 150  # drop near-empty placeholder/index pages
 EXPECTED_MIN_MAIN_PAGES = 8  # fail loud if the site walk looks broken
-
-# laser-generic notebooks produce many tqdm progress-bar snapshots in cell
-# outputs. They add no semantic value and hurt RAG/retrieval quality, so we
-# drop them at output-build time. Matching by the tqdm rate marker at
-# end-of-line (`it/s]` or its inverse `s/it]`) catches all tqdm variants
-# uniformly — with a description ("1,000,000 agents in 1 node(s): 37%|..."),
-# with a custom description ("10/10 simulations: 45%|..."), or with no
-# description ("100%|... 25/25 [02:15<00:00, 5.41s/it]"). The rate marker
-# is a tqdm-specific signature and rarely appears elsewhere.
-_TQDM_PROGRESS_RE = re.compile(r"(?<![A-Za-z])(?:it/s|s/it)\]\s*$")
 
 
 class _NavLoader(yaml.SafeLoader):

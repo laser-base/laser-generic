@@ -23,6 +23,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tqdm_strip import strip_notebook_file
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
@@ -95,6 +97,17 @@ def main() -> int:
         if rc != 0:
             print(f"nbconvert exited {rc} for {nb}", file=sys.stderr)
             return rc
+
+        # Strip tqdm progress-bar noise from cell outputs before the artifact
+        # ships anywhere downstream. Doing this at execute time keeps the
+        # canonical CI artifact clean by construction — MkDocs Deploy's
+        # notebook overlay and Build Combined Doc's RAG concat both consume
+        # it, so both get clean outputs without needing to filter separately.
+        # See docs/tqdm_strip.py for the regex + shape it targets.
+        out_path = out_dir / f"{nb.stem}.ipynb"
+        n_removed = strip_notebook_file(out_path)
+        if n_removed:
+            print(f"  stripped {n_removed} tqdm-progress line(s) from {out_path}")
     return 0
 
 
