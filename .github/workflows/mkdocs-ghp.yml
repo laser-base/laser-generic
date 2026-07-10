@@ -35,7 +35,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write   # mkdocs gh-deploy pushes to the gh-pages branch
+  actions: read     # both download-artifact steps need this to fetch executed_nbs
+                    # from Execute Notebooks runs (otherwise 403 at runtime)
 
 concurrency:
   group: gh-pages-deploy
