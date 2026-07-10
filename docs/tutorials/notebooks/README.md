@@ -4,31 +4,48 @@ This folder holds the Jupyter notebooks used as `laser-generic` tutorials. They 
 
 ## Where do I read them?
 
-- **Rendered on the docs site (recommended for browsing):** [laser.idmod.org/laser-generic → tutorials](https://laser.idmod.org/laser-generic/tutorials/).
-- **Rendered inline on GitHub:** open any `*.ipynb` file in this folder. Note that committed outputs are decorative — they may be stale relative to the current source. See "Provenance" below.
-- **Executed against a specific commit:** see the artifact section below.
+**Read the rendered tutorials on the docs site: [laser.idmod.org/laser-generic/tutorials/](https://laser.idmod.org/laser-generic/tutorials/).**
+
+That's the freshly-executed, browsable, hosted-by-GitHub-Pages view. No download, no local Jupyter setup. Every notebook has its own page — for example:
+
+- [SI model with no demographics](https://laser.idmod.org/laser-generic/tutorials/notebooks/01_SI_nobirths_logistic_growth/)
+- [Intrinsic periodicity of the SIR system](https://laser.idmod.org/laser-generic/tutorials/notebooks/06_SIR_wbirths_natural_periodicity/)
+- [Periodicity of measles in England and Wales](https://laser.idmod.org/laser-generic/tutorials/notebooks/10_England_and_Wales/)
+
+The docs site is auto-rebuilt whenever notebook or library source changes — the [Execute Notebooks](../../../.github/workflows/execute-notebooks.yml) workflow executes every notebook, and the [Build Combined Doc](../../../.github/workflows/build-combined-doc.yml) workflow feeds those outputs into the site build. So the version you see there always corresponds to a specific committed `main` state.
+
+If you want to read a notebook **inline on github.com** (as an `.ipynb` file rendered by GitHub's built-in notebook viewer), that also works, but the figures you see are whatever was committed with the notebook — they may not match the current source. See "Source vs outputs" below.
 
 ## Source vs outputs — what's authoritative?
 
-**Source is authoritative. Committed outputs are decorative.**
+**Source is authoritative. Rendered outputs live at [the docs site](https://laser.idmod.org/laser-generic/tutorials/). Committed `outputs` inside the `.ipynb` files are decorative.**
 
-The tutorial notebooks are executed in CI by the [Execute Notebooks](../../../.github/workflows/execute-notebooks.yml) workflow. That workflow runs on every push to `main` that touches notebook or library source, publishes an `executed_nbs` artifact, and feeds that artifact into the doc-site build. The rendered figures you see at `laser.idmod.org/laser-generic` come from that artifact, not from the `outputs` field of the committed notebook files.
+Concretely:
 
-That means:
-- Contributors may commit executed notebooks (nice for GitHub inline rendering) OR strip outputs (nice for lean diffs) — both work identically for the doc build.
-- Committed outputs may drift from source over time. That's OK, because no downstream product reads them.
-- The source-of-truth executed notebooks live in the CI artifact.
+| Where the figures live | Authoritative? | How fresh? |
+|---|---|---|
+| Docs site (`laser.idmod.org/laser-generic/tutorials/`) | ✅ yes | Fresh on every push to `main` that affects notebook or library source |
+| Committed `outputs` field in `docs/tutorials/notebooks/*.ipynb` | ❌ no — decorative, purely for github.com inline rendering | Whatever a contributor happened to commit |
+| GitHub Actions `executed_nbs` artifact | ✅ yes (same source the docs site is built from) | Same as the docs site — one artifact per successful Execute Notebooks run |
 
-## Downloading the executed notebooks
+Consequences:
 
-If you want a specific commit's freshly-executed notebooks (e.g. to debug a doc-quality regression, or to preview what the docs will render against a change), grab them from the workflow's artifact panel:
+- Contributors may commit executed notebooks (nice for github.com inline rendering) OR strip outputs (nice for lean diffs) — both work identically for the docs site.
+- Committed outputs may drift from source over time; that's OK because the docs site never reads them.
+- If you're demoing the model or citing a plot, link to the docs site, not to the github.com view of an `.ipynb` file.
+
+## Downloading a specific commit's executed notebooks
+
+**You don't need this for regular reading — go to the [docs site](https://laser.idmod.org/laser-generic/tutorials/) instead.**
+
+This section is for the debugging / archival case: you need the raw `.ipynb` files (with outputs) that were executed against a specific commit — e.g. to reproduce a doc-quality regression, or to compare corpora across time.
 
 1. Open the [Execute Notebooks workflow runs](https://github.com/laser-base/laser-generic/actions/workflows/execute-notebooks.yml).
 2. Filter for the branch or commit you care about; the latest successful main-push run is [here](https://github.com/laser-base/laser-generic/actions/workflows/execute-notebooks.yml?query=is%3Asuccess+branch%3Amain).
-3. Scroll to the *Artifacts* panel and click `executed_nbs`.
-4. Retention is 400 days.
+3. Scroll to the *Artifacts* panel and click `executed_nbs` (retention: 90 days per repo-default; can be raised).
+4. The zip contains every executed notebook plus a `manifest.json` recording provenance.
 
-## Provenance
+## Provenance (`manifest.json` fields)
 
 Each `executed_nbs` artifact includes a `manifest.json` at its root with:
 
@@ -38,21 +55,21 @@ Each `executed_nbs` artifact includes a `manifest.json` at its root with:
 - `run_id`, `run_number`, `workflow_url` — back-links to the CI run.
 - `was_cache_hit`, `was_forced`, `was_allow_errors` — provenance flags.
 
-If you're doing bisection or comparing corpora across time, the `source_hash` and `commit_sha` are the two fields to trust.
+If you're doing bisection or comparing corpora across time, `source_hash` and `commit_sha` are the two fields to trust.
 
-## Regenerating locally
+## Regenerating locally (contributors only)
 
-To execute the notebooks locally against a specific check-out:
+To execute the notebooks locally:
 
 ```
 make docs-executed-nbs           # populates dist/executed_nbs/
 make docs-check-nbs              # fail if any notebook errored
 ```
 
-Or run the full local doc pipeline:
+Or the full local doc pipeline:
 
 ```
-make docs-jenner-execute         # (available once #237 lands) execute + check + build + concat
+make docs-jenner                 # execute + check + build + concat -> dist/combined_mkdocs.md
 ```
 
-Set `GITHUB_ACTIONS=true` in the environment to force `nb06`'s env-var-lite path (n_years=20, nsims=2) — matches what CI does. Without it, `nb06` runs at full scale (n_years=100, nsims=10, ~15 min).
+Set `GITHUB_ACTIONS=true` in the environment to force nb06's env-var-lite path (n_years=20, nsims=2) — matches what CI does. Without it, nb06 runs at full scale (n_years=100, nsims=10, ~15 min).
