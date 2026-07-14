@@ -84,7 +84,7 @@ class RoutineImmunization:
         self.end = int(model.params.nticks if end == -1 else end)
         self.verbose = bool(verbose)
 
-    def __call__(self, model, tick: int) -> None:
+    def step(self, tick: int) -> None:
         """
         Apply routine immunization at the given tick, if eligible.
 
@@ -96,17 +96,28 @@ class RoutineImmunization:
         On each event:
             - Agents with age in [age - period//2, age + period//2) are considered.
             - A Binomial draw with probability `coverage` selects agents to immunize.
-            - Selected agents have `susceptibility` set to 0 (immune).
-            - If present, test arrays on `model.nodes` are updated for validation.
+            - Selected agents have their state set to `nodes.R` (immune).
 
         Args:
-            model (object): LASER model (unused; provided for signature parity).
             tick (int): Current simulation tick.
 
         Returns:
             None
         """
         if (tick >= self.start) and ((tick - self.start) % self.period == 0) and (tick < self.end):
+            # Identify agents in the target age window
+            age_low = self.age - self.period // 2
+            age_high = self.age + self.period // 2
+            in_window = (self.model.people.age >= age_low) & (self.model.people.age < age_high)
+            # Sample among those in window
+            n_candidates = np.sum(in_window)
+            if n_candidates == 0:
+                return
+            rng = np.random.default_rng()
+            selected = rng.random(n_candidates) < self.coverage
+            idx = np.where(in_window)[0][selected]
+            # Set state to recovered (immune)
+            self.model.nodes.state[idx] = self.model.nodes.Rd (tick < self.end):
             half_window = int(self.period // 2)
             lower = max(0, int(self.age - half_window))
             upper = int(self.age + half_window)
